@@ -28,8 +28,9 @@ INSTALLED_APPS = [
     "ninja",
     "apps.core",
     "apps.sde",
+    "apps.rules",
     # Phase 0: apps.accounts (EVE SSO, memberships), apps.audit
-    # Phase 1: apps.rules, apps.library
+    # Phase 1: apps.library
     # Phase 2: apps.sessions
     # Phase 3: apps.analytics, apps.importer
 ]
@@ -137,6 +138,8 @@ SDE_DOWNLOAD_URL = env.str(
     "SDE_DOWNLOAD_URL",
     "https://developers.eveonline.com/static-data/eve-online-static-data-latest-jsonl.zip",
 )
+
+RULESET_FIXTURES_DIR = BASE_DIR / "fixtures" / "rulesets"
 
 TEAM_NAME = env.str("TEAM_NAME", "AT Team")
 FIELD_ENCRYPTION_KEY = env.str("FIELD_ENCRYPTION_KEY", "")

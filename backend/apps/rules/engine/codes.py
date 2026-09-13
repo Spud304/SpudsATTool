@@ -1,0 +1,53 @@
+"""String constants shared by the engine and its callers (never enums: the TS port mirrors these)."""
+
+SIDE_A = "A"
+SIDE_B = "B"
+
+MODE_PER_COPY_ALL = "per_copy_all"  # every copy pays (copies - 1) * surcharge: the AT rule
+MODE_ESCALATING = "escalating"  # copy N pays (N - 1) * surcharge
+MODE_FLAT_ADDITIONAL = "flat_additional"  # every copy after the first pays the surcharge once
+
+KILL_POINTS_COMP_COST = "comp_cost"
+KILL_POINTS_KILL_TABLE = "kill_table"
+
+TIEBREAK_NONE = "none"
+TIEBREAK_POTENTIAL_DPS = "potential_dps_t0"
+TIEBREAK_POINTS_REMAINING = "points_remaining"
+TIEBREAK_CUSTOM = "custom"
+
+BAN_TARGETS_HULL = "hull"
+BAN_TARGETS_CLASS = "class"
+
+LEGALITY_LEGAL = "legal"
+LEGALITY_BANNED = "banned"
+
+CAP_UNDER = "UNDER"
+CAP_EXACT = "EXACT"
+CAP_OVER = "OVER"
+
+INDICATOR_NONE = "none"
+INDICATOR_WINNING_BIG = "winning_big"
+INDICATOR_LOSING_BIG = "losing_big"
+
+SEVERITY_ERROR = "error"
+SEVERITY_WARNING = "warning"
+SEVERITY_INFO = "info"
+
+# Violation codes
+WRONG_SLOT_COUNT = "WRONG_SLOT_COUNT"
+EMPTY_SLOT = "EMPTY_SLOT"
+UNLISTED_HULL = "UNLISTED_HULL"
+ILLEGAL_HULL = "ILLEGAL_HULL"
+BANNED = "BANNED"
+OVER_CAP = "OVER_CAP"
+UNDER_CAP = "UNDER_CAP"
+OVER_SIZE_LIMIT = "OVER_SIZE_LIMIT"
+OVER_SAME_HULL = "OVER_SAME_HULL"
+GROUP_LIMIT_EXCEEDED = "GROUP_LIMIT_EXCEEDED"
+MULTIPLE_FLAGSHIPS = "MULTIPLE_FLAGSHIPS"
+FLAGSHIP_DISABLED = "FLAGSHIP_DISABLED"
+FLAGSHIP_NOT_ELIGIBLE = "FLAGSHIP_NOT_ELIGIBLE"
+UNIQUE_DECLARED = "UNIQUE_DECLARED"
+UNIQUE_NOT_UNIQUE_HULL = "UNIQUE_NOT_UNIQUE_HULL"
+
+HULL_SIZE_FLAG = "FLAG"

@@ -1,5 +1,7 @@
 """SDE mirror. Written only by the importer; never deleted, only flagged removed."""
 
+from typing import TYPE_CHECKING
+
 from django.db import models
 
 
@@ -71,6 +73,9 @@ class EveGroup(models.Model):
     anchored = models.BooleanField(default=False)
     fittable_non_singleton = models.BooleanField(default=False)
     use_base_price = models.BooleanField(default=False)
+
+    if TYPE_CHECKING:
+        category_id: int
 
     class Meta:
         db_table = "sde_eve_group"
@@ -146,6 +151,12 @@ class EveType(models.Model):
     variation_parent_type_id = models.IntegerField(null=True, blank=True)
     icon_id = models.IntegerField(null=True, blank=True)
     graphic_id = models.IntegerField(null=True, blank=True)
+
+    if TYPE_CHECKING:  # <fk>_id attributes, for the type checker only
+        group_id: int
+        faction_id: int | None
+        meta_group_id: int | None
+        race_id: int | None
 
     class Meta:
         db_table = "sde_eve_type"

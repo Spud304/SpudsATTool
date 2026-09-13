@@ -1,0 +1,34 @@
+{
+  "description": "OF 99 practice sheet, set 1 (2026-09-09 vs Only Fleets). Exactly 200 points under ATXXII per_copy_all inflation. Shared contract for the Python engine and its TypeScript port.",
+  "ruleset": "ATXXII",
+  "slots": [
+    {"slot_no": 1, "type_id": 22466, "name": "Astarte", "has_links": true},
+    {"slot_no": 2, "type_id": 22466, "name": "Astarte", "has_links": true},
+    {"slot_no": 3, "type_id": 22448, "name": "Absolution", "has_links": true},
+    {"slot_no": 4, "type_id": 12003, "name": "Zealot"},
+    {"slot_no": 5, "type_id": 17922, "name": "Ashimmu"},
+    {"slot_no": 6, "type_id": 29337, "name": "Augoror Navy Issue"},
+    {"slot_no": 7, "type_id": 11174, "name": "Keres"},
+    {"slot_no": 8, "type_id": 37457, "name": "Deacon"},
+    {"slot_no": 9, "type_id": 37457, "name": "Deacon"},
+    {"slot_no": 10, "type_id": 609, "name": "Maulus"}
+  ],
+  "expected": {
+    "total_points": 200,
+    "cap_status": "EXACT",
+    "is_legal": true,
+    "slots": [
+      {"slot_no": 1, "name": "Astarte", "base_points": 33, "inflation_points": 3, "total_points": 36},
+      {"slot_no": 2, "name": "Astarte", "base_points": 33, "inflation_points": 3, "total_points": 36},
+      {"slot_no": 3, "name": "Absolution", "base_points": 33, "inflation_points": 0, "total_points": 33},
+      {"slot_no": 4, "name": "Zealot", "base_points": 21, "inflation_points": 0, "total_points": 21},
+      {"slot_no": 5, "name": "Ashimmu", "base_points": 18, "inflation_points": 0, "total_points": 18},
+      {"slot_no": 6, "name": "Augoror Navy Issue", "base_points": 15, "inflation_points": 0, "total_points": 15},
+      {"slot_no": 7, "name": "Keres", "base_points": 12, "inflation_points": 0, "total_points": 12},
+      {"slot_no": 8, "name": "Deacon", "base_points": 10, "inflation_points": 1, "total_points": 11},
+      {"slot_no": 9, "name": "Deacon", "base_points": 10, "inflation_points": 1, "total_points": 11},
+      {"slot_no": 10, "name": "Maulus", "base_points": 7, "inflation_points": 0, "total_points": 7}
+    ],
+    "link_indexes": [1, 2, 3, null, null, null, null, null, null, null]
+  }
+}

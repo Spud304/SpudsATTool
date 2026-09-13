@@ -1,0 +1,43 @@
+schema_version: 1
+verified: false
+notes: Anger Games 7 (April 2026). Transcribed from archived Anger Games rules text; the AG7 Google Doc has not been obtained, so bracket format, kill scoring, ammo bans and every point value are unconfirmed.
+tournament:
+  code: AG7
+  name: Anger Games 7
+  organiser: community
+  server: thunderdome
+  year: 2026
+ruleset:
+  fielded_pilots: 7
+  point_cap: 75
+  max_same_hull: 1
+  duplicate_inflation: { enabled: false }
+  flagship: { enabled: false }
+  unspent_points_to_opponent: true
+  ships_inference: prefix_and_aliases
+  extra: { pirate_faction_ammo_banned: true, overtime: 5 minute game-speed ramp (unverified) }
+hull_sizes:
+  - { size: BS, label: Battleship }
+  - { size: BC, label: Battlecruiser }
+  - { size: CR, label: Cruiser }
+  - { size: LC, label: Logistics Cruiser }
+  - { size: DE, label: Destroyer }
+  - { size: FR, label: Frigate }
+  - { size: LF, label: Logistics Frigate }
+group_limits:
+  - code: logistics
+    label: Logistics
+    max: 2
+    members: [{ hull_size: LC, weight: 2 }, { hull_size: LF, weight: 1 }]
+stages:
+  - { code: single, label: Match, best_of: 1, bans_per_side: 2, ban_order: ABBA, deadline_minutes: 45 }
+ship_classes: []
+ships: []
+point_table: null
+module_rules:
+  default: { allowed_meta_groups: [Tech I, Tech II] }
+  by_group:
+    - { categories: [Charge], allowed_meta_groups: [Tech I, Tech II], note: Pirate faction ammunition banned (unverified). }
+text_sections:
+  - heading: Unverified
+    body: Point values, hull list and kill scoring for AG7 are unknown; comps under this ruleset evaluate every hull as UNLISTED_HULL until a point table is imported. Bans are two per side in ABBA order, taken 45 minutes before the match.

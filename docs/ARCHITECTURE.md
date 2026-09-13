@@ -49,7 +49,7 @@ Verified from the workbook. Each maps to a screen or service below.
 8. Practice sessions: header (date, opponent, system, moveme, MotD, our side A/B), attendance roster with auto "# Flown", up to 8 sets.
 9. Per set: our 10 slots (pilot, ship, fit, warp-in, notes, flagship), opponent 10 slots, 4+4 bans + 2 avalanche bans, 4 rounds with Win/Loss/Draw/None/Reset + notes, per-slot per-round "died" checkboxes.
 10. One-click comp load into a set (ships, warp-ins, default fits, ship notes, link scripts), with manual override blanking dependent defaults and a per-slot "load default" toggle.
-11. Live scorer: points destroyed per side, unspent-points handicap, running differential, colour-coded vs overtime threshold.
+11. Round scorer (entered after each fight): points destroyed per side, unspent-points handicap, differential, colour-coded against a differential threshold.
 12. Ban legality highlighting (flagship exempt) and hull-limit highlighting on the live page.
 13. Link/command-burst coordinator: auto-detect links hulls, number link pilots, pull 5 scripts per link pilot from the comp.
 14. Per-pilot fit delivery: each pilot copies the full EFT text for their slot, with a dropdown of alternate active fits for that hull.
@@ -109,20 +109,20 @@ Five layers. All operational rows carry `created_at, updated_at, updated_by, row
 **(a) SDE mirror, importer-owned (section 10)**
 - Raw: `sde_raw_<file>(key, data JSONB, build, removed)` per included SDE file.
 - Typed: `sde_category`, `sde_group(groupID PK, categoryID, name, published)`, `sde_meta_group`, `sde_faction`, `sde_race`, `sde_type(typeID PK, groupID, name, published, factionID, metaGroupID, raceID, techLevel, metaLevel, mass, volume, marketGroupID, variationParentTypeID)`.
-- Curated hull facts (hull size for T1 support hulls such as Bantam/Burst/Inquisitor/Navitas as LF and Augoror/Osprey/Exequror/Scythe as LC, links capability) live in the `rules` app as `HullOverride(type FK, hull_size, can_fit_links)`, never in `sde` tables.
+- Curated hull facts live in the `rules` app, never in `sde` tables: the T1 support hull sizes (Bantam/Burst/Inquisitor/Navitas as LF, Augoror/Osprey/Exequror/Scythe as LC) and the SDE-group-to-size fallback are module constants in `apps/rules/constants.py`; the per-ruleset resolved size sits on `RulesetShip.hull_size`. Links capability is fit-driven (a command burst in the chosen fit), not a hull property.
 - `CommandBurstScript(code PK: AE AR RR EH ES SO AS SE SH EM IM RD, name, family)`.
 - `HullSize` is a TextChoices enum: `FR DE CR BC BS IN CV LF LC FLAG`.
 
-**(b) Ruleset configuration, one cluster per tournament edition**
-- `Tournament(code unique e.g. ATXXII/ATXXI/AG7, name, organiser ccp|community, year, server tranquility|thunderdome, dates, rules_url)`.
-- `Ruleset(tournament 1:1, fielded_pilots, point_cap, max_same_hull, duplicate_inflation_enabled, duplicate_inflation_mode per_copy_all|escalating|flat_additional, flagship_enabled + 5 flagship behaviour booleans, unique_ship_extra_bans, unspent_points_to_opponent, kill_points_source comp_cost|kill_table, match_length_seconds, overtime_mode none|fixed_extension|gamespeed_ramp, overtime_seconds, overtime_point_threshold, tiebreak_rule, roster_max, merc_max, extra JSON)`.
-- `RulesetHullSizeRule(ruleset, hull_size, label, max_per_comp, duplicate_surcharge)`: direct port of `Configurables!J8:M17`.
-- `CompQuota(ruleset, code, label, max_units)` + `CompQuotaMember(quota, hull_size|ship_class|ship, weight)`: expresses "1 LC or 2 LF" as weights 2/1 against max 2, which the sheet could not.
-- `ShipClass(ruleset, name, hull_size, source_text)`: the official class list (156 rows).
-- `RulesetShip(ruleset, ship, ship_class, hull_size, legality legal|banned|unlisted, flagship_eligible, can_fit_links, mapping_confidence)`: the edition's ship dimension (the sheet's `Point values!F:K`, 279 rows). Banned-hull list = rows with `legality=banned`.
-- `PointTableVersion(ruleset, purpose cost|kill, version_no, label, source_url, effective_from, is_current, raw_text)` + `PointTableEntry(version, ship_class|ship, points)`: class default with hull override, versioned.
-- `Stage(ruleset, code prelim|bracket|final|single, best_of, bans_per_side, ban_order_pattern e.g. "ABBAAB", bans_are_blind, ban_targets, ban_deadline_minutes_before, chess_clock_seconds, avalanche_* fields, flagship_uses)`.
-- `RulesetTextSection(ruleset, heading, body_markdown)`: module/implant/booster rules as reference text, not evaluated in v1.
+**(b) Ruleset configuration, one cluster per tournament edition (built 2026-09-13, `apps/rules`)**
+- `Tournament(code unique e.g. ATXXII/ATXXI/AG7, name, organiser ccp|community, server tranquility|thunderdome, year, dates, rules_url, verified, notes)`. `owner_team` deferred until `core.Team` exists.
+- `Ruleset(tournament 1:1, fielded_pilots, point_cap, max_same_hull, duplicate_inflation_enabled, duplicate_inflation_mode per_copy_all|escalating|flat_additional, six flagship flags, flagship_eligible_sizes JSON, flagship_eligible_meta_groups M2M, unique_ship_extra_bans, unspent_points_to_opponent, kill_points_source comp_cost|kill_table, point_threshold, tiebreak_rule, roster_max, merc_max, ships_inference, extra JSON, revision, source_hash, imported_at)`. `revision` bumps on every import and child edit (signals) and keys the engine-input cache.
+- `HullSizeRule(ruleset, hull_size, label, max_per_comp, duplicate_surcharge)`; FLAG is a real row with limit 1 and no surcharge.
+- `GroupLimit(ruleset, code, label, max, message)` + `GroupLimitMember(limit, hull_size|ship_class|ship, weight)`: the logistics rule as LC weight 2, LF weight 1, max 2.
+- `Stage(ruleset, code, label, best_of, bans_per_side, ban_order_pattern e.g. ABBAABAB, bans_are_blind, ban_targets, ban_deadline_minutes, avalanche_* fields, flagship_uses)`. No chess clock: bans are recorded after the fact.
+- `ShipClass(ruleset, name, hull_size, sort_order, active)`: the official points list; never deleted, `active=False` when dropped.
+- `RulesetShip(ruleset, ship FK sde.EveType, ship_class, hull_size, hull_size_is_override, legality, flagship_eligible|null, is_unique, mapping_source explicit|inferred_prefix|inferred_alias|manual)`: the edition's ship dimension; the banned-hull list is `legality=banned`.
+- `PointTableVersion(ruleset, purpose cost|kill, version_no, label, source_url, effective_from, is_current, content_hash)` + `PointTableEntry(version, ship_class|ship, points)`: class default with hull override, versioned by content hash.
+- `ModuleRule(ruleset, scope default|group|flagship, max_meta_level, hull_scope, groups M2M, categories M2M, allowed_meta_groups M2M)`, `BannedModuleType`, `TextSection`: module legality by SDE meta group and meta level, stored now and evaluated with the EFT parser.
 
 Worked example of the same schema holding three editions:
 
@@ -134,7 +134,7 @@ Worked example of the same schema holding three editions:
 | BS max_per_comp | 2 (+FLAG row max 1) | null | null |
 | flagship | on | on | off |
 | stages | prelim Bo1 3 bans; bracket Bo3 4 bans avalanche; final Bo5 flagship x2 | bracket Bo3 4 bans | single, 2 bans ABBA, 45 min deadline |
-| overtime | none (tiebreak potential DPS) | none | gamespeed_ramp 300 s |
+| tiebreak | potential DPS at t=0 | none | none |
 
 **(c) Team library**
 - `Pilot(team, name, status, roles_text, notes)` + `PilotCharacter(pilot, character, is_main)` (a pilot may have many alts or none) + `RosterEntry(team, tournament, pilot, is_merc, is_captain)`.
@@ -169,7 +169,7 @@ Rulesets are authored as **YAML documents**, one per tournament edition (`atxxii
 
 **Module legality from SDE meta data (noted 2026-09-13).** `EveType.meta_level` and `EveType.meta_group` come straight from the SDE, and modules, charges, drones, implants and subsystems are imported, so the AT module rules can be data rather than reference text. The YAML gains a `module_rules` block: a default allowed-meta-group set (AT: T1 and T2), per-group overrides with `max_meta_level` and/or `allowed_meta_groups` (damps and disruptors Meta 4 max, T2 rigs banned, hardwirings above Meta 3 banned), explicit `banned_types`, and a `flagship` relaxation (faction/officer/deadspace allowed for listed module families). The rules engine evaluates a parsed EFT fit against it in the library slice. Verify first: whether implant "Meta 03" in CCP's wording maps to `meta_level` on implant types, and how "bonused hulls only" resolves (use `typeBonus`).
 
-Sketch of the document (the schema is finalised in Phase 1 as the first deliverable, since it doubles as the install fixture):
+The schema is documented in `docs/rulesets.md`; shipped documents are `backend/fixtures/rulesets/{atxxii,atxxi,ag7}.yaml` (`atxxii.yaml` is generated from the team workbook by `backend/scripts/gen_atxxii_from_workbook.py`). Import with `manage.py import_ruleset --path FILE [--dry-run] [--replace-points] [--force]`, export with `manage.py export_ruleset CODE`. Sketch:
 
 ```yaml
 tournament: { code: ATXXII, name: Alliance Tournament XXII, organiser: ccp, server: tranquility, year: 2026 }
@@ -180,11 +180,11 @@ ruleset:
   duplicate_inflation: { enabled: true, mode: per_copy_all }
   flagship: { enabled: true, immune_to_bans: true, exempt_from_size_limit: true }
   unspent_points_to_opponent: true
-  match: { length_seconds: 600, overtime: none, tiebreak: potential_dps_t0 }
+  match: { tiebreak: potential_dps_t0 }
 hull_sizes:
   - { size: BS, label: Battleship, max_per_comp: 2, duplicate_surcharge: 4 }
-quotas:
-  - { code: logistics, max_units: 2, members: [{ hull_size: LC, weight: 2 }, { hull_size: LF, weight: 1 }] }
+group_limits:
+  - { code: logistics, max: 2, members: [{ hull_size: LC, weight: 2 }, { hull_size: LF, weight: 1 }] }
 stages:
   - { code: prelim, best_of: 1, bans_per_side: 3, ban_order: ABBAAB }
   - { code: bracket, best_of: 3, bans_per_side: 4, ban_order: ABBAABBA, avalanche: { loser: 2, winner: 1, blind: true } }
@@ -208,19 +208,19 @@ text_sections:
 
 ---
 
-## 6. Rules engine
+## 6. Rules engine (built 2026-09-13)
 
-Pure Python package `backend/apps/rules/engine/` (stdlib dataclasses only, no Django), mirrored in `frontend/src/engine/`, both run the same JSON fixtures.
+Pure Python package `backend/apps/rules/engine/` (stdlib dataclasses only, no Django), to be mirrored in `frontend/src/engine/` against the same golden fixture (`backend/tests/rules/fixtures/of99_set1.json`). `apps/rules/adapters.py` builds the inputs from ORM rows and caches them per `(ruleset, revision, point version)`.
 
-- `evaluate_comp(spec, point_table, hulls, slots, bans=(), our_side=None) -> CompEvaluation`: per-slot base points (hull override else class), inflation by mode, effective hull size (FLAG for flagship), violations (`OVER_CAP, UNDER_CAP info, OVER_SIZE_LIMIT, OVER_SAME_HULL, QUOTA_EXCEEDED, BANNED, ILLEGAL_HULL, UNLISTED_HULL, MULTIPLE_FLAGSHIPS, FLAGSHIP_NOT_ELIGIBLE, EMPTY_SLOT, WRONG_SLOT_COUNT`), link indexes, unspent points.
-- `score_round(spec, us_eval, opp_eval, us_dead, opp_dead, elapsed, ...) -> RoundScore`: points conceded per side including the unspent handicap, differential (theirs minus ours, as the sheet's `U21`), phase regulation|overtime|ended, overtime indicator vs threshold, tiebreak hint.
+- `evaluate_comp(spec, point_table, hulls, slots, bans=()) -> CompEvaluation`: per-slot base points (hull override else class), inflation by mode, effective hull size (FLAG for an exempt flagship), violations as errors (`WRONG_SLOT_COUNT, UNLISTED_HULL, ILLEGAL_HULL, BANNED, OVER_CAP, OVER_SIZE_LIMIT, OVER_SAME_HULL, GROUP_LIMIT_EXCEEDED, MULTIPLE_FLAGSHIPS, FLAGSHIP_DISABLED, FLAGSHIP_NOT_ELIGIBLE`), warnings (`EMPTY_SLOT, UNIQUE_NOT_UNIQUE_HULL`) and info (`UNDER_CAP, UNIQUE_DECLARED`), link indexes from the caller's per-slot `has_links` (fit-driven), unspent points. Inflation with `copies` copies of a hull and surcharge `s`: `per_copy_all` every copy pays `(copies-1)*s`; `escalating` copy N pays `(N-1)*s`; `flat_additional` every copy after the first pays `s`.
+- `score_round(spec, us_eval, opp_eval, us_dead, opp_dead, ...) -> RoundScore`: points conceded per side including the unspent handicap, differential (theirs minus ours, as the sheet's `U21`), a decisive-lead indicator against `point_threshold`, tiebreak hint. No match timing anywhere: results are entered after the fight.
 - `ban_sequence(stage, first_side)`, `avalanche_allocation(stage, winner)`, `extra_bans_for_unique(...)`, `flagship_uses_remaining(...)`.
 - `parse_pyfa_summary(text)`, `parse_eft_header(eft)` (server only).
 - Server is authoritative: every write to a set recomputes the whole set's cached values and broadcasts a compact `derived` block; the TS port gives instant feedback before the round trip.
 
-**Inflation discovery to resolve before implementing legality:** the sheet charges `(copies - 1) x surcharge` on every copy (two Astartes = 36 + 36 = 72, and OF 99 set 1 totals exactly 200 under that reading). The official text is ambiguous between that, escalating (33/36/39), and flat per extra copy. The engine supports all three via `duplicate_inflation_mode`; Paige should check one real AT XXII comp total against the Quick Comp Creator before Phase 1 ships. The xlsx importer cross-checks every imported set's total under `per_copy_all` as an acceptance test.
+**Inflation:** `per_copy_all` is the confirmed AT rule (two Ashimmus at 18 with +2 cost 20 each); OF 99 set 1 totals exactly 200 under it and is the golden fixture. The xlsx importer will cross-check every imported set's total as an acceptance test.
 
-Golden tests transcribed from the workbook: OF 99 set 1 (200 exact, two Astartes, two Deacons), over-cap comp, 1 LC + 1 LF quota violation, flagship BS as third battleship, banned flagship exempt, AG7 7-slot comp with duplicate hull, 190-point comp handicap, overtime colour thresholds.
+Golden tests transcribed from the workbook: OF 99 set 1 (200 exact, two Astartes, two Deacons), over-cap comp, 1 LC + 1 LF group-limit violation, flagship BS as third battleship, banned flagship exempt, AG7 7-slot comp with duplicate hull, 190-point comp handicap, overtime colour thresholds.
 
 ---
 
@@ -281,11 +281,11 @@ Layout: a left rail with scrim context, a main area for the selected set, and a 
 1. **Ban board.** Two columns (Team A, Team B) of ban chips laid out in the stage's ban order (`ABBAAB` etc.) with the order number on each chip; a third row for avalanche bans labelled "after R1", "after R2". Adding a ban is a typeahead over legal hulls. Banned hulls immediately show struck through with a red badge everywhere in this set (comp picker, lineup rows, opponent rows), and the comp picker filters to comps that survive the bans by default with a toggle to show all. A "we are A/B" switch flips which column counts against us. After a round is marked, the app prompts the avalanche allocation from the stage rules (loser bans 2, winner bans 1) and pre-creates the chips.
 
 2. **Lineups.** Side by side: **Ours** and **Theirs**, each N rows for the selected round (round tabs across the top of the panel: R1 R2 R3 +; a new round copies the previous lineup and highlights any cell later changed from the prior round).
-   - Ours: comp picker at the top (shows points, status, archetype, "3 hulls banned" warnings); rows: pilot dropdown with a "Suggested" group (who flew this hull or a hull of the same size most recently, how many times), ship typeahead, fit select (active fits for that hull, default from comp), warp-in, links number and scripts (auto-numbered, editable), note, flagship toggle, points with inflation shown as "33 +3". Row-level badges: over size limit, banned, quota exceeded. A budget bar under the table: total / cap with per-size segments and unspent points called out. Load-default toggle per row, override-blanks-defaults semantics preserved from the sheet.
+   - Ours: comp picker at the top (shows points, status, archetype, "3 hulls banned" warnings); rows: pilot dropdown with a "Suggested" group (who flew this hull or a hull of the same size most recently, how many times), ship typeahead, fit select (active fits for that hull, default from comp), warp-in, links number and scripts (auto-numbered, editable), note, flagship toggle, points with inflation shown as "33 +3". Row-level badges: over size limit, banned, limit exceeded. A budget bar under the table: total / cap with per-size segments and unspent points called out. Load-default toggle per row, override-blanks-defaults semantics preserved from the sheet.
    - Theirs: archetype select, rows of ship typeahead + flagship toggle + note, same budget bar. "Paste lineup" accepts ten ship names from chat and resolves them.
    - Warp calls (1st to 4th) and tactics note live in the panel header.
 
-3. **Round scoreboard.** For the selected round: two columns of ship chips (ours labelled with pilot name), one click toggles dead and moves the chip's points to the other side's total; toggling again undoes it. Big numbers: points destroyed by us, by them, differential with colour vs the overtime threshold, unspent-points handicap shown explicitly, a timer (start, pause, reset) that displays regulation / overtime / ended per the ruleset, outcome buttons (Win / Loss / Draw / Reset), round note. A **Focus mode** button expands the scoreboard to full screen for the scorer during the fight; everything else in the app keeps updating underneath. Anyone with scoring rights can toggle a death; the audit drawer shows who toggled what.
+3. **Round result.** For the selected round, entered after the fight: two columns of ship chips (ours labelled with pilot name), one click toggles dead and moves the chip's points to the other side's total; toggling again undoes it. Totals: points destroyed by us, by them, differential with colour against the point threshold, unspent-points handicap shown explicitly, outcome buttons (Win / Loss / Draw / Reset), round note. No timer and no live-update expectation: pilots are flying during the match. Anyone with scoring rights can toggle a death; the audit drawer shows who toggled what.
 
 **Right drawer: Fits for this round.** One card per our slot: pilot, ship, fit name, warp-in, scripts, notes, EFT text in a monospace block, Copy button (Phase 4: Push to EVE). Filter "mine" highlights the logged-in pilot's card; the pilot's own row in the lineup is also highlighted so a pilot with EVE open on another monitor finds their fit in one glance.
 
@@ -370,7 +370,8 @@ Dev: `docker-compose.dev.yml` runs Postgres + Redis only; Django and Vite run na
     apps/accounts (User, EveCharacter, Membership, AdmissionRule, Invite, ShareLink, sso.py, permissions.py)
     apps/audit (AuditLog, record() helper called from every service)
     apps/esi (client.py, refresh_affiliations)      apps/sde (SdeRawRecord, SdeBuild, EveCategory, EveGroup, EveMetaGroup, EveFaction, EveRace, EveType; jsonl.py, loader.py, derive.py, download.py, incoming.py; import_sde)
-    apps/rules (Tournament, Ruleset, ..., engine/, admin.py)
+    apps/rules (Tournament, Ruleset, HullSizeRule, GroupLimit, Stage, ShipClass, RulesetShip, PointTableVersion, ModuleRule; yaml_io.py, inference.py, importer.py, exporter.py, adapters.py, engine/; import_ruleset, export_ruleset)
+    fixtures/rulesets/{atxxii,atxxi,ag7}.yaml   scripts/gen_atxxii_from_workbook.py
     apps/library (Fit, Comp, CompSlot, Pilot, PilotNote, Opponent, Archetype, WarpInLabel, eft.py, pyfa.py)
     apps/sessions (Session, Set, Round, Assignment, Ban, ChangeEvent, services.py, events.py, consumers.py)
     apps/analytics (views SQL, match_log export)     apps/importer (xlsx.py + per-sheet modules)
@@ -393,8 +394,8 @@ Sizes relative; assume a solo dev at ~10 h/week. Phase 2 is the critical path; s
 | Phase | Scope | Size | Exit criterion |
 |---|---|---|---|
 | **0 Skeleton + auth** | git init; monorepo; Compose with Caddy TLS; Django + ninja + Channels hello; EVE SSO login/callback/link; first-login admin; Team/Membership/roles/invites/admission rules; generated TS client; SPA shell; CI green; `docs/SETUP.md`; copy research reports into `docs/research/`. | M | A stranger self-hosts from the README and logs in with an EVE character; a second character is rejected until invited. |
-| **1 Libraries + validation** | the hybrid SDE loader (section 10: raw JSONB layer, typed tables, CLI + drop folder + scheduled CCP download, health staleness); the YAML ruleset schema, validator and importer/exporter (section 5.1) with the ATXXII, ATXXI and AG7 documents as fixtures and an admin upload page; official points paste importer → ShipClass + PointTableVersion; RulesetShip auto-mapping + review queue; Fit library (EFT + Pyfa parse, lifecycle incl. Suggested → Active flow); Comp builder with live evaluation and stat rollups, open to all members with the Suggested status and a review queue; Comp browser with status + ban filter; comp notes/ban theory; pilot roster; opponent registry; scrim creation with RSVP (attending / unable / maybe + reason) on the dashboard; `AuditLog` written by every library and membership service action, with `/team/audit` and per-object History tabs; leadership flag and `/team/notes`; rules engine in Python and TS with shared fixtures. | L | Every validation the sheet performs is reproduced and tested; all 145 fits and 125 comps can be loaded (via the Phase 3 importer run early, or CSV). |
-| **2 Live scrim page** | Session/Set/Round/Assignment/Ban/ChangeEvent; write service with locking, LWW, seq, recompute, broadcast; consumer, presence, resync; the scrim page per section 9.2: set stepper, ban board with avalanche prompts, per-round lineups copied forward with pilot suggestions, comp load with override-blanks-defaults, link numbering + scripts, round scoreboard with click-to-toggle deaths, timer and focus mode; fits drawer; review tab; share links; audit drawer. Pilot card page only if cheap. | XL | A real weekly scrim is run entirely in the app with three simultaneous editors. |
+| **1 Libraries + validation** | DONE: the hybrid SDE loader (section 10) and the rules layer (sections 5(b), 5.1, 6: YAML schema, validating importer/exporter, ATXXII/ATXXI/AG7 fixtures, pure engine with golden tests). REMAINING: admin upload page; official points paste importer → ShipClass + PointTableVersion; RulesetShip auto-mapping + review queue; Fit library (EFT + Pyfa parse, lifecycle incl. Suggested → Active flow); Comp builder with live evaluation and stat rollups, open to all members with the Suggested status and a review queue; Comp browser with status + ban filter; comp notes/ban theory; pilot roster; opponent registry; scrim creation with RSVP (attending / unable / maybe + reason) on the dashboard; `AuditLog` written by every library and membership service action, with `/team/audit` and per-object History tabs; leadership flag and `/team/notes`; rules engine in Python and TS with shared fixtures. | L | Every validation the sheet performs is reproduced and tested; all 145 fits and 125 comps can be loaded (via the Phase 3 importer run early, or CSV). |
+| **2 Live scrim page** | Session/Set/Round/Assignment/Ban/ChangeEvent; write service with locking, LWW, seq, recompute, broadcast; consumer, presence, resync; the scrim page per section 9.2: set stepper, ban board with avalanche prompts, per-round lineups copied forward with pilot suggestions, comp load with override-blanks-defaults, link numbering + scripts, round result entry with click-to-toggle deaths; fits drawer; review tab; share links; audit drawer. Pilot card page only if cheap. | XL | A real weekly scrim is run entirely in the app with three simultaneous editors. |
 | **3 History + analytics** | openpyxl importer for the workbook (libraries + 30 sessions; set blocks located by scanning column Y for "Set #"; dates from tab names; hidden sheets archived; hidden column M ban codes; cross-checks against cached totals and the sheet's own data-log rows); Django-Q2 for the long-running import; `v_match_log` CSV/API export; stats pages (pilot survival, ship death rates, comp W/L by opponent and archetype, ban frequency, attendance over time, per-opponent history). | M-L | Historical OF 99 renders identically to the sheet; the R users get the same CSV. |
 | **4 Nice-to-haves** | ESI fit push; Anger Games ruleset row (exercises data-driven rules; add code rules only if needed); Challonge bracket import; opponent scouting (zKillboard lookups); `dogma-engine` WASM fit stats; team-wide library change notifications; flagship series tracking. | S-M each | Independent; ship as demanded. |
 
@@ -402,7 +403,7 @@ Sizes relative; assume a solo dev at ~10 h/week. Phase 2 is the critical path; s
 
 ## 14. Decisions still open (recommended defaults in bold; the plan proceeds on these unless Paige says otherwise)
 
-1. **Duplicate inflation semantics:** sheet = every copy pays `(copies-1) x surcharge`. Verify against a real AT XXII comp; **default `per_copy_all` to match the team's existing 200-point comps**.
+1. **Duplicate inflation semantics: resolved 2026-09-13.** Every copy pays `(copies-1) x surcharge`; Paige confirmed from play (two Ashimmus at 18 base with a +2 cruiser surcharge cost 20 each). ATXXII uses `duplicate_inflation_mode: per_copy_all`; the other two modes stay in the engine for other rulesets.
 2. Flagship counts toward same-hull limit and inflation: **yes to both** (toggles exist).
 3. Kill points when a duplicated hull dies: **base + inflation** (what the sheet sums).
 4. Anger Games: separate kill table, flagship, ban granularity: **unknown until the AG Google Doc is obtained from the AG Discord**; schema supports either.

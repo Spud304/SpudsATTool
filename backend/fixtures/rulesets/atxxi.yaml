@@ -1,0 +1,49 @@
+schema_version: 1
+verified: false
+notes: Alliance Tournament XXI (2025) knobs from the CCP rules post; the point table is not available in this repository, so comps under this ruleset evaluate hulls as unlisted until one is imported.
+tournament:
+  code: ATXXI
+  name: Alliance Tournament XXI
+  organiser: ccp
+  server: tranquility
+  year: 2025
+  rules_url: https://www.eveonline.com/news/view/alliance-tournament-xxi-rules-and-regulations
+ruleset:
+  fielded_pilots: 10
+  point_cap: 200
+  max_same_hull: null
+  duplicate_inflation: { enabled: false }
+  flagship:
+    enabled: true
+    eligible_sizes: [BS]
+    eligible_meta_groups: [Tech I, Tech II, Faction]
+  unspent_points_to_opponent: true
+  roster: { max: 40, merc_max: 10 }
+  ships_inference: prefix
+  extra: { format: 32-team double elimination }
+hull_sizes:
+  - { size: FLAG, label: Flagship, max_per_comp: 1 }
+  - { size: BS, label: Battleship, max_per_comp: 3 }
+  - { size: BC, label: Battlecruiser, max_per_comp: 3 }
+  - { size: CR, label: Cruiser, max_per_comp: 3 }
+  - { size: LC, label: Logistics Cruiser, max_per_comp: 1 }
+  - { size: DE, label: Destroyer, max_per_comp: 3 }
+  - { size: FR, label: Frigate, max_per_comp: 3 }
+  - { size: LF, label: Logistics Frigate, max_per_comp: 2 }
+  - { size: IN, label: Industrial, max_per_comp: 3 }
+  - { size: CV, label: Corvette, max_per_comp: 3 }
+group_limits:
+  - code: logistics
+    label: Logistics
+    max: 2
+    message: 1 logi cruiser or 2 logi frigates
+    members: [{ hull_size: LC, weight: 2 }, { hull_size: LF, weight: 1 }]
+stages:
+  - { code: bracket, label: Double elimination, best_of: 3, bans_per_side: 4, ban_order: ABBAABAB, flagship_uses: 1 }
+ship_classes: []
+ships: []
+point_table: null
+text_sections:
+  - heading: Provenance
+    body: Knobs transcribed from the AT XXI rules and regulations post. Point values were not captured; import a point table before evaluating comps.
+    source_url: https://www.eveonline.com/news/view/alliance-tournament-xxi-rules-and-regulations

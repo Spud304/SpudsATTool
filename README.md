@@ -8,12 +8,12 @@ A self-hosted organizer for EVE Online tournament teams (Alliance Tournament, An
 
 ## Status
 
-Skeleton plus the first Phase 1 slice: the SDE loader (`backend/apps/sde`) that mirrors CCP's JSONL Static Data Export into Postgres, with automatic download, a drop folder, and build tracking on `/api/health`. Phases are built one at a time from `docs/ARCHITECTURE.md` section 13.
+Skeleton plus two Phase 1 slices: the SDE loader (`backend/apps/sde`) that mirrors CCP's JSONL Static Data Export into Postgres, and the rules layer (`backend/apps/rules`): tournament rulesets as YAML documents (`docs/rulesets.md`, fixtures in `backend/fixtures/rulesets/`), a validating importer/exporter, and a pure rules engine for comp legality, points with duplicate inflation, bans and round scoring. Phases are built one at a time from `docs/ARCHITECTURE.md` section 13.
 
 ## Layout
 
 ```
-backend/    Django project (config/, apps/core, apps/sde, tests/)
+backend/    Django project (config/, apps/core, apps/sde, apps/rules, fixtures/rulesets, scripts/, tests/)
 frontend/   React + TypeScript SPA (Vite)
 deploy/     docker-compose.yml, Caddyfile, Dockerfiles, entrypoint, crontab, backup script
 docs/       setup guide, architecture plan (research/ is local-only)
