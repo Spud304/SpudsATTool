@@ -8,12 +8,12 @@ A self-hosted organizer for EVE Online tournament teams (Alliance Tournament, An
 
 ## Status
 
-Scaffolding only. The repo has the project skeleton (Django + django-ninja + Channels backend with a health endpoint, React + Vite frontend shell, Docker Compose deployment, CI) and the approved plan. No feature code yet; phases are built one at a time from `docs/ARCHITECTURE.md` section 13, starting with Phase 0 (EVE SSO login, memberships, roles).
+Skeleton plus the first Phase 1 slice: the SDE loader (`backend/apps/sde`) that mirrors CCP's JSONL Static Data Export into Postgres, with automatic download, a drop folder, and build tracking on `/api/health`. Phases are built one at a time from `docs/ARCHITECTURE.md` section 13.
 
 ## Layout
 
 ```
-backend/    Django project (config/, apps/core, tests/)
+backend/    Django project (config/, apps/core, apps/sde, tests/)
 frontend/   React + TypeScript SPA (Vite)
 deploy/     docker-compose.yml, Caddyfile, Dockerfiles, entrypoint, crontab, backup script
 docs/       setup guide, architecture plan (research/ is local-only)

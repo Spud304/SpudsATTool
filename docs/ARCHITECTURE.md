@@ -106,9 +106,10 @@ Single team per deployment, but a `Team` row exists and every library/session ro
 
 Five layers. All operational rows carry `created_at, updated_at, updated_by, row_version`.
 
-**(a) SDE reference, global, replaced by `import_sde`**
-- `ShipGroup(group_id PK, name, category_id, default_hull_size, default_can_fit_links, is_tournament_relevant)` with curated columns preserved across re-imports.
-- `Ship(type_id PK, name unique, group FK, faction_id, meta_group_id, race_id, tech_level, is_published, hull_size_override, can_fit_links_override, sde_version)`. T1 support hulls (Bantam/Burst/Inquisitor/Navitas → LF; Augoror/Osprey/Exequror/Scythe → LC) are overrides here.
+**(a) SDE mirror, importer-owned (section 10)**
+- Raw: `sde_raw_<file>(key, data JSONB, build, removed)` per included SDE file.
+- Typed: `sde_category`, `sde_group(groupID PK, categoryID, name, published)`, `sde_meta_group`, `sde_faction`, `sde_race`, `sde_type(typeID PK, groupID, name, published, factionID, metaGroupID, raceID, techLevel, metaLevel, mass, volume, marketGroupID, variationParentTypeID)`.
+- Curated hull facts (hull size for T1 support hulls such as Bantam/Burst/Inquisitor/Navitas as LF and Augoror/Osprey/Exequror/Scythe as LC, links capability) live in the `rules` app as `HullOverride(type FK, hull_size, can_fit_links)`, never in `sde` tables.
 - `CommandBurstScript(code PK: AE AR RR EH ES SO AS SE SH EM IM RD, name, family)`.
 - `HullSize` is a TextChoices enum: `FR DE CR BC BS IN CV LF LC FLAG`.
 
@@ -154,6 +155,56 @@ Worked example of the same schema holding three editions:
 
 **(e) Analytics: SQL views, no precomputation**
 `v_match_log` (one row per US assignment per round) reproduces the sheet's export columns in the exact order and names, with extra keys appended, so the R workflow keeps working. Plus `v_round_score`, `v_pilot_round_stats`, `v_pilot_ship_stats`, `v_ship_survival`, `v_comp_results` (comp W/L by opponent and archetype), `v_ban_frequency`, `v_opponent_ship_usage`, `v_opponent_archetypes`, `v_session_attendance`, `v_pilot_reliability` (RSVP answers, attendance rate, no-shows after a yes). Materialise only if slow.
+
+### 5.1 How rules get into the database (decided 2026-09-13)
+
+Rulesets are authored as **YAML documents**, one per tournament edition (`atxxii.yaml`, `atxxi.yaml`, `ag7.yaml`), shipped with the app as the seed fixtures and importable later. An admin or captain pastes or uploads a YAML file on an admin page and the importer propagates it into the layer (b) tables. Rules:
+
+- The importer validates before writing anything (unknown hull names, ban pattern not matching `bans_per_side`, points for an unlisted class, duplicate class names) and reports all problems at once.
+- Import is idempotent: re-importing an unchanged file writes nothing; a changed file updates in place and records an `AuditLog` entry with a summary diff.
+- Export produces the same YAML from the database, so a ruleset tuned in the UI can be diffed, committed, or shared with another team.
+- Point tables inside the YAML create a new `PointTableVersion`; mid-tournament point revisions can also arrive through a dedicated paste screen (official class list or CSV) that shows a diff against the current version and which library comps change total or go over cap before "make current".
+- Django admin remains available for one-off corrections (a single banned hull, a hull-to-class mapping); a full in-app rules editor is deferred until admin proves clunky.
+- No live-editable JSON blob as the source of truth: it would lose validation, ship foreign keys, and the "which comps did this revision break" question.
+
+**Module legality from SDE meta data (noted 2026-09-13).** `EveType.meta_level` and `EveType.meta_group` come straight from the SDE, and modules, charges, drones, implants and subsystems are imported, so the AT module rules can be data rather than reference text. The YAML gains a `module_rules` block: a default allowed-meta-group set (AT: T1 and T2), per-group overrides with `max_meta_level` and/or `allowed_meta_groups` (damps and disruptors Meta 4 max, T2 rigs banned, hardwirings above Meta 3 banned), explicit `banned_types`, and a `flagship` relaxation (faction/officer/deadspace allowed for listed module families). The rules engine evaluates a parsed EFT fit against it in the library slice. Verify first: whether implant "Meta 03" in CCP's wording maps to `meta_level` on implant types, and how "bonused hulls only" resolves (use `typeBonus`).
+
+Sketch of the document (the schema is finalised in Phase 1 as the first deliverable, since it doubles as the install fixture):
+
+```yaml
+tournament: { code: ATXXII, name: Alliance Tournament XXII, organiser: ccp, server: tranquility, year: 2026 }
+ruleset:
+  fielded_pilots: 10
+  point_cap: 200
+  max_same_hull: 3
+  duplicate_inflation: { enabled: true, mode: per_copy_all }
+  flagship: { enabled: true, immune_to_bans: true, exempt_from_size_limit: true }
+  unspent_points_to_opponent: true
+  match: { length_seconds: 600, overtime: none, tiebreak: potential_dps_t0 }
+hull_sizes:
+  - { size: BS, label: Battleship, max_per_comp: 2, duplicate_surcharge: 4 }
+quotas:
+  - { code: logistics, max_units: 2, members: [{ hull_size: LC, weight: 2 }, { hull_size: LF, weight: 1 }] }
+stages:
+  - { code: prelim, best_of: 1, bans_per_side: 3, ban_order: ABBAAB }
+  - { code: bracket, best_of: 3, bans_per_side: 4, ban_order: ABBAABBA, avalanche: { loser: 2, winner: 1, blind: true } }
+banned_hulls: [Nestor, Marshal, Enforcer, Pacifier, Monitor, Cenotaph, Odysseus]
+point_table:
+  label: "Rev 1 (rules post)"
+  classes:
+    - { name: "Command Ship", size: BC, points: 33 }
+  hull_overrides: []
+module_rules:
+  default: { allowed_meta_groups: [1, 2] }
+  by_group:
+    - { groups: [Sensor Dampener, Weapon Disruptor], max_meta_level: 4, hulls: bonused_only }
+    - { groups: [Rig Armor, Rig Shield], allowed_meta_groups: [1] }
+    - { groups: [Cyber Implant], max_meta_level: 3 }
+  banned_types: [Bastion Module I]
+  flagship: { allowed_meta_groups: [1, 2, 4, 5, 6], groups: [Energy Weapon, Stasis Web] }
+text_sections:
+  - { heading: Module restrictions, body: "..." }
+```
 
 ---
 
@@ -278,8 +329,15 @@ Charts with Recharts; tables with TanStack Table (sortable, filterable, column v
 
 ## 10. SDE, ESI, fits
 
-- `manage.py import_sde`: compare build from `latest.jsonl` with `SdeBuild`; stream the JSONL zip to disk; decode `_key/_value`; import category 6 (Ship) groups and published types with `bulk_create(update_conflicts=True)`; mark missing types unpublished instead of deleting; `--with-modules` and `--with-dogma` optional for future fit parsing. Weekly on the scheduler; admin "import now" later. Group → hull-size seed keyed by group name (Frigate/Assault Frigate/Interceptor/Covert Ops/EAF/Bomber/Expedition → FR; Logistics Frigate → LF; Destroyer/Interdictor/Command Destroyer/Tactical Destroyer → DE; Cruiser/HAC/Recons/HIC/T3C/Flag Cruiser → CR; Logistics → LC; Combat BC/Attack BC/Command Ship → BC; Battleship/Black Ops/Marauder → BS; Industrial/Blockade Runner/DST → IN; Corvette → CV; capitals and shuttles not relevant). Verify ids by name at seed time, not from memory.
-- Ship-class auto-mapping for `RulesetShip.ship_class`: (1) class name starts with `"{ship.name} ("`; (2) alias dict by group and faction set (empire vs pirate faction ids verified against `factions.jsonl`); (3) admin review queue for the rest.
+**SDE (decided 2026-09-13): a hybrid JSONL-to-Postgres loader in a dedicated `sde` app.** Goal: drop a new CCP JSONL zip and the project updates itself, with no per-file code.
+
+- **Raw layer, generic.** One table for every included file, `sde_raw_record(file, key, data JSONB, build, removed)`, unique on `(file, key)`. One model, one migration, no per-file code. The loader streams each `.jsonl` member from the zip, decodes the `_key`/`_value` pair encoding recursively, and upserts in batches. Which files land is a configured include list (`SDE_INCLUDED_FILES`), defaulting to categories, groups, metaGroups, factions, races, types, marketGroups, typeBonus, typeDogma, dogmaAttributes, dogmaEffects; anything else is a config line, not code. The full archive is ~570 MB uncompressed, dominated by mapMoons and missions, so "everything" is deliberately not the default.
+- **Typed layer, derived.** Models `EveCategory`, `EveGroup`, `EveMetaGroup`, `EveFaction`, `EveRace`, `EveType` (tables `sde_eve_*`) are filled from the raw table in Python with batched upserts, all six plus the `SdeBuild` row in one transaction so readers switch builds atomically. Types are limited to categories 6 Ship, 7 Module, 8 Charge, 18 Drone, 20 Implant, 22 Deployable, 32 Subsystem (`SDE_TYPE_CATEGORIES`), so every item an EFT fit can name is present. SDE ids are the primary keys; names are stored as `name` (English). `techLevel`, `metaLevel`, `metaGroupID` are direct fields in the current SDE; no dogma lookup needed.
+- **Never delete.** A record missing from a new build gets `removed = true` in both layers; `published` stays exactly what CCP shipped (many legitimate hulls are unpublished). Lookups use `published=True, removed=False`. Importing a build older than the current one is refused without `--force`. App tables (`RulesetShip`, `Fit`, `CompSlot`, `Assignment`) use **real foreign keys** to `sde_type`; the never-delete rule keeps them valid. Curated per-hull data (hull-size overrides, links capability) lives in `rules` tables keyed by type, never in `sde` tables. Exported documents (YAML rulesets, CSV) carry hull names, not type ids.
+- **Triggers, all feeding the same importer:** `manage.py import_sde --path <zip or folder>` for a manual drop and offline use; a drop folder `instance/sde/incoming/` polled by the scheduler (import, then move to `archive/`); a scheduled check of CCP's `latest.jsonl` (`{"_key":"sde","buildNumber":...,"releaseDate":...}`) that downloads `eve-online-static-data-latest-jsonl.zip` when the build is newer than the last import; later an admin upload page. Each run holds a Postgres advisory lock (cron and CLI cannot overlap), is one transaction per raw file, idempotent, logs row counts, records `SdeBuild(build, release_date, imported_at, last_checked_at, files, counts)`, and is shown on `/api/health` as `sde_build` / `sde_stale` (stale when neither an import nor a successful CCP check happened within `SDE_STALE_DAYS`). Nightly `pg_dump` excludes `sde_raw_record` data because it is reproducible from the archived zips; the typed tables are backed up.
+- **Verified against build 3503375 (2026-09-10):** all 102 files sit at the zip root; `_key` is a JSON number; names are `{de,en,es,fr,ja,ko,ru,zh}` objects; group 28 is now "Hauler"; category 6 has 50 groups (including Capsule 29, Citizen Ships 2001, Expedition Command Ship 4902, Special Edition Yachts 5087, Command Carrier 5120), so the ship-group set is derived from `groups` where `categoryID == 6`, not hardcoded; Society of Conscious Thought is faction 500017 and Deathless Circle 500029.
+- **Conventions carried from evecapnav / eveindyapp:** SDE data is read-only and importer-owned; constants are module-level `UPPER_SNAKE` ints and sets with the in-game name in a comment, no enums; lookups are loaded once into dicts where hot; defensive checks fail with a remediation message (`ImportFailed.remediation`); `ty` for type checking, ruff for lint. Shared importer plumbing (`ImportReport`, `ImportFailed`, `advisory_lock`) lives in `apps/core` for the YAML ruleset and xlsx importers to reuse. Tests run on Postgres only.
+- Ship-class auto-mapping for `RulesetShip.ship_class`: (1) class name starts with `"{ship.name} ("`; (2) alias dict by group and faction set (empire vs pirate faction ids from `factions`); (3) admin review queue for the rest.
 - ESI client (`httpx`): fixed `X-Compatibility-Date` from settings, contact-info User-Agent, Redis ETag cache with `If-None-Match`, honour `X-Ratelimit-Remaining`/`Retry-After`, circuit breaker on 5xx. v1 endpoints: `GET /characters/{id}/`, `POST /characters/affiliation/`.
 - Fits: v1 keeps Pyfa paste parsing (same three regexes plus volley, sig, cap, range). Future stats engine options ranked: `dogma-engine` (Rust) compiled to WASM in the browser, Rust sidecar, or keep paste parsing. Pyfa-as-library is not recommended. `stats_source` column keeps all options open.
 - Phase 4 ESI fit push: `esi-fittings.write_fittings.v1`, encrypted refresh tokens on `EsiToken`, per-character consent.
@@ -311,7 +369,7 @@ Dev: `docker-compose.dev.yml` runs Postgres + Redis only; Django and Vite run na
     manage.py  config/{settings/,asgi.py,urls.py,api.py,routing.py}
     apps/accounts (User, EveCharacter, Membership, AdmissionRule, Invite, ShareLink, sso.py, permissions.py)
     apps/audit (AuditLog, record() helper called from every service)
-    apps/esi (client.py, refresh_affiliations)      apps/sde (ShipGroup, Ship, SdeBuild, import_sde)
+    apps/esi (client.py, refresh_affiliations)      apps/sde (SdeRawRecord, SdeBuild, EveCategory, EveGroup, EveMetaGroup, EveFaction, EveRace, EveType; jsonl.py, loader.py, derive.py, download.py, incoming.py; import_sde)
     apps/rules (Tournament, Ruleset, ..., engine/, admin.py)
     apps/library (Fit, Comp, CompSlot, Pilot, PilotNote, Opponent, Archetype, WarpInLabel, eft.py, pyfa.py)
     apps/sessions (Session, Set, Round, Assignment, Ban, ChangeEvent, services.py, events.py, consumers.py)
@@ -335,7 +393,7 @@ Sizes relative; assume a solo dev at ~10 h/week. Phase 2 is the critical path; s
 | Phase | Scope | Size | Exit criterion |
 |---|---|---|---|
 | **0 Skeleton + auth** | git init; monorepo; Compose with Caddy TLS; Django + ninja + Channels hello; EVE SSO login/callback/link; first-login admin; Team/Membership/roles/invites/admission rules; generated TS client; SPA shell; CI green; `docs/SETUP.md`; copy research reports into `docs/research/`. | M | A stranger self-hosts from the README and logs in with an EVE character; a second character is rejected until invited. |
-| **1 Libraries + validation** | `import_sde`; Tournament/Ruleset/hull-size/quota/stage tables in Django admin with the ATXXII fixture; official points paste importer → ShipClass + PointTableVersion; RulesetShip auto-mapping + review queue; Fit library (EFT + Pyfa parse, lifecycle incl. Suggested → Active flow); Comp builder with live evaluation and stat rollups, open to all members with the Suggested status and a review queue; Comp browser with status + ban filter; comp notes/ban theory; pilot roster; opponent registry; scrim creation with RSVP (attending / unable / maybe + reason) on the dashboard; `AuditLog` written by every library and membership service action, with `/team/audit` and per-object History tabs; leadership flag and `/team/notes`; rules engine in Python and TS with shared fixtures. | L | Every validation the sheet performs is reproduced and tested; all 145 fits and 125 comps can be loaded (via the Phase 3 importer run early, or CSV). |
+| **1 Libraries + validation** | the hybrid SDE loader (section 10: raw JSONB layer, typed tables, CLI + drop folder + scheduled CCP download, health staleness); the YAML ruleset schema, validator and importer/exporter (section 5.1) with the ATXXII, ATXXI and AG7 documents as fixtures and an admin upload page; official points paste importer → ShipClass + PointTableVersion; RulesetShip auto-mapping + review queue; Fit library (EFT + Pyfa parse, lifecycle incl. Suggested → Active flow); Comp builder with live evaluation and stat rollups, open to all members with the Suggested status and a review queue; Comp browser with status + ban filter; comp notes/ban theory; pilot roster; opponent registry; scrim creation with RSVP (attending / unable / maybe + reason) on the dashboard; `AuditLog` written by every library and membership service action, with `/team/audit` and per-object History tabs; leadership flag and `/team/notes`; rules engine in Python and TS with shared fixtures. | L | Every validation the sheet performs is reproduced and tested; all 145 fits and 125 comps can be loaded (via the Phase 3 importer run early, or CSV). |
 | **2 Live scrim page** | Session/Set/Round/Assignment/Ban/ChangeEvent; write service with locking, LWW, seq, recompute, broadcast; consumer, presence, resync; the scrim page per section 9.2: set stepper, ban board with avalanche prompts, per-round lineups copied forward with pilot suggestions, comp load with override-blanks-defaults, link numbering + scripts, round scoreboard with click-to-toggle deaths, timer and focus mode; fits drawer; review tab; share links; audit drawer. Pilot card page only if cheap. | XL | A real weekly scrim is run entirely in the app with three simultaneous editors. |
 | **3 History + analytics** | openpyxl importer for the workbook (libraries + 30 sessions; set blocks located by scanning column Y for "Set #"; dates from tab names; hidden sheets archived; hidden column M ban codes; cross-checks against cached totals and the sheet's own data-log rows); Django-Q2 for the long-running import; `v_match_log` CSV/API export; stats pages (pilot survival, ship death rates, comp W/L by opponent and archetype, ban frequency, attendance over time, per-opponent history). | M-L | Historical OF 99 renders identically to the sheet; the R users get the same CSV. |
 | **4 Nice-to-haves** | ESI fit push; Anger Games ruleset row (exercises data-driven rules; add code rules only if needed); Challonge bracket import; opponent scouting (zKillboard lookups); `dogma-engine` WASM fit stats; team-wide library change notifications; flagship series tracking. | S-M each | Independent; ship as demanded. |
@@ -356,7 +414,7 @@ Sizes relative; assume a solo dev at ~10 h/week. Phase 2 is the critical path; s
 10. Shared text notes with soft lock vs per-user notes: **shared + soft lock**; revisit if it bites.
 11. Opsec share links: **yes, in Phase 2**.
 12. Dates for tabs without one (`Prelims Day 1-5`, `Ivy League Warmup`): **importer takes a `--dates` JSON override**; Paige supplies them.
-13. Point table import UX: **paste the official text / CSV of `class, points, size` with optional hull-override rows**; the class-line regex from the existing sheet layout handles the official format.
+13. Rules and point-table import: **YAML ruleset documents pasted or uploaded on an admin page (section 5.1)**, plus a paste screen for mid-tournament point revisions.
 14. Multi-tenant on Paige's own box later: **not designed for, but `Team` FK is everywhere so it stays possible**.
 15. Phase 4 ordering: **ESI fit push first** (removes copy-paste for every pilot every set), then Anger Games.
 16. **Deployment behind Paige's existing containerised nginx (TODO, needed before first deploy):** the server already runs an nginx container that routes to other sites' containers. Plan: Caddy drops TLS and published ports, serves plain HTTP on the internal network, and the stack joins the existing proxy network as `external: true`; Caddy-owns-80/443 stays available as a Compose override for other self-hosters. Open until Paige checks: (a) whether that nginx is hand-configured or an automatic proxy (`nginx-proxy` + `acme-companion`, driven by `VIRTUAL_HOST` / `LETSENCRYPT_HOST` env vars), and (b) the shared Docker network name (`docker network ls`).

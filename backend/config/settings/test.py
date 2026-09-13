@@ -9,10 +9,15 @@ CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"
 STORAGES["staticfiles"] = {  # noqa: F405
     "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
 }
-# SQLite keeps the skeleton tests free of infrastructure. Set TEST_DATABASE_URL to run
-# against Postgres, which the Phase 2 row-locking tests will require.
+# Tests run on Postgres: JSONB, ON CONFLICT upserts and advisory locks are core behaviour.
+# Default is the dev container from deploy/docker-compose.dev.yml (`make dev-db`).
 DATABASES = {
-    "default": env.dj_db_url("TEST_DATABASE_URL", "sqlite://:memory:")  # noqa: F405
+    "default": env.dj_db_url(  # noqa: F405
+        "TEST_DATABASE_URL", "postgres://attool:attool@localhost:5433/attool"
+    )
 }
+DATABASES["default"].setdefault("OPTIONS", {})["connect_timeout"] = 5
+INSTANCE_DIR = BASE_DIR / "instance-test"  # noqa: F405
+SDE_DIR = INSTANCE_DIR / "sde"
 EVE_CLIENT_ID = "test-client-id"
 EVE_CLIENT_SECRET = "test-client-secret"

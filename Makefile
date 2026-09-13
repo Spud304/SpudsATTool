@@ -44,14 +44,14 @@ dev: dev-db      ## print the two commands to run in separate terminals
 
 test: test-backend test-frontend
 
-test-backend:
+test-backend:     ## needs `make dev-db` running (tests use Postgres on :5433)
 	cd backend && uv run pytest -q
 
 test-frontend:
 	cd frontend && npx tsc -b && npm test
 
 lint:
-	cd backend && uv run ruff check . && uv run ruff format --check .
+	cd backend && uv run ruff check . && uv run ruff format --check . && uv run ty check
 	cd frontend && npm run lint
 
 gen-client:      ## regenerate the typed API client from the running backend

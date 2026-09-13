@@ -26,7 +26,17 @@ make up                   # pulls images and starts caddy, web, scheduler, db, r
 
 Caddy obtains a TLS certificate automatically once DNS for `DOMAIN` resolves to the box. Ports 80 and 443 must be reachable. Watch the first boot with `make logs`.
 
-## 3. Operations
+## 3. Ship data (SDE)
+
+The app mirrors CCP's Static Data Export into Postgres. Three ways to update it, all safe to repeat:
+
+- **Automatic:** the scheduler checks CCP's build pointer daily and imports a newer build when one appears (`SDE_AUTO_DOWNLOAD=true`, the default).
+- **Drop folder:** copy a CCP JSONL zip into the `instance` volume at `sde/incoming/`; the scheduler imports it within five minutes and moves it to `sde/archive/` (or `sde/failed/` with a `.error.txt` note).
+- **Command line:** `docker compose -f deploy/docker-compose.yml --env-file deploy/.env exec web python manage.py import_sde --path /app/instance/sde/incoming/<file>.zip` (also `--check-latest`, `--scan-incoming`, `--dry-run`, `--files types,groups`).
+
+`/api/health` reports `sde_build` and `sde_stale`. Records are never deleted on re-import, only flagged removed, so your fits and comps keep valid references.
+
+## 4. Operations
 
 | Task | Command |
 |---|---|
@@ -35,7 +45,7 @@ Caddy obtains a TLS certificate automatically once DNS for `DOMAIN` resolves to 
 | Manual backup | `make backup` |
 | Logs | `make logs` |
 
-Backups are `pg_dump` files written nightly to the `backups` volume and, if `BACKUP_RCLONE_REMOTE` is set, copied off-box with rclone.
+Backups are `pg_dump` files written nightly to the `backups` volume and, if `BACKUP_RCLONE_REMOTE` is set, copied off-box with rclone. The raw SDE layer is excluded (it is reproducible); after a restore, run `import_sde --check-latest` or drop the archived zip into `sde/incoming/`.
 
 Restore:
 
@@ -43,7 +53,7 @@ Restore:
 docker compose -f deploy/docker-compose.yml --env-file deploy/.env exec -T db pg_restore -U attool -d attool --clean --if-exists < backups/attool-<stamp>.dump
 ```
 
-## 4. Development
+## 5. Development
 
 Requirements: Python 3.12, [uv](https://docs.astral.sh/uv/), Node 20.19+ or 22 (Node 20.15 works with the pinned Vite 6), Docker.
 
@@ -63,4 +73,6 @@ REDIS_URL=redis://localhost:6380/0
 DJANGO_SETTINGS_MODULE=config.settings.dev
 ```
 
-Tests: `make test`. Backend tests run on SQLite by default; set `TEST_DATABASE_URL` to a Postgres URL to run them against Postgres. The typed API client is regenerated with `make gen-client` while the backend is running.
+SDE settings (all optional): `INSTANCE_DIR` (default `backend/instance`), `SDE_INCLUDED_FILES`, `SDE_TYPE_CATEGORIES`, `SDE_AUTO_DOWNLOAD`, `SDE_STALE_DAYS`, `SDE_LATEST_URL`, `SDE_DOWNLOAD_URL`. Load ship data locally with `uv run python manage.py import_sde --check-latest` (about 95 MB download).
+
+Tests: `make test`, with `make dev-db` running. Backend tests use the dev Postgres on :5433 (override with `TEST_DATABASE_URL`). The typed API client is regenerated with `make gen-client` while the backend is running.

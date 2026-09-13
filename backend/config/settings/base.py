@@ -2,6 +2,8 @@ from pathlib import Path
 
 from environs import Env
 
+from apps.sde import constants as sde_constants
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 env = Env()
@@ -9,7 +11,7 @@ env.read_env(str(BASE_DIR / ".env"), recurse=False)
 env.read_env(str(BASE_DIR.parent / "deploy" / ".env"), recurse=False)
 
 SECRET_KEY = env.str("SECRET_KEY", "dev-insecure-secret-key")
-DEBUG = False
+DEBUG: bool = False
 ALLOWED_HOSTS: list[str] = env.list("ALLOWED_HOSTS", ["localhost", "127.0.0.1"])
 DOMAIN = env.str("DOMAIN", "localhost")
 APP_VERSION = env.str("APP_VERSION", "dev")
@@ -25,8 +27,9 @@ INSTALLED_APPS = [
     "channels",
     "ninja",
     "apps.core",
+    "apps.sde",
     # Phase 0: apps.accounts (EVE SSO, memberships), apps.audit
-    # Phase 1: apps.sde, apps.rules, apps.library
+    # Phase 1: apps.rules, apps.library
     # Phase 2: apps.sessions
     # Phase 3: apps.analytics, apps.importer
 ]
@@ -64,6 +67,8 @@ DATABASES = {
     "default": env.dj_db_url("DATABASE_URL", "postgres://attool:attool@localhost:5433/attool")
 }
 DATABASES["default"]["CONN_MAX_AGE"] = 60
+# Fail fast when the database is down instead of hanging a request or a test run.
+DATABASES["default"].setdefault("OPTIONS", {})["connect_timeout"] = 5
 
 REDIS_URL = env.str("REDIS_URL", "redis://localhost:6380/0")
 CHANNEL_LAYERS = {
@@ -112,7 +117,26 @@ EVE_SSO_SCOPES = env.list("EVE_SSO_SCOPES", ["publicData"])
 ESI_BASE_URL = env.str("ESI_BASE_URL", "https://esi.evetech.net")
 ESI_COMPAT_DATE = env.str("ESI_COMPAT_DATE", "2026-08-01")
 ESI_CONTACT_EMAIL = env.str("ESI_CONTACT_EMAIL", "")
-ESI_USER_AGENT = f"attool/{APP_VERSION} ({ESI_CONTACT_EMAIL}; +https://github.com/spudsattool/attool)"
+ESI_USER_AGENT = (
+    f"attool/{APP_VERSION} ({ESI_CONTACT_EMAIL}; +https://github.com/spudsattool/attool)"
+)
+
+# ---- Instance data (downloads, drop folders); a Docker volume in production ----
+INSTANCE_DIR = env.path("INSTANCE_DIR", BASE_DIR / "instance")
+SDE_DIR = INSTANCE_DIR / "sde"
+SDE_INCLUDED_FILES = env.list("SDE_INCLUDED_FILES", sde_constants.DEFAULT_INCLUDED_FILES)
+SDE_TYPE_CATEGORIES = env.list(
+    "SDE_TYPE_CATEGORIES", sde_constants.DEFAULT_TYPE_CATEGORIES, subcast=int
+)
+SDE_AUTO_DOWNLOAD = env.bool("SDE_AUTO_DOWNLOAD", True)
+SDE_STALE_DAYS = env.int("SDE_STALE_DAYS", 45)
+SDE_LATEST_URL = env.str(
+    "SDE_LATEST_URL", "https://developers.eveonline.com/static-data/tranquility/latest.jsonl"
+)
+SDE_DOWNLOAD_URL = env.str(
+    "SDE_DOWNLOAD_URL",
+    "https://developers.eveonline.com/static-data/eve-online-static-data-latest-jsonl.zip",
+)
 
 TEAM_NAME = env.str("TEAM_NAME", "AT Team")
 FIELD_ENCRYPTION_KEY = env.str("FIELD_ENCRYPTION_KEY", "")

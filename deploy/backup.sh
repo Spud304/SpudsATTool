@@ -3,7 +3,8 @@
 set -eu
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
 OUT=/backups/attool-${STAMP}.dump
-pg_dump "${DATABASE_URL}" -Fc -f "${OUT}"
+# The raw SDE layer is reproducible from the archived zips, so it stays out of the dump.
+pg_dump "${DATABASE_URL}" -Fc --exclude-table-data=sde_raw_record -f "${OUT}"
 echo "backup written: ${OUT} ($(du -h "${OUT}" | cut -f1))"
 find /backups -name 'attool-*.dump' -mtime "+${BACKUP_RETENTION_DAYS:-30}" -delete
 if [ -n "${BACKUP_RCLONE_REMOTE:-}" ]; then
