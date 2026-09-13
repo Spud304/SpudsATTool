@@ -1,0 +1,17 @@
+FROM python:3.12-slim AS base
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
+RUN apt-get update && apt-get install -y --no-install-recommends postgresql-client curl ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /uvx /bin/
+# supercronic: cron for containers, logs to stdout, no daemon
+ARG SUPERCRONIC_VERSION=v0.2.33
+RUN curl -fsSL "https://github.com/aptible/supercronic/releases/download/${SUPERCRONIC_VERSION}/supercronic-linux-amd64" -o /usr/local/bin/supercronic && chmod +x /usr/local/bin/supercronic
+WORKDIR /app
+COPY backend/pyproject.toml backend/uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
+COPY backend/ ./
+COPY deploy/entrypoint.sh deploy/crontab deploy/backup.sh /app/deploy/
+RUN chmod +x /app/deploy/entrypoint.sh /app/deploy/backup.sh
+ARG APP_VERSION=dev
+ENV APP_VERSION=${APP_VERSION} PATH="/app/.venv/bin:$PATH"
+LABEL org.opencontainers.image.version=${APP_VERSION}
+EXPOSE 8000

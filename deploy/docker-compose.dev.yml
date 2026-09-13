@@ -1,0 +1,22 @@
+# Local development: only the stateful services. Run Django and Vite natively.
+name: attool-dev
+
+services:
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: attool
+      POSTGRES_USER: attool
+      POSTGRES_PASSWORD: attool
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+
+volumes:
+  pgdata_dev:

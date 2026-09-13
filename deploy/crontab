@@ -1,0 +1,5 @@
+# minute hour dom month dow  command                       (UTC)
+# Phase 0: 0 * * * *  cd /app && python manage.py refresh_affiliations
+# Phase 1: 0 4 * * 0  cd /app && python manage.py import_sde
+30 3 * * *     /app/deploy/backup.sh
+15 * * * *     cd /app && python manage.py clearsessions

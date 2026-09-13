@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+backend/.venv/
+backend/staticfiles/
+backend/media/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Env and secrets
+.env
+deploy/.env
+*.local
+
+# Data (local dumps)
+backups/
+*.dump
+*.sqlite3
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local-only: the source workbook and the raw analysis notes (contain pilot names)
+/docs/research/

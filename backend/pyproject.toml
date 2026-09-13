@@ -1,0 +1,55 @@
+[project]
+name = "attool-backend"
+version = "0.1.0"
+description = "Alliance Tournament / Anger Games team organizer backend"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.2,<5.3",
+    "django-ninja>=1.4",
+    "channels>=4.2",
+    "channels-redis>=4.2",
+    "uvicorn[standard]>=0.34",
+    "httpx>=0.28",
+    "pyjwt[crypto]>=2.10",
+    "psycopg[binary]>=3.2",
+    "environs>=14",
+    "cryptography>=44",
+    "whitenoise>=6.9",
+    "redis>=5.2",
+    "dj-database-url>=3.1.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-django>=4.10",
+    "pytest-asyncio>=0.25",
+    "hypothesis>=6.130",
+    "ruff>=0.11",
+    "mypy>=1.15",
+    "django-stubs[compatible-mypy]>=5.2",
+    "factory-boy>=3.3",
+    "responses>=0.25",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main"]
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.dev"
