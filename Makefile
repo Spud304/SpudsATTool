@@ -1,4 +1,4 @@
-.PHONY: init dev dev-db dev-backend dev-frontend test test-backend test-frontend lint gen-client build up upgrade backup logs
+.PHONY: init run dev dev-db dev-backend dev-frontend test test-backend test-frontend lint gen-client build up upgrade backup logs
 
 COMPOSE     = docker compose -f deploy/docker-compose.yml --env-file deploy/.env
 COMPOSE_DEV = docker compose -f deploy/docker-compose.dev.yml
@@ -34,13 +34,15 @@ dev-db:          ## start Postgres and Redis for local development (ports 5433 /
 	$(COMPOSE_DEV) up -d
 
 dev-backend:     ## run the Django ASGI server with reload on :8000
-	cd backend && DJANGO_SETTINGS_MODULE=config.settings.dev uv run uvicorn config.asgi:application --reload --port 8000
+	cd backend && uv run uvicorn config.asgi:application --reload --port 8000 --env-file .env
 
 dev-frontend:    ## run the Vite dev server on :5173 (proxies /api, /auth, /ws to :8000)
 	cd frontend && npm run dev
 
-dev: dev-db      ## print the two commands to run in separate terminals
-	@echo "run in two terminals:  make dev-backend   and   make dev-frontend"
+run: dev-db      ## start everything for local development in one terminal (Ctrl+C stops both servers)
+	cd frontend && npx concurrently -k -n api,web -c blue,green "cd ../backend && uv run uvicorn config.asgi:application --reload --port 8000 --env-file .env" "npm run dev"
+
+dev: run
 
 test: test-backend test-frontend
 

@@ -2,6 +2,7 @@ from ninja import NinjaAPI
 from ninja.security import django_auth
 
 from apps.core.api import router as core_router
+from apps.rules.api import router as rules_router
 
 # django_auth is cookie-based, so ninja enforces CSRF on unsafe methods automatically.
 api = NinjaAPI(
@@ -12,3 +13,4 @@ api = NinjaAPI(
 )
 
 api.add_router("/", core_router)
+api.add_router("/rulesets", rules_router)

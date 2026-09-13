@@ -58,12 +58,12 @@ docker compose -f deploy/docker-compose.yml --env-file deploy/.env exec -T db pg
 Requirements: Python 3.12, [uv](https://docs.astral.sh/uv/), Node 20.19+ or 22 (Node 20.15 works with the pinned Vite 6), Docker.
 
 ```bash
-make dev-db                       # Postgres on :5433, Redis on :6380 (5432 is left free for a local PostgreSQL install)
-cd backend && uv sync
-uv run python manage.py migrate
-make dev-backend                  # :8000
-make dev-frontend                 # :5173, proxies /api /auth /ws to :8000
+cd backend && uv sync && cd ../frontend && npm install && cd ..
+make dev-db && (cd backend && uv run python manage.py migrate)
+make run                          # DB containers, backend on :8000, frontend on :5173, one terminal
 ```
+
+`make run` needs GNU Make (`choco install make` on Windows) and Docker Desktop running. The pieces are also available separately: `make dev-db` (Postgres :5433, Redis :6380), `make dev-backend`, `make dev-frontend`.
 
 `backend/.env` for development:
 
@@ -74,5 +74,7 @@ DJANGO_SETTINGS_MODULE=config.settings.dev
 ```
 
 SDE settings (all optional): `INSTANCE_DIR` (default `backend/instance`), `SDE_INCLUDED_FILES`, `SDE_TYPE_CATEGORIES`, `SDE_AUTO_DOWNLOAD`, `SDE_STALE_DAYS`, `SDE_LATEST_URL`, `SDE_DOWNLOAD_URL`. Load ship data locally with `uv run python manage.py import_sde --check-latest` (about 95 MB download).
+
+With both servers up, `http://localhost:5173/scratchpad` evaluates comps against the imported rulesets (`import_ruleset --path fixtures/rulesets/atxxii.yaml` first).
 
 Tests: `make test`, with `make dev-db` running. Backend tests use the dev Postgres on :5433 (override with `TEST_DATABASE_URL`). The typed API client is regenerated with `make gen-client` while the backend is running.

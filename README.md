@@ -8,7 +8,7 @@ A self-hosted organizer for EVE Online tournament teams (Alliance Tournament, An
 
 ## Status
 
-Skeleton plus two Phase 1 slices: the SDE loader (`backend/apps/sde`) that mirrors CCP's JSONL Static Data Export into Postgres, and the rules layer (`backend/apps/rules`): tournament rulesets as YAML documents (`docs/rulesets.md`, fixtures in `backend/fixtures/rulesets/`), a validating importer/exporter, and a pure rules engine for comp legality, points with duplicate inflation, bans and round scoring. Phases are built one at a time from `docs/ARCHITECTURE.md` section 13.
+Skeleton plus two Phase 1 slices: the SDE loader (`backend/apps/sde`) that mirrors CCP's JSONL Static Data Export into Postgres, and the rules layer (`backend/apps/rules`): tournament rulesets as YAML documents (`docs/rulesets.md`, fixtures in `backend/fixtures/rulesets/`), a validating importer/exporter, a pure rules engine for comp legality, points with duplicate inflation, bans and round scoring, and a `/scratchpad` page that exercises it through read-only API endpoints (open only when `DEBUG` is on, until EVE SSO lands). Phases are built one at a time from `docs/ARCHITECTURE.md` section 13.
 
 ## Layout
 
@@ -22,8 +22,6 @@ docs/       setup guide, architecture plan (research/ is local-only)
 ## Development quick start
 
 ```bash
-make dev-db            # Postgres :5433 and Redis :6380 in Docker
-make dev-backend       # Django on :8000 (needs backend/.env, see docs/SETUP.md)
-make dev-frontend      # Vite on :5173
+make run               # DB containers + Django :8000 + Vite :5173 in one terminal (see docs/SETUP.md for first-time setup)
 make test
 ```
