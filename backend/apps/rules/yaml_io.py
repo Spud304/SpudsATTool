@@ -176,6 +176,7 @@ class ModuleRulesDoc(_Base):
     default: ModuleDefaultDoc
     by_group: list[ModuleRuleDoc] = []
     banned_types: list[str] = []
+    banned_groups: list[str] = []  # whole SDE groups, e.g. Booster (drugs)
     flagship: FlagshipModuleDoc | None = None
 
 
@@ -460,6 +461,7 @@ def dump_document(doc: RulesetDocument) -> str:
                 rule["allowed_meta_groups"] = sorted(rule["allowed_meta_groups"])
         mr["by_group"] = [_Flow(_drop_none(r)) for r in mr["by_group"]]
         mr["banned_types"] = sorted(mr["banned_types"])
+        mr["banned_groups"] = sorted(mr["banned_groups"])
         if mr.get("flagship"):
             mr["flagship"]["allowed_meta_groups"] = sorted(mr["flagship"]["allowed_meta_groups"])
             mr["flagship"]["groups"] = sorted(mr["flagship"]["groups"])

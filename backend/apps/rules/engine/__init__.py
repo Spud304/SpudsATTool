@@ -7,14 +7,20 @@ from .bans import (
     flagship_uses_remaining,
 )
 from .comp import evaluate_comp, inflation_points
+from .modules import evaluate_fit_modules, implant_grade
 from .scoring import score_round
 from .types import (
     BanInput,
     CompEvaluation,
+    FitEvaluation,
+    FitItemSpec,
+    FlagshipModuleRule,
     FlagshipRules,
     GroupLimit,
     GroupLimitMember,
+    GroupModuleRule,
     HullSpec,
+    ModuleRulesSpec,
     PointTable,
     RoundScore,
     RulesetSpec,
@@ -29,11 +35,16 @@ from .types import (
 __all__ = [
     "BanInput",
     "CompEvaluation",
+    "FitEvaluation",
+    "FitItemSpec",
+    "FlagshipModuleRule",
     "FlagshipRules",
     "HullSpec",
     "PointTable",
     "GroupLimit",
     "GroupLimitMember",
+    "GroupModuleRule",
+    "ModuleRulesSpec",
     "RoundScore",
     "RulesetSpec",
     "SideScore",
@@ -45,6 +56,8 @@ __all__ = [
     "avalanche_allocation",
     "ban_sequence",
     "evaluate_comp",
+    "evaluate_fit_modules",
+    "implant_grade",
     "extra_bans_for_unique",
     "flagship_uses_remaining",
     "inflation_points",

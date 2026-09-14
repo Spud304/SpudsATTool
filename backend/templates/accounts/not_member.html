@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Not a member</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#0f1216;color:#e7eaee;margin:0;display:grid;place-items:center;min-height:100vh}
+  main{max-width:34rem;padding:2rem;background:#171b21;border:1px solid #2a3139;border-radius:6px}
+  code{background:#0f1216;padding:.15rem .4rem;border-radius:4px;font-size:1.05em}
+  a{color:#6ea8fe}
+  .muted{color:#8f9aa8;font-size:.9em}
+</style>
+</head>
+<body>
+<main>
+  <h1>{{ character.name }}</h1>
+  {% if outcome == "no_admins" %}
+  <p>This server has no admins configured yet.</p>
+  <p>Add this character id to <code>ADMIN_CHARACTER_IDS</code> in the server's env file and restart:</p>
+  <p><code>{{ character.character_id }}</code></p>
+  {% elif outcome == "suspended" %}
+  <p>Your membership is suspended. Ask your captain to reinstate it.</p>
+  {% else %}
+  <p>This character is not a member of this team.</p>
+  <p>Ask your captain for an invite link, or give them this character id:</p>
+  <p><code>{{ character.character_id }}</code></p>
+  {% endif %}
+  <p class="muted">Wrong character? <a href="/auth/login">Log in again</a>.</p>
+</main>
+</body>
+</html>

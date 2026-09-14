@@ -15,7 +15,7 @@ case "${1:-web}" in
     wait_for_db
     python manage.py migrate --noinput
     python manage.py collectstatic --noinput
-    # Phase 0 adds: python manage.py bootstrap
+    python manage.py bootstrap
     exec uvicorn config.asgi:application --host 0.0.0.0 --port 8000 --workers 2 --proxy-headers --forwarded-allow-ips="*"
     ;;
   scheduler)

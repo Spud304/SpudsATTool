@@ -5,6 +5,7 @@ from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.dispatch import receiver
 
 from .models import (
+    BannedModuleGroup,
     BannedModuleType,
     GroupLimit,
     GroupLimitMember,
@@ -54,6 +55,7 @@ _CHILD_MODELS = (
     PointTableEntry,
     ModuleRule,
     BannedModuleType,
+    BannedModuleGroup,
     TextSection,
 )
 

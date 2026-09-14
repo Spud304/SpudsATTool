@@ -1,0 +1,167 @@
+import type {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+  TableHTMLAttributes,
+  TextareaHTMLAttributes,
+} from 'react'
+import clsx from 'clsx'
+
+/** The one place visual styling lives. Pages compose these; a design pass edits this file. */
+
+export function Panel({
+  title,
+  actions,
+  children,
+  className,
+}: {
+  title?: ReactNode
+  actions?: ReactNode
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <section className={clsx('rounded border border-line bg-panel', className)}>
+      {title !== undefined ? (
+        <header className="flex h-9 items-center justify-between border-b border-line px-3">
+          <h2 className="text-[12px] font-semibold uppercase tracking-wide text-muted">{title}</h2>
+          {actions}
+        </header>
+      ) : null}
+      <div className="p-3">{children}</div>
+    </section>
+  )
+}
+
+type ButtonVariant = 'default' | 'primary' | 'danger' | 'ghost'
+
+export function Button({
+  variant = 'default',
+  className,
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }) {
+  return (
+    <button
+      {...props}
+      className={clsx(
+        'inline-flex h-7 items-center gap-1 rounded border px-2.5 text-[12px] font-medium disabled:cursor-not-allowed disabled:opacity-50',
+        variant === 'default' && 'border-line bg-panel-2 hover:border-muted',
+        variant === 'primary' && 'border-transparent bg-accent text-accent-fg hover:brightness-110',
+        variant === 'danger' && 'border-transparent bg-bad/15 text-bad hover:bg-bad/25',
+        variant === 'ghost' && 'border-transparent text-muted hover:bg-panel-2 hover:text-fg',
+        className,
+      )}
+    />
+  )
+}
+
+export function LinkButton({ href, children, variant = 'primary' }: { href: string; children: ReactNode; variant?: ButtonVariant }) {
+  return (
+    <a
+      href={href}
+      className={clsx(
+        'inline-flex h-7 items-center rounded border px-2.5 text-[12px] font-medium',
+        variant === 'primary' && 'border-transparent bg-accent text-accent-fg hover:brightness-110',
+        variant === 'default' && 'border-line bg-panel-2 hover:border-muted',
+        variant === 'ghost' && 'border-transparent text-muted hover:text-fg',
+      )}
+    >
+      {children}
+    </a>
+  )
+}
+
+export function Input({ className, invalid, ...props }: InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }) {
+  return (
+    <input
+      {...props}
+      className={clsx(
+        'h-7 rounded border bg-bg px-2 text-[12px] text-fg placeholder:text-muted focus:border-accent focus:outline-none',
+        invalid ? 'border-warn' : 'border-line',
+        className,
+      )}
+    />
+  )
+}
+
+export function Textarea({ className, invalid, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement> & { invalid?: boolean }) {
+  return (
+    <textarea
+      {...props}
+      className={clsx(
+        'mono rounded border bg-bg p-2 text-[12px] leading-snug text-fg placeholder:text-muted focus:border-accent focus:outline-none',
+        invalid ? 'border-warn' : 'border-line',
+        className,
+      )}
+    />
+  )
+}
+
+export function Select({ className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select
+      {...props}
+      className={clsx('h-7 rounded border border-line bg-bg px-1.5 text-[12px] text-fg focus:border-accent focus:outline-none', className)}
+    />
+  )
+}
+
+export function Checkbox(props: InputHTMLAttributes<HTMLInputElement>) {
+  return <input type="checkbox" {...props} className={clsx('accent-[var(--accent)]', props.className)} />
+}
+
+export type Tone = 'muted' | 'ok' | 'warn' | 'bad' | 'info' | 'accent'
+
+export function Badge({ tone = 'muted', children }: { tone?: Tone; children: ReactNode }) {
+  return (
+    <span
+      className={clsx(
+        'inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium uppercase tracking-wide',
+        tone === 'muted' && 'bg-panel-2 text-muted',
+        tone === 'ok' && 'bg-ok/15 text-ok',
+        tone === 'warn' && 'bg-warn/15 text-warn',
+        tone === 'bad' && 'bg-bad/15 text-bad',
+        tone === 'info' && 'bg-info/15 text-info',
+        tone === 'accent' && 'bg-accent/15 text-accent',
+      )}
+    >
+      {children}
+    </span>
+  )
+}
+
+export function Table({ children, className, ...props }: TableHTMLAttributes<HTMLTableElement> & { children: ReactNode }) {
+  return (
+    <div className={clsx('overflow-x-auto', className)}>
+      <table
+        {...props}
+        className="w-full border-collapse text-left text-[12px] [&_td]:border-t [&_td]:border-line [&_td]:px-2 [&_td]:py-1 [&_th]:px-2 [&_th]:py-1 [&_th]:text-[11px] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted"
+      >
+        {children}
+      </table>
+    </div>
+  )
+}
+
+export function Field({ label, children }: { label: ReactNode; children: ReactNode }) {
+  return (
+    <label className="flex flex-col gap-0.5 text-[11px] text-muted">
+      {label}
+      {children}
+    </label>
+  )
+}
+
+export function Empty({ children }: { children: ReactNode }) {
+  return <p className="py-6 text-center text-muted">{children}</p>
+}
+
+export function ErrorText({ error }: { error: unknown }) {
+  if (!error) return null
+  return <p className="text-bad">{error instanceof Error ? error.message : String(error)}</p>
+}
+
+export function Mono({ children, className }: { children: ReactNode; className?: string }) {
+  return <span className={clsx('mono', className)}>{children}</span>
+}

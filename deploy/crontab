@@ -1,5 +1,5 @@
 # minute hour dom month dow  command                       (UTC)
-# Phase 0: 0 * * * *  cd /app && python manage.py refresh_affiliations
+0 * * * *      cd /app && python manage.py refresh_affiliations
 */5 * * * *    cd /app && python manage.py import_sde --scan-incoming
 0 4 * * *      cd /app && python manage.py import_sde --check-latest
 30 3 * * *     /app/deploy/backup.sh

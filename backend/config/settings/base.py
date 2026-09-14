@@ -27,10 +27,11 @@ INSTALLED_APPS = [
     "channels",
     "ninja",
     "apps.core",
+    "apps.accounts",
+    "apps.audit",
     "apps.sde",
     "apps.rules",
-    # Phase 0: apps.accounts (EVE SSO, memberships), apps.audit
-    # Phase 1: apps.library
+    "apps.library",
     # Phase 2: apps.sessions
     # Phase 3: apps.analytics, apps.importer
 ]
@@ -85,6 +86,9 @@ CACHES = {
     }
 }
 
+AUTH_USER_MODEL = "accounts.User"
+LOGIN_URL = "/auth/login"
+
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
 SESSION_COOKIE_AGE = 14 * 24 * 3600
 SESSION_COOKIE_HTTPONLY = True
@@ -115,6 +119,8 @@ EVE_SSO_ISSUERS = ["https://login.eveonline.com", "login.eveonline.com"]
 EVE_CLIENT_ID = env.str("EVE_CLIENT_ID", "")
 EVE_CLIENT_SECRET = env.str("EVE_CLIENT_SECRET", "")
 EVE_SSO_SCOPES = env.list("EVE_SSO_SCOPES", ["publicData"])
+# Explicit redirect URI; when empty it is built from the request host, which dev proxies rewrite.
+EVE_CALLBACK_URL = env.str("EVE_CALLBACK_URL", "")
 ESI_BASE_URL = env.str("ESI_BASE_URL", "https://esi.evetech.net")
 ESI_COMPAT_DATE = env.str("ESI_COMPAT_DATE", "2026-08-01")
 ESI_CONTACT_EMAIL = env.str("ESI_CONTACT_EMAIL", "")
@@ -142,6 +148,10 @@ SDE_DOWNLOAD_URL = env.str(
 RULESET_FIXTURES_DIR = BASE_DIR / "fixtures" / "rulesets"
 
 TEAM_NAME = env.str("TEAM_NAME", "AT Team")
+# Characters that are granted admin on login. Empty means nobody can be admitted.
+ADMIN_CHARACTER_IDS = env.list("ADMIN_CHARACTER_IDS", [], subcast=int)
+# /auth/dev-login shortcut for local work and tests; dev and test settings turn it on.
+DEV_LOGIN_ENABLED: bool = False
 FIELD_ENCRYPTION_KEY = env.str("FIELD_ENCRYPTION_KEY", "")
 
 LOGGING = {

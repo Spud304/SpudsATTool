@@ -1,25 +1,21 @@
-"""Read-only rules endpoints for the comp scratchpad. Open in DEBUG only until EVE SSO lands."""
+"""Read-only rules endpoints for the comp scratchpad. Any active member may use them."""
 
 from dataclasses import asdict
 
-from django.conf import settings
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from ninja import Router, Schema
 from ninja.errors import HttpError
+
+from apps.accounts.models import Role
+from apps.accounts.permissions import require_role
 
 from . import adapters
 from .engine import BanInput, SlotInput, evaluate_comp
 from .engine.comp import base_points
 from .models import Ruleset
 
-
-def debug_only(request: HttpRequest):
-    """Temporary gate: these endpoints have no auth yet, so they only answer in DEBUG."""
-    return True if settings.DEBUG else None
-
-
-router = Router(tags=["rules"], auth=debug_only)
+router = Router(tags=["rules"])
 
 
 class HullSizeOut(Schema):
@@ -126,6 +122,7 @@ def _inputs(ruleset: Ruleset) -> adapters.EngineInputs:
 
 @router.get("", response=list[RulesetOut])
 def list_rulesets(request: HttpRequest):
+    require_role(request.user, Role.PILOT)
     out = []
     for rs in Ruleset.objects.select_related("tournament").prefetch_related(
         "hull_sizes", "point_versions"
@@ -160,6 +157,7 @@ def list_rulesets(request: HttpRequest):
 
 @router.get("/{code}/ships", response=list[ShipOut])
 def list_ships(request: HttpRequest, code: str):
+    require_role(request.user, Role.PILOT)
     inputs = _inputs(_ruleset(code))
     return [
         {
@@ -178,6 +176,7 @@ def list_ships(request: HttpRequest, code: str):
 
 @router.post("/{code}/evaluate", response=EvaluateOut)
 def evaluate(request: HttpRequest, code: str, payload: EvaluateIn):
+    require_role(request.user, Role.PILOT)
     inputs = _inputs(_ruleset(code))
     slots = [SlotInput(**s.dict()) for s in payload.slots]
     bans = [BanInput(**b.dict()) for b in payload.bans]

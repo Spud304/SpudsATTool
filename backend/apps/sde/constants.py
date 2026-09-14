@@ -64,6 +64,9 @@ GROUP_EXPEDITION_COMMAND_SHIP = 4902
 GROUP_SPECIAL_EDITION_YACHTS = 5087
 GROUP_COMMAND_CARRIER = 5120
 
+# Module groups (category 7) the app reads directly
+GROUP_COMMAND_BURST = 1770  # links capability of a fit
+
 # Meta groups (metaGroups.jsonl)
 META_TECH_I = 1
 META_TECH_II = 2

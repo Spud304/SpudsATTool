@@ -16,6 +16,7 @@ GROUPS = {
     893: ("Electronic Attack Ship", SHIPS),
     1527: ("Logistics Frigate", SHIPS),
     208: ("Sensor Dampener", MODULES),
+    303: ("Booster", 20),
     291: ("Weapon Disruptor", MODULES),
 }
 META = {1: "Tech I", 2: "Tech II", 3: "Storyline", 4: "Faction", 5: "Officer", 6: "Deadspace"}
@@ -103,6 +104,7 @@ module_rules:
   default: { allowed_meta_groups: [Tech I, Tech II] }
   by_group:
     - { groups: [Sensor Dampener, Weapon Disruptor], max_meta_level: 4, hulls: bonused_only }
+  banned_groups: [Booster]
   flagship: { allowed_meta_groups: [Tech I, Tech II, Faction, Deadspace, Officer] }
 text_sections:
   - { heading: Flagship, body: One pre-declared battleship. }

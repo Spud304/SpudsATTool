@@ -168,3 +168,52 @@ class RoundScore:
     leader: str  # "US" | "OPP" | "TIED"
     differential_indicator: str
     tiebreak_hint: str | None
+
+
+@dataclass(frozen=True)
+class FitItemSpec:
+    """One EFT line (module, charge, drone, implant, cargo) after SDE resolution; type_id None when unresolved."""
+
+    line_no: int
+    name: str
+    type_id: int | None
+    category_id: int | None = None
+    group_id: int | None = None
+    meta_group_id: int | None = None
+    meta_level: int | None = None
+    quantity: int = 1
+    offline: bool = False
+
+
+@dataclass(frozen=True)
+class GroupModuleRule:
+    group_ids: frozenset[int] = frozenset()
+    category_ids: frozenset[int] = frozenset()
+    max_meta_level: int | None = None
+    allowed_meta_group_ids: frozenset[int] | None = None
+    hull_scope: str = "any"
+    note: str = ""
+
+
+@dataclass(frozen=True)
+class FlagshipModuleRule:
+    allowed_meta_group_ids: frozenset[int]
+    group_ids: frozenset[int] = frozenset()  # empty means every module family
+
+
+@dataclass(frozen=True)
+class ModuleRulesSpec:
+    default_allowed_meta_group_ids: frozenset[int] | None = None
+    by_group: tuple[GroupModuleRule, ...] = ()
+    flagship: FlagshipModuleRule | None = None
+    banned_type_ids: frozenset[int] = frozenset()
+    banned_group_ids: frozenset[int] = frozenset()
+    meta_group_names: Mapping[int, str] = field(default_factory=dict)
+    group_names: Mapping[int, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class FitEvaluation:
+    violations: tuple[Violation, ...]
+    is_legal: bool
+    item_count: int

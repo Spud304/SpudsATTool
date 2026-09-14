@@ -159,6 +159,7 @@ class Ruleset(models.Model):
         point_versions: "RelatedManager[PointTableVersion]"
         module_rules: "RelatedManager[ModuleRule]"
         banned_module_types: "RelatedManager[BannedModuleType]"
+        banned_module_groups: "RelatedManager[BannedModuleGroup]"
         text_sections: "RelatedManager[TextSection]"
 
     class Meta:
@@ -437,6 +438,21 @@ class BannedModuleType(models.Model):
         db_table = "rules_banned_module_type"
         constraints = [
             models.UniqueConstraint(fields=["ruleset", "type"], name="rules_banned_module_uniq")
+        ]
+
+
+class BannedModuleGroup(models.Model):
+    """Every type in the group is illegal, e.g. Booster (drugs of any sort)."""
+
+    ruleset = models.ForeignKey(
+        Ruleset, on_delete=models.CASCADE, related_name="banned_module_groups"
+    )
+    group = models.ForeignKey(EveGroup, on_delete=models.PROTECT, related_name="+")
+
+    class Meta:
+        db_table = "rules_banned_module_group"
+        constraints = [
+            models.UniqueConstraint(fields=["ruleset", "group"], name="rules_banned_group_uniq")
         ]
 
 

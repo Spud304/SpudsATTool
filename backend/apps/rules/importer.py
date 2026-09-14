@@ -10,11 +10,13 @@ from django.utils import timezone
 from apps.core.importing import ImportFailed, ImportReport
 from apps.sde import constants as sde
 from apps.sde.models import EveCategory, EveGroup, EveMetaGroup, EveType
+from apps.sde.resolve import resolve_names as resolve_sde_names
 
 from . import yaml_io
 from .constants import GROUP_HULL_SIZES, T1_SUPPORT_HULL_SIZES
 from .inference import HullFacts, infer_aliases, infer_prefix
 from .models import (
+    BannedModuleGroup,
     BannedModuleType,
     GroupLimit,
     GroupLimitMember,
@@ -64,37 +66,9 @@ class ShipPlan:
 
 
 def _resolve(names: set[str], queryset, label: str, errors: list[str]) -> dict:
-    found: dict = {}
-    if not names:
-        return found
-    rows = list(queryset.filter(name__in=names))
-    by_name: dict[str, list] = {}
-    for row in rows:
-        by_name.setdefault(row.name, []).append(row)
-    lowered = {n.lower(): n for n in names if n not in by_name}
-    if lowered:
-        for row in queryset.filter(
-            name__iregex="^(" + "|".join(_re_escape(n) for n in lowered) + ")$"
-        ):
-            wanted = lowered.get(row.name.lower())
-            if wanted:
-                by_name.setdefault(wanted, []).append(row)
-    for name in sorted(names):
-        matches = by_name.get(name, [])
-        if not matches:
-            errors.append(f"unknown {label}: {name!r}")
-        elif len(matches) > 1:
-            ids = ", ".join(str(m.pk) for m in matches)
-            errors.append(f"ambiguous {label}: {name!r} matches ids {ids}")
-        else:
-            found[name] = matches[0]
+    found, problems = resolve_sde_names(names, queryset, label)
+    errors.extend(problems)
     return found
-
-
-def _re_escape(text: str) -> str:
-    import re
-
-    return re.escape(text)
 
 
 def resolve_names(doc: RulesetDocument) -> Resolved:
@@ -123,6 +97,7 @@ def resolve_names(doc: RulesetDocument) -> Resolved:
             category_names |= set(rule.categories)
             meta_names |= set(rule.allowed_meta_groups or [])
         type_names |= set(doc.module_rules.banned_types)
+        group_names |= set(doc.module_rules.banned_groups)
         if doc.module_rules.flagship:
             meta_names |= set(doc.module_rules.flagship.allowed_meta_groups)
             group_names |= set(doc.module_rules.flagship.groups)
@@ -517,6 +492,10 @@ def _write(doc, effective, plans, resolved, report, replace_points, new_hash) ->
             flag.groups.set([resolved.groups[g] for g in mr.flagship.groups])
         BannedModuleType.objects.bulk_create(
             BannedModuleType(ruleset=ruleset, type=resolved.types[n]) for n in mr.banned_types
+        )
+        ruleset.banned_module_groups.all().delete()
+        BannedModuleGroup.objects.bulk_create(
+            BannedModuleGroup(ruleset=ruleset, group=resolved.groups[g]) for g in mr.banned_groups
         )
         report.derived["module_rules"] = 1 + len(mr.by_group) + (1 if mr.flagship else 0)
 

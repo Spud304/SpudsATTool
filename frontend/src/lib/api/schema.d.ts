@@ -21,6 +21,181 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/team": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Team */
+        get: operations["apps_core_api_get_team"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Team */
+        patch: operations["apps_core_api_patch_team"];
+        trace?: never;
+    };
+    "/api/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Me */
+        get: operations["apps_accounts_api_me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/main-character": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Main Character */
+        post: operations["apps_accounts_api_set_main_character"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/team/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Members */
+        get: operations["apps_accounts_api_list_members"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/team/members/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Member */
+        delete: operations["apps_accounts_api_remove_member"];
+        options?: never;
+        head?: never;
+        /** Patch Member */
+        patch: operations["apps_accounts_api_patch_member"];
+        trace?: never;
+    };
+    "/api/team/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Invites */
+        get: operations["apps_accounts_api_list_invites"];
+        put?: never;
+        /** Create Invite */
+        post: operations["apps_accounts_api_create_invite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/team/invites/{invite_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke Invite */
+        delete: operations["apps_accounts_api_revoke_invite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/team/admission-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Rules */
+        get: operations["apps_accounts_api_list_rules"];
+        put?: never;
+        /** Create Rule */
+        post: operations["apps_accounts_api_create_rule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/team/admission-rules/{rule_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Rule */
+        delete: operations["apps_accounts_api_delete_rule"];
+        options?: never;
+        head?: never;
+        /** Patch Rule */
+        patch: operations["apps_accounts_api_patch_rule"];
+        trace?: never;
+    };
+    "/api/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Audit */
+        get: operations["apps_audit_api_list_audit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rulesets": {
         parameters: {
             query?: never;
@@ -72,6 +247,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Fits */
+        get: operations["apps_library_api_list_fits"];
+        put?: never;
+        /** Create Fit */
+        post: operations["apps_library_api_create_fit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fits/parse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Parse Fit */
+        post: operations["apps_library_api_parse_fit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fits/{fit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Fit */
+        get: operations["apps_library_api_get_fit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Fit */
+        patch: operations["apps_library_api_patch_fit"];
+        trace?: never;
+    };
+    "/api/fits/{fit_id}/legality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fit Legality */
+        get: operations["apps_library_api_fit_legality"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -95,6 +340,339 @@ export interface components {
              * @default true
              */
             sde_stale: boolean;
+        };
+        /** TeamOut */
+        TeamOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Alliance Id */
+            alliance_id: number | null;
+            /** Pilots Can Score */
+            pilots_can_score: boolean;
+            /** Pilots Can Browse Library */
+            pilots_can_browse_library: boolean;
+            /** Affiliation Grace Hours */
+            affiliation_grace_hours: number;
+        };
+        /** TeamPatch */
+        TeamPatch: {
+            /** Name */
+            name?: string | null;
+            /** Alliance Id */
+            alliance_id?: number | null;
+            /** Pilots Can Score */
+            pilots_can_score?: boolean | null;
+            /** Pilots Can Browse Library */
+            pilots_can_browse_library?: boolean | null;
+            /** Affiliation Grace Hours */
+            affiliation_grace_hours?: number | null;
+        };
+        /** Capabilities */
+        Capabilities: {
+            /** Manage Members */
+            manage_members: boolean;
+            /** Manage Team */
+            manage_team: boolean;
+            /** Manage Library */
+            manage_library: boolean;
+            /** Manage Scrims */
+            manage_scrims: boolean;
+            /** View Audit */
+            view_audit: boolean;
+            /** View Pilot Notes */
+            view_pilot_notes: boolean;
+            /** Score */
+            score: boolean;
+            /** Browse Library */
+            browse_library: boolean;
+        };
+        /** CharacterOut */
+        CharacterOut: {
+            /** Character Id */
+            character_id: number;
+            /** Name */
+            name: string;
+            /** Corporation Id */
+            corporation_id: number | null;
+            /** Alliance Id */
+            alliance_id: number | null;
+            /**
+             * Is Main
+             * @default false
+             */
+            is_main: boolean;
+        };
+        /** MeOut */
+        MeOut: {
+            /** Authenticated */
+            authenticated: boolean;
+            /** User Id */
+            user_id?: number | null;
+            /** Display Name */
+            display_name?: string | null;
+            /**
+             * Characters
+             * @default []
+             */
+            characters: components["schemas"]["CharacterOut"][];
+            membership?: components["schemas"]["MembershipOut"] | null;
+            team?: components["schemas"]["TeamBrief"] | null;
+            capabilities?: components["schemas"]["Capabilities"] | null;
+            /**
+             * Sso Configured
+             * @default true
+             */
+            sso_configured: boolean;
+            /**
+             * Admins Configured
+             * @default true
+             */
+            admins_configured: boolean;
+            /**
+             * Version
+             * @default
+             */
+            version: string;
+        };
+        /** MembershipOut */
+        MembershipOut: {
+            /** Role */
+            role: string;
+            /** Status */
+            status: string;
+            /** Source */
+            source: string;
+            /** Is Leadership */
+            is_leadership: boolean;
+        };
+        /** TeamBrief */
+        TeamBrief: {
+            /** Name */
+            name: string;
+            /** Pilots Can Score */
+            pilots_can_score: boolean;
+            /** Pilots Can Browse Library */
+            pilots_can_browse_library: boolean;
+        };
+        /** MainCharacterIn */
+        MainCharacterIn: {
+            /** Character Id */
+            character_id: number;
+        };
+        /** MemberOut */
+        MemberOut: {
+            /** User Id */
+            user_id: number;
+            /** Display Name */
+            display_name: string;
+            /** Role */
+            role: string;
+            /** Status */
+            status: string;
+            /** Source */
+            source: string;
+            /** Is Leadership */
+            is_leadership: boolean;
+            /** Note */
+            note: string;
+            /** Characters */
+            characters: components["schemas"]["CharacterOut"][];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** MemberPatch */
+        MemberPatch: {
+            role?: components["schemas"]["Role"] | null;
+            /** Is Leadership */
+            is_leadership?: boolean | null;
+            status?: components["schemas"]["MembershipStatus"] | null;
+            /** Note */
+            note?: string | null;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /**
+         * MembershipStatus
+         * @enum {string}
+         */
+        MembershipStatus: "active" | "suspended" | "removed";
+        /**
+         * Role
+         * @enum {string}
+         */
+        Role: "admin" | "captain" | "theorycrafter" | "pilot" | "guest" | "viewer";
+        /** RemoveIn */
+        RemoveIn: {
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /** InviteOut */
+        InviteOut: {
+            /** Id */
+            id: number;
+            /** Token */
+            token: string;
+            /** Url */
+            url: string;
+            /** Role */
+            role: string;
+            /** Uses Left */
+            uses_left: number;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Note */
+            note: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** InviteIn */
+        InviteIn: {
+            /** @default pilot */
+            role: components["schemas"]["Role"];
+            /**
+             * Uses
+             * @default 1
+             */
+            uses: number;
+            /**
+             * Expires In Hours
+             * @default 72
+             */
+            expires_in_hours: number;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        /** AdmissionRuleOut */
+        AdmissionRuleOut: {
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Entity Id */
+            entity_id: number;
+            /** Entity Name */
+            entity_name: string;
+            /** Default Role */
+            default_role: string;
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** AdmissionRuleIn */
+        AdmissionRuleIn: {
+            kind: components["schemas"]["AdmissionRuleKind"];
+            /** Entity Id */
+            entity_id: number;
+            /**
+             * Entity Name
+             * @default
+             */
+            entity_name: string;
+            /** @default pilot */
+            default_role: components["schemas"]["Role"];
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+        };
+        /**
+         * AdmissionRuleKind
+         * @enum {string}
+         */
+        AdmissionRuleKind: "corporation" | "alliance";
+        /** AdmissionRulePatch */
+        AdmissionRulePatch: {
+            /** Entity Name */
+            entity_name?: string | null;
+            default_role?: components["schemas"]["Role"] | null;
+            /** Enabled */
+            enabled?: boolean | null;
+        };
+        /** AuditFilter */
+        AuditFilter: {
+            /** Action */
+            action?: string | null;
+            /** Target Type */
+            target_type?: string | null;
+            /** Target Id */
+            target_id?: string | null;
+            /** Actor Id */
+            actor_id?: number | null;
+        };
+        /** Input */
+        Input: {
+            /**
+             * Limit
+             * @default 100
+             */
+            limit: number;
+            /**
+             * Offset
+             * @default 0
+             */
+            offset: number;
+        };
+        /** AuditOut */
+        AuditOut: {
+            /** Id */
+            id: number;
+            /** Actor Id */
+            actor_id: number | null;
+            /** Actor Name */
+            actor_name: string;
+            /** Action */
+            action: string;
+            /** Target Type */
+            target_type: string;
+            /** Target Id */
+            target_id: string;
+            /** Target Label */
+            target_label: string;
+            /** Reason */
+            reason: string;
+            /** Before */
+            before: unknown;
+            /** After */
+            after: unknown;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+        };
+        /** PagedAuditOut */
+        PagedAuditOut: {
+            /** Items */
+            items: components["schemas"]["AuditOut"][];
+            /** Count */
+            count: number;
         };
         /** HullSizeOut */
         HullSizeOut: {
@@ -262,6 +840,242 @@ export interface components {
              */
             has_links: boolean;
         };
+        /** FitSummaryOut */
+        FitSummaryOut: {
+            /** Id */
+            id: number;
+            /** Ship Id */
+            ship_id: number;
+            /** Ship Name */
+            ship_name: string;
+            /** Name */
+            name: string;
+            /** Status */
+            status: string;
+            /** Dps */
+            dps: number | null;
+            /** Volley */
+            volley: number | null;
+            /** Ehp K */
+            ehp_k: number | null;
+            /** Speed Ms */
+            speed_ms: number | null;
+            /** Sig Radius M */
+            sig_radius_m: number | null;
+            /** Cap Stable Pct */
+            cap_stable_pct: number | null;
+            /** Cap Lasts S */
+            cap_lasts_s: number | null;
+            /** Targeting Range Km */
+            targeting_range_km: number | null;
+            /** Stats Parse Ok */
+            stats_parse_ok: boolean;
+            /** Has Links */
+            has_links: boolean;
+            /** Unresolved Count */
+            unresolved_count: number;
+            /** Created By Id */
+            created_by_id: number | null;
+            /** Created By Name */
+            created_by_name: string;
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** FitOut */
+        FitOut: {
+            /** Id */
+            id: number;
+            /** Ship Id */
+            ship_id: number;
+            /** Ship Name */
+            ship_name: string;
+            /** Name */
+            name: string;
+            /** Status */
+            status: string;
+            /** Dps */
+            dps: number | null;
+            /** Volley */
+            volley: number | null;
+            /** Ehp K */
+            ehp_k: number | null;
+            /** Speed Ms */
+            speed_ms: number | null;
+            /** Sig Radius M */
+            sig_radius_m: number | null;
+            /** Cap Stable Pct */
+            cap_stable_pct: number | null;
+            /** Cap Lasts S */
+            cap_lasts_s: number | null;
+            /** Targeting Range Km */
+            targeting_range_km: number | null;
+            /** Stats Parse Ok */
+            stats_parse_ok: boolean;
+            /** Has Links */
+            has_links: boolean;
+            /** Unresolved Count */
+            unresolved_count: number;
+            /** Created By Id */
+            created_by_id: number | null;
+            /** Created By Name */
+            created_by_name: string;
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+            /** Eft Text */
+            eft_text: string;
+            /** Pyfa Summary */
+            pyfa_summary: string;
+            /** Unresolved Names */
+            unresolved_names: string[];
+            /** Reviewed By Name */
+            reviewed_by_name: string;
+            /** Reviewed At */
+            reviewed_at: string | null;
+            /** Can Edit */
+            can_edit: boolean;
+        };
+        /** FitCreateIn */
+        FitCreateIn: {
+            /** Eft Text */
+            eft_text: string;
+            /** Name */
+            name?: string | null;
+            /**
+             * Pyfa Summary
+             * @default
+             */
+            pyfa_summary: string;
+            /** Status */
+            status?: string | null;
+        };
+        /** ParseItemOut */
+        ParseItemOut: {
+            /** Line No */
+            line_no: number;
+            /** Name */
+            name: string;
+            /** Charge */
+            charge: string | null;
+            /** Quantity */
+            quantity: number;
+            /** Offline */
+            offline: boolean;
+            /** Type Id */
+            type_id: number | null;
+            /** Group Name */
+            group_name: string | null;
+            /** Category Name */
+            category_name: string | null;
+            /** Meta Group Name */
+            meta_group_name: string | null;
+            /** Meta Level */
+            meta_level: number | null;
+            /** Charge Type Id */
+            charge_type_id: number | null;
+        };
+        /** ParseOut */
+        ParseOut: {
+            /** Ok */
+            ok: boolean;
+            /** Hull Name */
+            hull_name: string;
+            /** Hull Type Id */
+            hull_type_id: number | null;
+            /** Fit Name */
+            fit_name: string;
+            /** Items */
+            items: components["schemas"]["ParseItemOut"][];
+            /** Unresolved */
+            unresolved: string[];
+            /** Has Links */
+            has_links: boolean;
+            stats: components["schemas"]["StatsOut"];
+            /** Warnings */
+            warnings: string[];
+            /** Errors */
+            errors: string[];
+        };
+        /** StatsOut */
+        StatsOut: {
+            /** Dps */
+            dps: number | null;
+            /** Volley */
+            volley: number | null;
+            /** Ehp K */
+            ehp_k: number | null;
+            /** Speed Ms */
+            speed_ms: number | null;
+            /** Sig Radius M */
+            sig_radius_m: number | null;
+            /** Cap Stable Pct */
+            cap_stable_pct: number | null;
+            /** Cap Lasts S */
+            cap_lasts_s: number | null;
+            /** Targeting Range Km */
+            targeting_range_km: number | null;
+            /** Ok */
+            ok: boolean;
+        };
+        /** ParseIn */
+        ParseIn: {
+            /** Eft Text */
+            eft_text: string;
+            /**
+             * Pyfa Summary
+             * @default
+             */
+            pyfa_summary: string;
+        };
+        /** FitPatchIn */
+        FitPatchIn: {
+            /** Name */
+            name?: string | null;
+            /** Eft Text */
+            eft_text?: string | null;
+            /** Pyfa Summary */
+            pyfa_summary?: string | null;
+            /** Status */
+            status?: string | null;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /** FitViolationOut */
+        FitViolationOut: {
+            /** Code */
+            code: string;
+            /** Severity */
+            severity: string;
+            /** Message */
+            message: string;
+            /** Line Nos */
+            line_nos: number[];
+            /** Data */
+            data: {
+                [key: string]: number | string;
+            };
+        };
+        /** LegalityOut */
+        LegalityOut: {
+            /** Ruleset */
+            ruleset: string;
+            /** Revision */
+            revision: number;
+            /** Is Flagship */
+            is_flagship: boolean;
+            /** Is Legal */
+            is_legal: boolean;
+            /** Item Count */
+            item_count: number;
+            /** Violations */
+            violations: components["schemas"]["FitViolationOut"][];
+        };
     };
     responses: never;
     parameters: never;
@@ -287,6 +1101,345 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthOut"];
+                };
+            };
+        };
+    };
+    apps_core_api_get_team: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamOut"];
+                };
+            };
+        };
+    };
+    apps_core_api_patch_team: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeamPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamOut"];
+                };
+            };
+        };
+    };
+    apps_accounts_api_me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeOut"];
+                };
+            };
+        };
+    };
+    apps_accounts_api_set_main_character: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MainCharacterIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeOut"];
+                };
+            };
+        };
+    };
+    apps_accounts_api_list_members: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberOut"][];
+                };
+            };
+        };
+    };
+    apps_accounts_api_remove_member: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemoveIn"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    apps_accounts_api_patch_member: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberOut"];
+                };
+            };
+        };
+    };
+    apps_accounts_api_list_invites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteOut"][];
+                };
+            };
+        };
+    };
+    apps_accounts_api_create_invite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteOut"];
+                };
+            };
+        };
+    };
+    apps_accounts_api_revoke_invite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invite_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    apps_accounts_api_list_rules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdmissionRuleOut"][];
+                };
+            };
+        };
+    };
+    apps_accounts_api_create_rule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdmissionRuleIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdmissionRuleOut"];
+                };
+            };
+        };
+    };
+    apps_accounts_api_delete_rule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    apps_accounts_api_patch_rule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rule_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdmissionRulePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdmissionRuleOut"];
+                };
+            };
+        };
+    };
+    apps_audit_api_list_audit: {
+        parameters: {
+            query?: {
+                action?: string | null;
+                target_type?: string | null;
+                target_id?: string | null;
+                actor_id?: number | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagedAuditOut"];
                 };
             };
         };
@@ -355,6 +1508,151 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EvaluateOut"];
+                };
+            };
+        };
+    };
+    apps_library_api_list_fits: {
+        parameters: {
+            query?: {
+                ship?: number | null;
+                status?: string | null;
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FitSummaryOut"][];
+                };
+            };
+        };
+    };
+    apps_library_api_create_fit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FitCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FitOut"];
+                };
+            };
+        };
+    };
+    apps_library_api_parse_fit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParseIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParseOut"];
+                };
+            };
+        };
+    };
+    apps_library_api_get_fit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FitOut"];
+                };
+            };
+        };
+    };
+    apps_library_api_patch_fit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FitPatchIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FitOut"];
+                };
+            };
+        };
+    };
+    apps_library_api_fit_legality: {
+        parameters: {
+            query: {
+                ruleset: string;
+                flagship?: boolean;
+            };
+            header?: never;
+            path: {
+                fit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalityOut"];
                 };
             };
         };

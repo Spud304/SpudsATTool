@@ -1,9 +1,9 @@
 import pytest
 from django.contrib.admin.sites import site
-from django.contrib.auth.models import User
 from django.core.management import CommandError, call_command
 from django.urls import reverse
 
+from apps.accounts.models import User
 from apps.rules import models as rules_models
 from apps.rules.models import Tournament
 
@@ -14,7 +14,7 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def admin_client(client):
-    user = User.objects.create_superuser("admin", "a@example.org", "pw")
+    user = User.objects.create_superuser("admin", password="pw")
     client.force_login(user)
     return client
 

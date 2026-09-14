@@ -532,6 +532,7 @@ module_rules:
   - {groups: [Sensor Dampener, Weapon Disruptor], categories: [], max_meta_level: 4, hulls: bonused_only, note: Only on hulls with a bonus to them; Meta 4 at most.}
   - {groups: [], categories: [Implant], max_meta_level: 3, hulls: any, note: Hardwirings above Meta 3 are banned.}
   banned_types: []
+  banned_groups: [Booster]
   flagship: {allowed_meta_groups: [Deadspace, Faction, Officer, Storyline, Tech I, Tech II], groups: []}
 text_sections:
 - heading: Flagship

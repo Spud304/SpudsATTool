@@ -6,11 +6,17 @@ pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
-def debug(settings):
-    settings.DEBUG = True
+def debug(client):
+    """Historic name: logs the test client in as a pilot."""
+    assert (
+        client.get(
+            "/auth/dev-login", {"character_id": 1, "name": "Pilot", "role": "pilot"}
+        ).status_code
+        == 302
+    )
 
 
-def test_endpoints_closed_outside_debug(client, imported_atxxii):
+def test_endpoints_require_login(client, imported_atxxii):
     assert client.get("/api/rulesets").status_code == 401
     assert client.get("/api/rulesets/ATXXII/ships").status_code == 401
 

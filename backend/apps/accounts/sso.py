@@ -1,0 +1,126 @@
+"""EVE SSO v2: authorization-code flow with PKCE and offline JWT validation."""
+
+import base64
+import hashlib
+import logging
+import secrets
+from dataclasses import dataclass
+from urllib.parse import urlencode
+
+import httpx
+import jwt
+from django.conf import settings
+from django.core.cache import cache
+from jwt import PyJWKClient
+
+log = logging.getLogger(__name__)
+
+DISCOVERY_CACHE_KEY = "sso:discovery"
+_jwk_clients: dict[str, PyJWKClient] = {}
+
+
+class SsoError(Exception):
+    pass
+
+
+@dataclass(frozen=True)
+class SsoIdentity:
+    character_id: int
+    name: str
+    owner_hash: str
+    scopes: tuple[str, ...]
+
+
+def discovery() -> dict:
+    doc = cache.get(DISCOVERY_CACHE_KEY)
+    if doc:
+        return doc
+    resp = httpx.get(settings.EVE_SSO_DISCOVERY_URL, timeout=10)
+    resp.raise_for_status()
+    doc = resp.json()
+    cache.set(DISCOVERY_CACHE_KEY, doc, 24 * 3600)
+    return doc
+
+
+def make_pkce() -> tuple[str, str]:
+    verifier = base64.urlsafe_b64encode(secrets.token_bytes(32)).rstrip(b"=").decode()
+    digest = hashlib.sha256(verifier.encode()).digest()
+    challenge = base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
+    return verifier, challenge
+
+
+def build_authorize_url(
+    *, state: str, code_challenge: str, redirect_uri: str, scopes: list[str]
+) -> str:
+    params = {
+        "response_type": "code",
+        "redirect_uri": redirect_uri,
+        "client_id": settings.EVE_CLIENT_ID,
+        "scope": " ".join(scopes),
+        "state": state,
+        "code_challenge": code_challenge,
+        "code_challenge_method": "S256",
+    }
+    return f"{discovery()['authorization_endpoint']}?{urlencode(params)}"
+
+
+def exchange_code(*, code: str, code_verifier: str, redirect_uri: str) -> dict:
+    resp = httpx.post(
+        discovery()["token_endpoint"],
+        data={
+            "grant_type": "authorization_code",
+            "code": code,
+            "code_verifier": code_verifier,
+            "redirect_uri": redirect_uri,
+        },
+        auth=(settings.EVE_CLIENT_ID, settings.EVE_CLIENT_SECRET),
+        timeout=15,
+    )
+    if resp.status_code != 200:
+        log.warning("sso token exchange failed: %s %s", resp.status_code, resp.text[:300])
+        raise SsoError("token exchange failed")
+    return resp.json()
+
+
+def _signing_key(token: str):
+    jwks_uri = discovery()["jwks_uri"]
+    client = _jwk_clients.get(jwks_uri)
+    if client is None:
+        client = PyJWKClient(jwks_uri, cache_keys=True, lifespan=24 * 3600)
+        _jwk_clients[jwks_uri] = client
+    return client.get_signing_key_from_jwt(token).key
+
+
+def validate_access_token(token: str, *, key=None) -> SsoIdentity:
+    """Validate an EVE SSO JWT offline. `key` lets tests inject a public key instead of the JWKS."""
+    if key is None:
+        key = _signing_key(token)
+    try:
+        claims = jwt.decode(
+            token,
+            key,
+            algorithms=["RS256"],
+            audience=[settings.EVE_CLIENT_ID, "EVE Online"],
+            options={"require": ["exp", "sub", "iss"]},
+        )
+    except jwt.PyJWTError as exc:
+        raise SsoError(f"invalid token: {exc}") from exc
+    if claims.get("iss") not in settings.EVE_SSO_ISSUERS:
+        raise SsoError(f"unexpected issuer {claims.get('iss')!r}")
+    sub = str(claims.get("sub", ""))
+    prefix = "CHARACTER:EVE:"
+    if not sub.startswith(prefix):
+        raise SsoError(f"unexpected subject {sub!r}")
+    try:
+        character_id = int(sub[len(prefix) :])
+    except ValueError as exc:
+        raise SsoError(f"unexpected subject {sub!r}") from exc
+    scp = claims.get("scp", [])
+    if isinstance(scp, str):
+        scp = [scp]
+    return SsoIdentity(
+        character_id=character_id,
+        name=str(claims.get("name", "")),
+        owner_hash=str(claims.get("owner", "")),
+        scopes=tuple(scp),
+    )

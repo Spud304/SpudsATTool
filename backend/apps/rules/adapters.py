@@ -1,20 +1,25 @@
-"""Build engine inputs from ORM rows. Cached per (ruleset, revision, point version)."""
+"""Build engine inputs from ORM rows. Cached per (ruleset, revision[, point version])."""
 
 from collections import OrderedDict
 from dataclasses import dataclass
 
+from apps.sde.models import EveMetaGroup
+
 from .engine.types import (
+    FlagshipModuleRule,
     FlagshipRules,
     GroupLimit,
     GroupLimitMember,
+    GroupModuleRule,
     HullIndex,
     HullSpec,
+    ModuleRulesSpec,
     PointTable,
     RulesetSpec,
     SizeRule,
     StageSpec,
 )
-from .models import Legality, PointTableVersion, Ruleset, Stage, TablePurpose
+from .models import Legality, ModuleRuleScope, PointTableVersion, Ruleset, Stage, TablePurpose
 
 CACHE_SIZE = 16
 
@@ -31,10 +36,67 @@ class EngineInputs:
 
 
 _cache: OrderedDict[tuple[int, int, int], EngineInputs] = OrderedDict()
+_module_cache: OrderedDict[tuple[int, int], ModuleRulesSpec] = OrderedDict()
 
 
 def clear_cache() -> None:
     _cache.clear()
+    _module_cache.clear()
+
+
+def module_rules_for(ruleset: Ruleset) -> ModuleRulesSpec:
+    key = (ruleset.pk, ruleset.revision)
+    cached = _module_cache.get(key)
+    if cached is not None:
+        _module_cache.move_to_end(key)
+        return cached
+    spec = build_module_rules(ruleset)
+    _module_cache[key] = spec
+    while len(_module_cache) > CACHE_SIZE:
+        _module_cache.popitem(last=False)
+    return spec
+
+
+def build_module_rules(ruleset: Ruleset) -> ModuleRulesSpec:
+    default_allowed: frozenset[int] | None = None
+    by_group: list[GroupModuleRule] = []
+    flagship: FlagshipModuleRule | None = None
+    for rule in ruleset.module_rules.prefetch_related(
+        "groups", "categories", "allowed_meta_groups"
+    ):
+        allowed = (
+            frozenset(m.pk for m in rule.allowed_meta_groups.all())
+            if rule.restricts_meta_groups
+            else None
+        )
+        if rule.scope == ModuleRuleScope.DEFAULT:
+            default_allowed = allowed
+        elif rule.scope == ModuleRuleScope.FLAGSHIP:
+            flagship = FlagshipModuleRule(
+                allowed_meta_group_ids=allowed or frozenset(),
+                group_ids=frozenset(g.pk for g in rule.groups.all()),
+            )
+        else:
+            by_group.append(
+                GroupModuleRule(
+                    group_ids=frozenset(g.pk for g in rule.groups.all()),
+                    category_ids=frozenset(c.pk for c in rule.categories.all()),
+                    max_meta_level=rule.max_meta_level,
+                    allowed_meta_group_ids=allowed,
+                    hull_scope=rule.hull_scope,
+                    note=rule.note,
+                )
+            )
+    banned_groups = dict(ruleset.banned_module_groups.values_list("group_id", "group__name"))
+    return ModuleRulesSpec(
+        default_allowed_meta_group_ids=default_allowed,
+        by_group=tuple(by_group),
+        flagship=flagship,
+        banned_type_ids=frozenset(ruleset.banned_module_types.values_list("type_id", flat=True)),
+        banned_group_ids=frozenset(banned_groups),
+        meta_group_names=dict(EveMetaGroup.objects.values_list("id", "name")),
+        group_names=dict(banned_groups.items()),
+    )
 
 
 def engine_inputs_for(ruleset: Ruleset, version: PointTableVersion | None = None) -> EngineInputs:

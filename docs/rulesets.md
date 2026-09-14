@@ -21,7 +21,7 @@ Shipped documents live in `backend/fixtures/rulesets/`: `atxxii.yaml` (generated
 | `point_table` | no | Metadata for the cost table plus hull overrides; class points sit on `ship_classes`. |
 | `kill_table` | no | Only when `ruleset.kill_points_source` is `kill_table`. |
 | `banned_hulls`, `unique_hulls` | no | Shorthand lists of hull names. |
-| `module_rules` | no | Module legality by SDE meta group and meta level (stored now, evaluated with the fit parser). |
+| `module_rules` | no | Module legality by SDE meta group and meta level; evaluated against every fit on `/fits/:id`. |
 | `text_sections` | no | Human-readable rule text. |
 
 ## `tournament`
@@ -83,10 +83,19 @@ module_rules:
     - { groups: [Sensor Dampener, Weapon Disruptor], max_meta_level: 4, hulls: bonused_only }
     - { categories: [Implant], max_meta_level: 3 }
   banned_types: [Bastion Module I]
+  banned_groups: [Booster]   # drugs of any sort
   flagship: { allowed_meta_groups: [Tech I, Tech II, Faction, Deadspace, Officer], groups: [] }
 ```
 
 `by_group` entries need `groups` or `categories` (SDE names) and at least one of `max_meta_level`, `allowed_meta_groups`. `hulls: bonused_only` restricts the module to hulls with a bonus to it.
+
+How a fit is checked (`apps/rules/engine/modules.py`):
+
+- Every EFT line (modules, charges, drones, implants, cargo) is resolved to an SDE type; unknown names are `UNRESOLVED_ITEM` warnings and never make a fit illegal.
+- `banned_types` → `BANNED_TYPE` error; `banned_groups` (whole SDE groups, e.g. `Booster` for drugs) → `BANNED_GROUP` error.
+- `default.allowed_meta_groups` applies to **modules and drones only**. Charges, implants, subsystems and deployables are checked only by `by_group` entries that name them.
+- A `by_group` entry with `allowed_meta_groups` replaces the default set for its groups or categories. With the flagship toggle on, `flagship.allowed_meta_groups` is added on top (for every family when `groups` is empty). Meta group misses are `META_GROUP_NOT_ALLOWED` errors.
+- `max_meta_level` compares against the SDE `metaLevel`. Hardwiring implants have none, so the grade digit in the name is used (`EE-603` is 3, which is what CCP means by Meta 3). `hulls: bonused_only` misses are warnings until hull bonuses are checked. Elsewhere `META_LEVEL_TOO_HIGH` is an error; a missing level is `META_LEVEL_UNKNOWN`.
 
 ## Minimal example
 
