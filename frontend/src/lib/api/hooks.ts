@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api, unwrap, type FitCreateIn, type FitPatchIn, type MemberPatch, type Role } from './client'
+import { api, unwrap, type CompCreateIn, type CompPatchIn, type FitCreateIn, type FitPatchIn, type MemberPatch, type Role, type TeamPatch } from './client'
 
 export const keys = {
   me: ['me'] as const,
@@ -13,7 +13,12 @@ export const keys = {
   fits: (filters: FitFilters) => ['fits', 'list', filters] as const,
   fit: (id: number) => ['fits', 'one', id] as const,
   legality: (id: number, code: string, flagship: boolean) => ['fits', 'one', id, 'legality', code, flagship] as const,
+  comps: (filters: CompFilters) => ['comps', 'list', filters] as const,
+  comp: (id: number) => ['comps', 'one', id] as const,
+  compVocab: ['comps', 'vocab'] as const,
 }
+
+export type CompFilters = { ruleset?: string; status?: string; archetype?: number; q?: string; banned?: string }
 
 export type FitFilters = { ship?: number; status?: string; q?: string }
 
@@ -53,6 +58,7 @@ export function useRulesetShips(code: string) {
     queryKey: keys.ships(code),
     queryFn: async () => unwrap(await api.GET('/api/rulesets/{code}/ships', { params: { path: { code } } })),
     staleTime: Infinity,
+    enabled: Boolean(code),
   })
 }
 
@@ -74,8 +80,7 @@ export function useFitLegality(id: number, code: string | undefined, flagship: b
   return useQuery({
     queryKey: keys.legality(id, code ?? '', flagship),
     queryFn: async () =>
-      unwrap(await api.GET('/api/fits/{fit_id}/legality', { params: { path: { fit_id: id }, query: { ruleset: code ?? '', flagship } } })),
-    enabled: Boolean(code),
+      unwrap(await api.GET('/api/fits/{fit_id}/legality', { params: { path: { fit_id: id }, query: code ? { ruleset: code, flagship } : { flagship } } })),
   })
 }
 
@@ -98,11 +103,63 @@ export function useFitMutations() {
   }
 }
 
+export function useComps(filters: CompFilters, enabled = true) {
+  return useQuery({
+    queryKey: keys.comps(filters),
+    queryFn: async () => unwrap(await api.GET('/api/comps', { params: { query: filters } })),
+    enabled,
+  })
+}
+
+export function useComp(id: number) {
+  return useQuery({
+    queryKey: keys.comp(id),
+    queryFn: async () => unwrap(await api.GET('/api/comps/{comp_id}', { params: { path: { comp_id: id } } })),
+  })
+}
+
+export function useCompVocab() {
+  return useQuery({ queryKey: keys.compVocab, queryFn: async () => unwrap(await api.GET('/api/comps/vocab')), staleTime: 300_000 })
+}
+
+export function useCompMutations() {
+  const qc = useQueryClient()
+  const refreshComps = () => qc.invalidateQueries({ queryKey: ['comps'] })
+  return {
+    createComp: useMutation({
+      mutationFn: async (body: CompCreateIn) => unwrap(await api.POST('/api/comps', { body })),
+      onSuccess: refreshComps,
+    }),
+    patchComp: useMutation({
+      mutationFn: async (vars: { id: number; body: CompPatchIn }) =>
+        unwrap(await api.PATCH('/api/comps/{comp_id}', { params: { path: { comp_id: vars.id } }, body: vars.body })),
+      onSuccess: refreshComps,
+    }),
+    cloneComp: useMutation({
+      mutationFn: async (vars: { id: number; name?: string | null; ruleset?: string | null }) =>
+        unwrap(await api.POST('/api/comps/{comp_id}/clone', { params: { path: { comp_id: vars.id } }, body: { name: vars.name ?? null, ruleset: vars.ruleset ?? null } })),
+      onSuccess: refreshComps,
+    }),
+    createArchetype: useMutation({
+      mutationFn: async (body: { name: string; description: string; sort_order: number }) => unwrap(await api.POST('/api/comps/archetypes', { body })),
+      onSuccess: refreshComps,
+    }),
+  }
+}
+
 /** Mutations invalidate the lists they touch so every page refreshes without wiring. */
 export function useTeamMutations() {
   const qc = useQueryClient()
   const refresh = (...groups: readonly (readonly string[])[]) => groups.forEach((k) => qc.invalidateQueries({ queryKey: k }))
   return {
+    patchTeam: useMutation({
+      mutationFn: async (body: TeamPatch) => unwrap(await api.PATCH('/api/team', { body })),
+      onSuccess: () => {
+        refresh(keys.me)
+        qc.invalidateQueries({ queryKey: ['comps'] })
+        qc.invalidateQueries({ queryKey: ['fits'] })
+      },
+    }),
     patchMember: useMutation({
       mutationFn: async (vars: { userId: number; body: MemberPatch }) =>
         unwrap(await api.PATCH('/api/team/members/{user_id}', { params: { path: { user_id: vars.userId } }, body: vars.body })),

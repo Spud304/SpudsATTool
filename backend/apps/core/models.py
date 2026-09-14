@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
@@ -12,7 +14,14 @@ class Team(models.Model):
     pilots_can_score = models.BooleanField(default=True)
     pilots_can_browse_library = models.BooleanField(default=True)
     affiliation_grace_hours = models.PositiveIntegerField(default=24)
+    # The season the team is working in; comps, fit legality and the comps list default to it.
+    active_ruleset = models.ForeignKey(
+        "rules.Ruleset", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
+
+    if TYPE_CHECKING:
+        active_ruleset_id: int | None
 
     class Meta:
         db_table = "core_team"

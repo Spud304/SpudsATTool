@@ -93,16 +93,18 @@ DATABASE_URL=postgres://attool:attool@localhost:5433/attool
 REDIS_URL=redis://localhost:6380/0
 DJANGO_SETTINGS_MODULE=config.settings.dev
 ADMIN_CHARACTER_IDS=<your character id>
-EVE_CLIENT_ID=<dev app id>          # dev app callback must be exactly http://localhost:5173/auth/callback
+EVE_CLIENT_ID=<dev app id>          # dev app callback must be exactly http://127.0.0.1:5173/auth/callback
 EVE_CLIENT_SECRET=<dev app secret>
 ```
 
+On Windows, Ctrl+C in `make run` can leave uvicorn's reload worker alive on port 8000 (it is a separate `multiprocessing` process); `make stop` kills it and anything else on ports 8000 and 5173.
+
 Without an EVE application you can still log in locally: dev settings enable `/auth/dev-login?character_id=1&name=Spud` (goes through normal admission, so put `1` in `ADMIN_CHARACTER_IDS`) or `...&role=pilot` to force a role. The endpoint does not exist under production settings.
 
-Dev settings pin `EVE_CALLBACK_URL` to `http://localhost:5173/auth/callback`; the Vite proxy rewrites the Host header to `:8000`, so the redirect URI cannot be derived from the request in development.
+Dev settings pin `EVE_CALLBACK_URL` to `http://127.0.0.1:5173/auth/callback`; the Vite proxy rewrites the Host header to `:8000`, so the redirect URI cannot be derived from the request in development. Browse the dev app at `http://127.0.0.1:5173`, not `localhost`: the session cookie must match the callback host, and an explicit IP avoids Chrome stalling for ~2 s while it tries the other loopback address (Vite binds IPv4 only so it is not exposed on the LAN).
 
 SDE settings (all optional): `INSTANCE_DIR` (default `backend/instance`), `SDE_INCLUDED_FILES`, `SDE_TYPE_CATEGORIES`, `SDE_AUTO_DOWNLOAD`, `SDE_STALE_DAYS`, `SDE_LATEST_URL`, `SDE_DOWNLOAD_URL`. Load ship data locally with `uv run python manage.py import_sde --check-latest` (about 95 MB download).
 
-With both servers up, `http://localhost:5173/scratchpad` evaluates comps against the imported rulesets (`import_ruleset --path fixtures/rulesets/atxxii.yaml` first), and `/fits` holds the fit library. To seed it from the old practice organizer: `python manage.py import_workbook_fits <workbook.xlsx> [--dry-run]` reads its `Fit library` sheet and reports unknown items.
+With both servers up, `http://127.0.0.1:5173/scratchpad` evaluates comps against the imported rulesets (`import_ruleset --path fixtures/rulesets/atxxii.yaml` first), and `/fits` holds the fit library. To seed it from the old practice organizer: `python manage.py import_workbook_fits <workbook.xlsx> [--dry-run]` reads its `Fit library` sheet and reports unknown items; `import_workbook_comps <workbook.xlsx> [--ruleset ATXXII] [--dry-run]` then loads `Comp library` and `Comp Notes` (run it after the fits so default fits resolve). Admins pick the season the team works in from the header; it defaults to the newest ruleset with a point table.
 
 Tests: `make test`, with `make dev-db` running. Backend tests use the dev Postgres on :5433 (override with `TEST_DATABASE_URL`). The typed API client is regenerated with `make gen-client` while the backend is running.

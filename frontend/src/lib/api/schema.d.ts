@@ -317,6 +317,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/comps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Comps */
+        get: operations["apps_library_comps_api_list_comps"];
+        put?: never;
+        /** Create Comp */
+        post: operations["apps_library_comps_api_create_comp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/comps/vocab": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Vocab */
+        get: operations["apps_library_comps_api_vocab"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/comps/archetypes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Archetype */
+        post: operations["apps_library_comps_api_create_archetype"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/comps/archetypes/{archetype_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Archetype */
+        patch: operations["apps_library_comps_api_patch_archetype"];
+        trace?: never;
+    };
+    "/api/comps/{comp_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Comp */
+        get: operations["apps_library_comps_api_get_comp"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Comp */
+        patch: operations["apps_library_comps_api_patch_comp"];
+        trace?: never;
+    };
+    "/api/comps/{comp_id}/clone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Clone Comp */
+        post: operations["apps_library_comps_api_clone_comp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -357,6 +461,10 @@ export interface components {
             pilots_can_browse_library: boolean;
             /** Affiliation Grace Hours */
             affiliation_grace_hours: number;
+            /** Active Ruleset */
+            active_ruleset: string | null;
+            /** Active Ruleset Is Fallback */
+            active_ruleset_is_fallback: boolean;
         };
         /** TeamPatch */
         TeamPatch: {
@@ -370,6 +478,8 @@ export interface components {
             pilots_can_browse_library?: boolean | null;
             /** Affiliation Grace Hours */
             affiliation_grace_hours?: number | null;
+            /** Active Ruleset */
+            active_ruleset?: string | null;
         };
         /** Capabilities */
         Capabilities: {
@@ -457,6 +567,8 @@ export interface components {
             pilots_can_score: boolean;
             /** Pilots Can Browse Library */
             pilots_can_browse_library: boolean;
+            /** Active Ruleset */
+            active_ruleset?: string | null;
         };
         /** MainCharacterIn */
         MainCharacterIn: {
@@ -1076,6 +1188,274 @@ export interface components {
             /** Violations */
             violations: components["schemas"]["FitViolationOut"][];
         };
+        /** CompEvalSummaryOut */
+        CompEvalSummaryOut: {
+            /** Total Points */
+            total_points: number;
+            /** Point Cap */
+            point_cap: number;
+            /** Cap Status */
+            cap_status: string;
+            /** Is Legal */
+            is_legal: boolean;
+            /** Error Count */
+            error_count: number;
+            /** Banned Hulls */
+            banned_hulls: string[];
+        };
+        /** CompStatsOut */
+        CompStatsOut: {
+            /** Dps Total */
+            dps_total: number | null;
+            /** Ehp K Total */
+            ehp_k_total: number | null;
+            /** Speed Avg */
+            speed_avg: number | null;
+            /** Speed Min */
+            speed_min: number | null;
+            /** Fits Set */
+            fits_set: number;
+            /** Fits With Stats */
+            fits_with_stats: number;
+        };
+        /** CompSummaryOut */
+        CompSummaryOut: {
+            /** Id */
+            id: number;
+            /** Ruleset */
+            ruleset: string;
+            /** Name */
+            name: string;
+            /** Status */
+            status: string;
+            /** Archetype Id */
+            archetype_id: number | null;
+            /** Archetype */
+            archetype: string | null;
+            /** Hulls */
+            hulls: (string | null)[];
+            evaluation: components["schemas"]["CompEvalSummaryOut"] | null;
+            stats: components["schemas"]["CompStatsOut"];
+            /** Created By Id */
+            created_by_id: number | null;
+            /** Created By Name */
+            created_by_name: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** CompOut */
+        CompOut: {
+            /** Id */
+            id: number;
+            /** Ruleset */
+            ruleset: string;
+            /** Name */
+            name: string;
+            /** Status */
+            status: string;
+            /** Archetype Id */
+            archetype_id: number | null;
+            /** Archetype */
+            archetype: string | null;
+            /** Hulls */
+            hulls: (string | null)[];
+            evaluation: components["schemas"]["CompEvalSummaryOut"] | null;
+            stats: components["schemas"]["CompStatsOut"];
+            /** Created By Id */
+            created_by_id: number | null;
+            /** Created By Name */
+            created_by_name: string;
+            /** Updated At */
+            updated_at: string;
+            /** Notes */
+            notes: string;
+            /** Ban Theory */
+            ban_theory: string;
+            /** Fielded Pilots */
+            fielded_pilots: number;
+            /** Flagship Enabled */
+            flagship_enabled: boolean;
+            /** Slots */
+            slots: components["schemas"]["CompSlotOut"][];
+            evaluation_detail: components["schemas"]["EvaluateOut"] | null;
+            /** Reviewed By Name */
+            reviewed_by_name: string;
+            /** Reviewed At */
+            reviewed_at: string | null;
+            /** Can Edit */
+            can_edit: boolean;
+        };
+        /** CompSlotOut */
+        CompSlotOut: {
+            /** Slot No */
+            slot_no: number;
+            /** Type Id */
+            type_id: number | null;
+            /** Ship Name */
+            ship_name: string | null;
+            /** Is Flagship */
+            is_flagship: boolean;
+            /** Is Unique */
+            is_unique: boolean;
+            /** Warp In Km */
+            warp_in_km: number | null;
+            /** Default Fit Id */
+            default_fit_id: number | null;
+            /** Default Fit Name */
+            default_fit_name: string | null;
+            /** Default Fit Status */
+            default_fit_status: string | null;
+            /** Default Fit Has Links */
+            default_fit_has_links: boolean;
+            /** Default Fit Dps */
+            default_fit_dps: number | null;
+            /** Default Fit Ehp K */
+            default_fit_ehp_k: number | null;
+            /** Default Fit Speed Ms */
+            default_fit_speed_ms: number | null;
+            /** Ship Note */
+            ship_note: string;
+            /** Link Scripts */
+            link_scripts: string[];
+        };
+        /** CompCreateIn */
+        CompCreateIn: {
+            /** Name */
+            name: string;
+            /** Ruleset */
+            ruleset?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Archetype Id */
+            archetype_id?: number | null;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /**
+             * Ban Theory
+             * @default
+             */
+            ban_theory: string;
+        };
+        /** ArchetypeOut */
+        ArchetypeOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            /** Is Retired */
+            is_retired: boolean;
+            /** Sort Order */
+            sort_order: number;
+        };
+        /** CompVocabOut */
+        CompVocabOut: {
+            /** Link Scripts */
+            link_scripts: components["schemas"]["LinkScriptOut"][];
+            /** Archetypes */
+            archetypes: components["schemas"]["ArchetypeOut"][];
+            /** Statuses */
+            statuses: string[];
+            /** Active Ruleset */
+            active_ruleset: string | null;
+        };
+        /** LinkScriptOut */
+        LinkScriptOut: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Family */
+            family: string;
+        };
+        /** ArchetypeIn */
+        ArchetypeIn: {
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** ArchetypePatchIn */
+        ArchetypePatchIn: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Is Retired */
+            is_retired?: boolean | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
+        /** CompPatchIn */
+        CompPatchIn: {
+            /** Name */
+            name?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Archetype Id */
+            archetype_id?: number | null;
+            /** Notes */
+            notes?: string | null;
+            /** Ban Theory */
+            ban_theory?: string | null;
+            /** Slots */
+            slots?: components["schemas"]["CompSlotIn"][] | null;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /** CompSlotIn */
+        CompSlotIn: {
+            /** Slot No */
+            slot_no: number;
+            /** Type Id */
+            type_id?: number | null;
+            /**
+             * Is Flagship
+             * @default false
+             */
+            is_flagship: boolean;
+            /**
+             * Is Unique
+             * @default false
+             */
+            is_unique: boolean;
+            /** Warp In Km */
+            warp_in_km?: number | null;
+            /** Default Fit Id */
+            default_fit_id?: number | null;
+            /**
+             * Ship Note
+             * @default
+             */
+            ship_note: string;
+            /**
+             * Link Scripts
+             * @default []
+             */
+            link_scripts: string[];
+        };
+        /** CloneIn */
+        CloneIn: {
+            /** Name */
+            name?: string | null;
+            /** Ruleset */
+            ruleset?: string | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -1634,8 +2014,8 @@ export interface operations {
     };
     apps_library_api_fit_legality: {
         parameters: {
-            query: {
-                ruleset: string;
+            query?: {
+                ruleset?: string | null;
                 flagship?: boolean;
             };
             header?: never;
@@ -1653,6 +2033,200 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LegalityOut"];
+                };
+            };
+        };
+    };
+    apps_library_comps_api_list_comps: {
+        parameters: {
+            query?: {
+                ruleset?: string | null;
+                status?: string | null;
+                archetype?: number | null;
+                q?: string | null;
+                banned?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompSummaryOut"][];
+                };
+            };
+        };
+    };
+    apps_library_comps_api_create_comp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompOut"];
+                };
+            };
+        };
+    };
+    apps_library_comps_api_vocab: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompVocabOut"];
+                };
+            };
+        };
+    };
+    apps_library_comps_api_create_archetype: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArchetypeIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArchetypeOut"];
+                };
+            };
+        };
+    };
+    apps_library_comps_api_patch_archetype: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archetype_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArchetypePatchIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArchetypeOut"];
+                };
+            };
+        };
+    };
+    apps_library_comps_api_get_comp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comp_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompOut"];
+                };
+            };
+        };
+    };
+    apps_library_comps_api_patch_comp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comp_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompPatchIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompOut"];
+                };
+            };
+        };
+    };
+    apps_library_comps_api_clone_comp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comp_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloneIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompOut"];
                 };
             };
         };

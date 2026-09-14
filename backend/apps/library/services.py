@@ -3,7 +3,7 @@
 import hashlib
 from dataclasses import dataclass, field
 
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, models, transaction
 from django.utils import timezone
 
 from apps.accounts import permissions
@@ -141,14 +141,24 @@ def _snapshot(fit: Fit) -> dict:
     }
 
 
-def _check_status(actor: User, status: str | None, fit: Fit | None) -> str:
+SUGGESTED = "suggested"
+
+
+def _check_status(
+    actor: User,
+    status: str | None,
+    current: str | None,
+    *,
+    choices: type[models.TextChoices] = FitStatus,
+    label: str = "fit",
+) -> str:
     """Anyone may suggest; only library managers pick another status."""
     if status is None:
-        return fit.status if fit else FitStatus.SUGGESTED
-    if status not in FitStatus.values:
-        raise FitError(422, f"unknown status {status!r}")
-    if status != FitStatus.SUGGESTED and not permissions.can_manage_library(actor):
-        raise FitError(403, "only theorycrafters and above change fit status")
+        return current or SUGGESTED
+    if status not in choices.values:
+        raise FitError(422, f"unknown {label} status {status!r}")
+    if status != SUGGESTED and not permissions.can_manage_library(actor):
+        raise FitError(403, f"only theorycrafters and above change {label} status")
     return status
 
 
@@ -199,7 +209,7 @@ def update_fit(
 ) -> Fit:
     before = _snapshot(fit)
     if status is not None and status != fit.status:
-        new_status = _check_status(actor, status, fit)
+        new_status = _check_status(actor, status, fit.status)
         fit.status = new_status
         fit.reviewed_by, fit.reviewed_at = actor, timezone.now()
         status_changed = True

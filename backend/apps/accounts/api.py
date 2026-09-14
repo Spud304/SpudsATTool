@@ -11,6 +11,7 @@ from ninja.errors import HttpError
 
 from apps.audit.services import record
 from apps.core.models import Team
+from apps.rules import selection
 
 from . import permissions
 from .models import (
@@ -47,6 +48,7 @@ class TeamBrief(Schema):
     name: str
     pilots_can_score: bool
     pilots_can_browse_library: bool
+    active_ruleset: str | None = None
 
 
 class Capabilities(Schema):
@@ -224,7 +226,12 @@ def me(request: HttpRequest):
         "display_name": user.display_name,
         "characters": _characters(user),
         "membership": MembershipOut.from_orm(membership) if membership else None,
-        "team": TeamBrief.from_orm(team),
+        "team": {
+            "name": team.name,
+            "pilots_can_score": team.pilots_can_score,
+            "pilots_can_browse_library": team.pilots_can_browse_library,
+            "active_ruleset": active.code if (active := selection.active_ruleset(team)) else None,
+        },
         "capabilities": _capabilities(user, team) if membership else None,
         **base,
     }

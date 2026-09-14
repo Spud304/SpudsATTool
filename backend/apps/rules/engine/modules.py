@@ -13,7 +13,7 @@ from .types import FitEvaluation, FitItemSpec, ModuleRulesSpec, Violation
 DEFAULT_RULE_CATEGORIES = frozenset({CATEGORY_MODULE, CATEGORY_DRONE})
 
 # Hardwiring implants carry no metaLevel in the SDE; CCP's "Meta 3" is the grade digit in the name
-# (EE-603 is grade 3, SM-705 grade 5). Confirmed by Paige 2026-09-13.
+# (EE-603 is grade 3, SM-705 grade 5).
 IMPLANT_GRADE_RE = re.compile(r"-(\d+)0(\d)$")
 
 

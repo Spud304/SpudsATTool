@@ -68,9 +68,12 @@ TEMPLATES = [
 DATABASES = {
     "default": env.dj_db_url("DATABASE_URL", "postgres://attool:attool@localhost:5433/attool")
 }
-DATABASES["default"]["CONN_MAX_AGE"] = 60
+# Under ASGI every request runs in its own async context, so persistent connections never get
+# reused; a psycopg pool makes the per-request connection cheap instead.
+DATABASES["default"]["CONN_MAX_AGE"] = 0
+DATABASES["default"].setdefault("OPTIONS", {})["pool"] = {"min_size": 1, "max_size": 8}
 # Fail fast when the database is down instead of hanging a request or a test run.
-DATABASES["default"].setdefault("OPTIONS", {})["connect_timeout"] = 5
+DATABASES["default"]["OPTIONS"]["connect_timeout"] = 5
 
 REDIS_URL = env.str("REDIS_URL", "redis://localhost:6380/0")
 CHANNEL_LAYERS = {

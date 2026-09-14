@@ -10,6 +10,7 @@ from ninja.errors import HttpError
 
 from apps.accounts import permissions
 from apps.accounts.models import User
+from apps.rules import selection
 from apps.rules.models import Ruleset
 
 from . import services
@@ -278,10 +279,20 @@ def patch_fit(request: HttpRequest, fit_id: int, payload: FitPatchIn):
 
 
 @router.get("/{fit_id}/legality", response=LegalityOut)
-def fit_legality(request: HttpRequest, fit_id: int, ruleset: str, flagship: bool = False):
+def fit_legality(
+    request: HttpRequest, fit_id: int, ruleset: str | None = None, flagship: bool = False
+):
     permissions.require_browse_library(request.user)
     fit = _fit(fit_id)
-    rs = get_object_or_404(Ruleset.objects.select_related("tournament"), tournament__code=ruleset)
+    if ruleset:
+        rs = get_object_or_404(
+            Ruleset.objects.select_related("tournament"), tournament__code=ruleset
+        )
+    else:
+        active = selection.active_ruleset()
+        if active is None:
+            raise HttpError(404, "no ruleset imported")
+        rs = active
     evaluation = services.evaluate_fit(fit, rs, is_flagship=flagship)
     return {
         "ruleset": rs.code,

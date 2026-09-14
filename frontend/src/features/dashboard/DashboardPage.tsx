@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { useHealth, useMe } from '@/lib/api/hooks'
+import { useComps, useFits, useHealth, useMe } from '@/lib/api/hooks'
 import { Badge, LinkButton, Mono, Panel } from '@/components/ui'
 
 export function DashboardPage() {
@@ -67,6 +67,7 @@ export function DashboardPage() {
           </li>
         </ul>
       </Panel>
+      {me.data.capabilities?.manage_library ? <ReviewQueuePanel /> : null}
       {me.data.capabilities?.manage_members ? (
         <Panel title="Next steps">
           <ul className="space-y-1">
@@ -84,5 +85,43 @@ export function DashboardPage() {
         </Panel>
       ) : null}
     </div>
+  )
+}
+
+/** Member proposals waiting for a theorycrafter: suggested fits and comps. */
+function ReviewQueuePanel() {
+  const fits = useFits({ status: 'suggested' })
+  const comps = useComps({ status: 'suggested' })
+  const total = (fits.data?.length ?? 0) + (comps.data?.length ?? 0)
+  return (
+    <Panel title={`Review queue${total ? ` (${total})` : ''}`}>
+      {total === 0 ? (
+        <p className="text-muted">Nothing suggested right now.</p>
+      ) : (
+        <ul className="space-y-1">
+          {(comps.data ?? []).slice(0, 5).map((c) => (
+            <li key={`c${c.id}`}>
+              <Link to="/comps/$compId" params={{ compId: String(c.id) }} className="text-accent">
+                comp: {c.name}
+              </Link>
+              <span className="text-muted"> by {c.created_by_name || 'unknown'}</span>
+            </li>
+          ))}
+          {(fits.data ?? []).slice(0, 5).map((f) => (
+            <li key={`f${f.id}`}>
+              <Link to="/fits/$fitId" params={{ fitId: String(f.id) }} className="text-accent">
+                fit: {f.ship_name} / {f.name}
+              </Link>
+              <span className="text-muted"> by {f.created_by_name || 'unknown'}</span>
+            </li>
+          ))}
+          {total > 10 ? (
+            <li className="text-muted">
+              and more in <Link to="/comps" className="text-accent">Comps</Link> and <Link to="/fits" className="text-accent">Fits</Link>
+            </li>
+          ) : null}
+        </ul>
+      )}
+    </Panel>
   )
 }

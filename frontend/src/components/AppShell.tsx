@@ -1,14 +1,15 @@
 import type { ReactNode } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
 import clsx from 'clsx'
-import { useMe } from '@/lib/api/hooks'
-import { Badge, LinkButton } from '@/components/ui'
+import { useMe, useRulesets, useTeamMutations } from '@/lib/api/hooks'
+import { Badge, LinkButton, Mono, Select } from '@/components/ui'
 
 type NavItem = { to: string; label: string; show: (me: ReturnType<typeof useMe>['data']) => boolean }
 
 const NAV: NavItem[] = [
   { to: '/', label: 'Home', show: () => true },
   { to: '/scratchpad', label: 'Comp scratchpad', show: (me) => Boolean(me?.membership) },
+  { to: '/comps', label: 'Comps', show: (me) => Boolean(me?.capabilities?.browse_library) },
   { to: '/fits', label: 'Fits', show: (me) => Boolean(me?.capabilities?.browse_library) },
   { to: '/team', label: 'Team', show: (me) => Boolean(me?.membership) },
   { to: '/team/audit', label: 'Audit', show: (me) => Boolean(me?.capabilities?.view_audit) },
@@ -35,6 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-3 text-muted">
+          {me.data?.membership ? <RulesetSwitcher active={me.data.team?.active_ruleset ?? null} canSwitch={Boolean(me.data.capabilities?.manage_team)} /> : null}
           {me.isLoading ? null : me.data?.authenticated ? (
             <>
               <span>
@@ -52,5 +54,30 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="min-h-0 flex-1 overflow-auto p-4">{children}</main>
       <footer className="flex h-6 items-center justify-end border-t border-line px-3 text-[11px] text-muted">attool {me.data?.version ?? ''}</footer>
     </div>
+  )
+}
+
+/** The season the team is working in; admins switch it here, everyone else just sees it. */
+function RulesetSwitcher({ active, canSwitch }: { active: string | null; canSwitch: boolean }) {
+  const rulesets = useRulesets()
+  const { patchTeam } = useTeamMutations()
+  if (!canSwitch || !rulesets.data?.length) {
+    return active ? (
+      <span title="active ruleset">
+        <Mono className="text-fg">{active}</Mono>
+      </span>
+    ) : null
+  }
+  return (
+    <span className="flex items-center gap-1" title="active ruleset (admins can switch)">
+      <span className="text-[11px]">season</span>
+      <Select value={active ?? ''} disabled={patchTeam.isPending} onChange={(e) => patchTeam.mutate({ active_ruleset: e.target.value })}>
+        {rulesets.data.map((r) => (
+          <option key={r.code} value={r.code}>
+            {r.code}
+          </option>
+        ))}
+      </Select>
+    </span>
   )
 }

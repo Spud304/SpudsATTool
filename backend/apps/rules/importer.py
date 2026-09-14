@@ -289,8 +289,12 @@ def import_ruleset(
     if not doc.verified:
         report.warn(f"{doc.tournament.code}: document is marked unverified")
 
+    from . import selection
+
     with transaction.atomic():
         ruleset = _write(doc, effective, plans, resolved, report, replace_points, new_hash)
+        if selection.set_active_if_unset(ruleset):
+            report.warn(f"{doc.tournament.code}: now the team's active ruleset")
         if dry_run:
             transaction.set_rollback(True)
             report.warn("dry run: all changes rolled back")

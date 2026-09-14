@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from '@tanstack/react-router'
-import { useFit, useFitLegality, useFitMutations, useMe, useRulesets } from '@/lib/api/hooks'
+import { useFit, useFitLegality, useFitMutations, useMe } from '@/lib/api/hooks'
 import type { FitOut } from '@/lib/api/client'
 import { Badge, Button, Checkbox, Empty, ErrorText, Field, Input, Mono, Panel, Select, Table, Textarea } from '@/components/ui'
 import { FIT_STATUSES, num, severityTone, statusTone, when } from './format'
@@ -161,26 +161,17 @@ function StatusPanel({ fit }: { fit: FitOut }) {
 }
 
 function LegalityPanel({ fit }: { fit: FitOut }) {
-  const rulesets = useRulesets()
-  const [code, setCode] = useState('')
+  const me = useMe()
+  const active = me.data?.team?.active_ruleset ?? undefined
   const [flagship, setFlagship] = useState(false)
-  useEffect(() => {
-    if (!code && rulesets.data?.length) setCode(rulesets.data[0].code)
-  }, [code, rulesets.data])
-  const legality = useFitLegality(fit.id, code || undefined, flagship)
+  const legality = useFitLegality(fit.id, active, flagship)
   const result = legality.data
   return (
     <Panel
       title="Module legality"
       actions={
         <div className="flex items-center gap-2">
-          <Select value={code} onChange={(e) => setCode(e.target.value)}>
-            {(rulesets.data ?? []).map((r) => (
-              <option key={r.code} value={r.code}>
-                {r.code}
-              </option>
-            ))}
-          </Select>
+          <Mono className="text-muted">{active ?? 'no ruleset'}</Mono>
           <label className="flex items-center gap-1 text-[11px] text-muted">
             <Checkbox checked={flagship} onChange={(e) => setFlagship(e.target.checked)} /> flagship
           </label>

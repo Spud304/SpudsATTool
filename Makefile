@@ -1,4 +1,4 @@
-.PHONY: init run dev dev-db dev-backend dev-frontend test test-backend test-frontend lint gen-client build up upgrade backup logs
+.PHONY: init run stop dev dev-db dev-backend dev-frontend test test-backend test-frontend lint gen-client build up upgrade backup logs
 
 COMPOSE     = docker compose -f deploy/docker-compose.yml --env-file deploy/.env
 COMPOSE_DEV = docker compose -f deploy/docker-compose.dev.yml
@@ -39,7 +39,7 @@ dev-backend:     ## run the Django ASGI server with reload on :8000
 dev-frontend:    ## run the Vite dev server on :5173 (proxies /api, /auth, /ws to :8000)
 	cd frontend && npm run dev
 
-run: dev-db      ## start everything for local development in one terminal (Ctrl+C stops both servers)
+run: dev-db      ## start everything for local development in one terminal (Ctrl+C; run `make stop` if port 8000 stays busy)
 	cd frontend && npx concurrently -k -n api,web -c blue,green "cd ../backend && uv run uvicorn config.asgi:application --reload --port 8000 --env-file .env" "npm run dev"
 
 dev: run
@@ -58,3 +58,6 @@ lint:
 
 gen-client:      ## regenerate the typed API client from the running backend
 	cd frontend && npm run gen:api
+
+stop: ## kill dev servers left behind after Ctrl+C (orphaned uvicorn reload workers)
+	powershell -NoProfile -ExecutionPolicy Bypass -File scripts/stop-dev.ps1

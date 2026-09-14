@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import clsx from 'clsx'
-import { api, unwrap, type BanIn, type EvaluateOut, type ShipOut, type SlotIn } from '@/lib/api/client'
+import { api, unwrap, type BanIn, type EvaluateOut, type SlotIn } from '@/lib/api/client'
 import { useRulesets, useRulesetShips } from '@/lib/api/hooks'
 import { Badge, Button, Checkbox, Empty, ErrorText, Input, Mono, Panel, Select, Table } from '@/components/ui'
+import { HullInput } from '@/features/comps/HullInput'
 
 /** Utilitarian harness for the rules engine: pick a ruleset, fill slots, read the evaluation. */
 export function CompScratchpad() {
@@ -185,29 +186,5 @@ function Editor({ code, fielded, flagship }: { code: string; fielded: number; fl
         )}
       </Panel>
     </div>
-  )
-}
-
-function HullInput({ value, lookup, onPick }: { value: string; lookup: Map<string, ShipOut>; onPick: (s: ShipOut | null) => void }) {
-  const [text, setText] = useState(value)
-  useEffect(() => setText(value), [value])
-  const commit = () => {
-    const t = text.trim()
-    if (t === '') return onPick(null)
-    const s = lookup.get(t)
-    if (s) onPick(s)
-    else setText(value)
-  }
-  return (
-    <Input
-      list="hulls"
-      className="w-56"
-      invalid={Boolean(text) && !lookup.has(text.trim())}
-      value={text}
-      onChange={(e) => setText(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => e.key === 'Enter' && commit()}
-      placeholder="hull"
-    />
   )
 }
