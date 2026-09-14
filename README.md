@@ -13,7 +13,7 @@ Skeleton plus two Phase 1 slices: the SDE loader (`backend/apps/sde`) that mirro
 ## Layout
 
 ```
-backend/    Django project (config/, apps/{core,accounts,audit,esi,sde,rules,library}, fixtures/rulesets, scripts/, tests/)
+backend/    Django project (config/, apps/{core,accounts,audit,esi,sde,rules,library}, fixtures/rulesets, scripts/, tests/, playwright_tests/)
 frontend/   React + TypeScript SPA (Vite)
 deploy/     docker-compose.yml, Caddyfile, Dockerfiles, entrypoint, crontab, backup script
 docs/       setup guide, architecture plan (research/ is local-only)
@@ -23,5 +23,29 @@ docs/       setup guide, architecture plan (research/ is local-only)
 
 ```bash
 make run               # DB containers + Django :8000 + Vite :5173 in one terminal (see docs/SETUP.md for first-time setup)
-make test
+make stop              # if Ctrl+C left a uvicorn worker holding port 8000
+```
+
+Browse the dev app at `http://127.0.0.1:5173`, not `localhost` (see docs/SETUP.md for why).
+
+## Tests
+
+```bash
+make test              # backend pytest (needs the dev DB containers) + frontend tsc/vitest
+make test-backend      # cd backend && uv run pytest -q
+make test-frontend     # cd frontend && npx tsc -b && npm test
+make lint              # ruff, ty, eslint
+make playwright        # browser tests; needs `make run` up in another terminal
+```
+
+Backend tests run against real Postgres on the dev container (`make dev-db`), never SQLite; `TEST_DATABASE_URL` overrides the target. A single test file:
+
+```bash
+cd backend && uv run pytest tests/library/test_comps_api.py -q
+```
+
+The browser tests are Python (`pytest-playwright`) in `backend/playwright_tests/` and drive the servers you already have running. They log in through the dev-only `/auth/dev-login`, create rows prefixed `pw_` and use reserved test characters, and `make playwright` wipes those first via `manage.py playwright_cleanup`. Watch a run with:
+
+```bash
+cd backend && uv run pytest playwright_tests --browser chromium --headed
 ```
