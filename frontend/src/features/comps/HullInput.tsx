@@ -9,12 +9,14 @@ export function HullInput({
   onPick,
   listId = 'hulls',
   className = 'w-56',
+  testId,
 }: {
   value: string
   lookup: Map<string, ShipOut>
   onPick: (s: ShipOut | null) => void
   listId?: string
   className?: string
+  testId?: string
 }) {
   const [text, setText] = useState(value)
   useEffect(() => setText(value), [value])
@@ -27,6 +29,7 @@ export function HullInput({
   }
   return (
     <Input
+      data-testid={testId}
       list={listId}
       className={className}
       invalid={Boolean(text) && !lookup.has(text.trim())}

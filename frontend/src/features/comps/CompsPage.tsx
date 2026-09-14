@@ -40,8 +40,8 @@ export function CompsPage() {
         title={`Comps · ${active}${comps.data ? ` (${comps.data.length})` : ''}`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Input placeholder="search comp or hull" className="w-48" value={q} onChange={(e) => setQ(e.target.value)} />
-            <Select value={status} onChange={(e) => setStatus(e.target.value)}>
+            <Input data-testid="comps.search" placeholder="search comp or hull" className="w-48" value={q} onChange={(e) => setQ(e.target.value)} />
+            <Select data-testid="comps.status" value={status} onChange={(e) => setStatus(e.target.value)}>
               {STATUS_FILTERS.map((s) => (
                 <option key={s.value} value={s.value}>
                   {s.label}
@@ -82,7 +82,7 @@ export function CompsPage() {
               {comps.data.map((c) => {
                 const ev = c.evaluation
                 return (
-                  <tr key={c.id}>
+                  <tr key={c.id} data-testid={`comps.row.${c.id}`}>
                     <td>
                       <Link to="/comps/$compId" params={{ compId: String(c.id) }} className="text-accent hover:underline">
                         {c.name}
@@ -121,7 +121,7 @@ export function CompsPage() {
         ) : comps.isLoading ? (
           <Empty>Loading…</Empty>
         ) : (
-          <Empty>No comps match.</Empty>
+          <Empty testId="comps.empty">No comps match.</Empty>
         )}
       </Panel>
       <NewCompPanel />
@@ -142,14 +142,14 @@ function NewCompPanel() {
     await navigate({ to: '/comps/$compId', params: { compId: String(comp.id) } })
   }
   return (
-    <Panel title="New comp">
+    <Panel title="New comp" testId="comps.new">
       <div className="space-y-2">
         <Field label="Name">
-          <Input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && name.trim() && submit()} />
+          <Input data-testid="comps.new.name" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && name.trim() && submit()} />
         </Field>
         {canManage ? (
           <Field label="Status">
-            <Select value={status} onChange={(e) => setStatus(e.target.value)}>
+            <Select data-testid="comps.new.status" value={status} onChange={(e) => setStatus(e.target.value)}>
               {COMP_STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {s}
@@ -160,7 +160,7 @@ function NewCompPanel() {
         ) : (
           <p className="text-[11px] text-muted">Lands as suggested until a theorycrafter promotes it.</p>
         )}
-        <Button variant="primary" disabled={!name.trim() || createComp.isPending} onClick={submit}>
+        <Button data-testid="comps.new.create" variant="primary" disabled={!name.trim() || createComp.isPending} onClick={submit}>
           Create and open builder
         </Button>
         <ErrorText error={createComp.error} />

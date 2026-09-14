@@ -50,7 +50,7 @@ function MembersPanel({ canManage, isAdmin, myUserId }: { canManage: boolean; is
               const locked = m.role === 'admin' && !isAdmin
               const editable = canManage && !locked
               return (
-                <tr key={m.user_id}>
+                <tr key={m.user_id} data-testid={`team.members.row.${m.user_id}`}>
                   <td className="font-medium">
                     {m.display_name}
                     {m.user_id === myUserId ? <span className="ml-1 text-muted">(you)</span> : null}
@@ -58,7 +58,7 @@ function MembersPanel({ canManage, isAdmin, myUserId }: { canManage: boolean; is
                   <td className="text-muted">{m.characters.map((c) => c.name).join(', ')}</td>
                   <td>
                     {editable ? (
-                      <Select value={m.role} onChange={(e) => patchMember.mutate({ userId: m.user_id, body: { role: e.target.value as Role, reason: 'role change' } })}>
+                      <Select data-testid="team.members.role" value={m.role} onChange={(e) => patchMember.mutate({ userId: m.user_id, body: { role: e.target.value as Role, reason: 'role change' } })}>
                         {ROLES.filter((r) => r !== 'admin' || isAdmin).map((r) => (
                           <option key={r} value={r}>
                             {r}
@@ -66,26 +66,33 @@ function MembersPanel({ canManage, isAdmin, myUserId }: { canManage: boolean; is
                         ))}
                       </Select>
                     ) : (
-                      <Badge tone="accent">{m.role}</Badge>
+                      <Badge tone="accent" testId="team.members.role">
+                        {m.role}
+                      </Badge>
                     )}
                   </td>
                   <td>
                     {editable ? (
-                      <Checkbox checked={m.is_leadership} onChange={(e) => patchMember.mutate({ userId: m.user_id, body: { is_leadership: e.target.checked, reason: 'leadership toggle' } })} />
+                      <Checkbox data-testid="team.members.leadership" checked={m.is_leadership} onChange={(e) => patchMember.mutate({ userId: m.user_id, body: { is_leadership: e.target.checked, reason: 'leadership toggle' } })} />
                     ) : m.is_leadership ? (
                       <Badge tone="info">yes</Badge>
                     ) : null}
                   </td>
                   <td>
-                    <Badge tone={statusTone(m.status)}>{m.status}</Badge>
+                    <Badge tone={statusTone(m.status)} testId="team.members.status">
+                      {m.status}
+                    </Badge>
                   </td>
                   <td className="text-muted">{m.source}</td>
                   {canManage ? (
                     <td className="text-right">
                       {m.status !== 'active' && !locked ? (
-                        <Button onClick={() => patchMember.mutate({ userId: m.user_id, body: { status: 'active', reason: 'reinstated' } })}>Reinstate</Button>
+                        <Button data-testid="team.members.reinstate" onClick={() => patchMember.mutate({ userId: m.user_id, body: { status: 'active', reason: 'reinstated' } })}>
+                          Reinstate
+                        </Button>
                       ) : m.user_id !== myUserId && !locked ? (
                         <Button
+                          data-testid="team.members.remove"
                           variant="danger"
                           onClick={() => {
                             const reason = window.prompt('Reason for removing this member (kept in the audit log):')
@@ -120,7 +127,7 @@ function InvitesPanel({ isAdmin }: { isAdmin: boolean }) {
   const [note, setNote] = useState('')
   const [copied, setCopied] = useState<number | null>(null)
   return (
-    <Panel title="Invite links">
+    <Panel title="Invite links" testId="team.invites">
       <form
         className="mb-3 flex flex-wrap items-end gap-2"
         onSubmit={(e) => {
@@ -129,7 +136,7 @@ function InvitesPanel({ isAdmin }: { isAdmin: boolean }) {
         }}
       >
         <Field label="Role">
-          <Select value={role} onChange={(e) => setRole(e.target.value as Role)}>
+          <Select data-testid="team.invites.role" value={role} onChange={(e) => setRole(e.target.value as Role)}>
             {ROLES.filter((r) => r !== 'admin' || isAdmin).map((r) => (
               <option key={r} value={r}>
                 {r}
@@ -138,15 +145,15 @@ function InvitesPanel({ isAdmin }: { isAdmin: boolean }) {
           </Select>
         </Field>
         <Field label="Uses">
-          <Input type="number" min={1} className="w-16" value={uses} onChange={(e) => setUses(Number(e.target.value))} />
+          <Input data-testid="team.invites.uses" type="number" min={1} className="w-16" value={uses} onChange={(e) => setUses(Number(e.target.value))} />
         </Field>
         <Field label="Expires (h)">
-          <Input type="number" min={1} className="w-20" value={hours} onChange={(e) => setHours(Number(e.target.value))} />
+          <Input data-testid="team.invites.expires" type="number" min={1} className="w-20" value={hours} onChange={(e) => setHours(Number(e.target.value))} />
         </Field>
         <Field label="Note">
-          <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="who it is for" />
+          <Input data-testid="team.invites.note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="who it is for" />
         </Field>
-        <Button type="submit" variant="primary" disabled={createInvite.isPending}>
+        <Button data-testid="team.invites.create" type="submit" variant="primary" disabled={createInvite.isPending}>
           Create
         </Button>
       </form>
@@ -164,7 +171,7 @@ function InvitesPanel({ isAdmin }: { isAdmin: boolean }) {
           </thead>
           <tbody>
             {invites.data.map((inv) => (
-              <tr key={inv.id}>
+              <tr key={inv.id} data-testid={`team.invites.row.${inv.id}`}>
                 <td>
                   <Badge tone="accent">{inv.role}</Badge>
                 </td>
@@ -175,6 +182,7 @@ function InvitesPanel({ isAdmin }: { isAdmin: boolean }) {
                 <td className="text-muted">{inv.note}</td>
                 <td className="whitespace-nowrap text-right">
                   <Button
+                    data-testid="team.invites.copy"
                     onClick={() => {
                       void navigator.clipboard.writeText(inv.url)
                       setCopied(inv.id)
@@ -183,7 +191,7 @@ function InvitesPanel({ isAdmin }: { isAdmin: boolean }) {
                   >
                     {copied === inv.id ? 'Copied' : 'Copy link'}
                   </Button>{' '}
-                  <Button variant="ghost" onClick={() => revokeInvite.mutate(inv.id)}>
+                  <Button data-testid="team.invites.revoke" variant="ghost" onClick={() => revokeInvite.mutate(inv.id)}>
                     Revoke
                   </Button>
                 </td>
@@ -206,7 +214,7 @@ function RulesPanel({ isAdmin }: { isAdmin: boolean }) {
   const [entityName, setEntityName] = useState('')
   const [role, setRole] = useState<Role>('pilot')
   return (
-    <Panel title="Admission rules">
+    <Panel title="Admission rules" testId="team.rules">
       <p className="mb-2 text-[12px] text-muted">
         Characters in these corporations or alliances are admitted automatically. Re-checked hourly; members who leave are suspended after the grace period.
       </p>
@@ -227,19 +235,19 @@ function RulesPanel({ isAdmin }: { isAdmin: boolean }) {
         }}
       >
         <Field label="Kind">
-          <Select value={kind} onChange={(e) => setKind(e.target.value as 'corporation' | 'alliance')}>
+          <Select data-testid="team.rules.kind" value={kind} onChange={(e) => setKind(e.target.value as 'corporation' | 'alliance')}>
             <option value="alliance">Alliance</option>
             <option value="corporation">Corporation</option>
           </Select>
         </Field>
         <Field label="ID">
-          <Input className="w-32" value={entityId} onChange={(e) => setEntityId(e.target.value)} />
+          <Input data-testid="team.rules.id" className="w-32" value={entityId} onChange={(e) => setEntityId(e.target.value)} />
         </Field>
         <Field label="Name (optional)">
-          <Input value={entityName} onChange={(e) => setEntityName(e.target.value)} />
+          <Input data-testid="team.rules.name" value={entityName} onChange={(e) => setEntityName(e.target.value)} />
         </Field>
         <Field label="Role">
-          <Select value={role} onChange={(e) => setRole(e.target.value as Role)}>
+          <Select data-testid="team.rules.role" value={role} onChange={(e) => setRole(e.target.value as Role)}>
             {ROLES.filter((r) => r !== 'admin' || isAdmin).map((r) => (
               <option key={r} value={r}>
                 {r}
@@ -247,7 +255,7 @@ function RulesPanel({ isAdmin }: { isAdmin: boolean }) {
             ))}
           </Select>
         </Field>
-        <Button type="submit" variant="primary" disabled={createRule.isPending || !entityId}>
+        <Button data-testid="team.rules.add" type="submit" variant="primary" disabled={createRule.isPending || !entityId}>
           Add
         </Button>
       </form>
@@ -265,7 +273,7 @@ function RulesPanel({ isAdmin }: { isAdmin: boolean }) {
           </thead>
           <tbody>
             {rules.data.map((r) => (
-              <tr key={r.id}>
+              <tr key={r.id} data-testid={`team.rules.row.${r.id}`}>
                 <td>{r.kind}</td>
                 <td>
                   {r.entity_name || <span className="text-muted">unnamed</span>} <Mono className="text-muted">{r.entity_id}</Mono>
@@ -274,10 +282,10 @@ function RulesPanel({ isAdmin }: { isAdmin: boolean }) {
                   <Badge tone="accent">{r.default_role}</Badge>
                 </td>
                 <td>
-                  <Checkbox checked={r.enabled} onChange={(e) => patchRule.mutate({ id: r.id, enabled: e.target.checked })} />
+                  <Checkbox data-testid="team.rules.enabled" checked={r.enabled} onChange={(e) => patchRule.mutate({ id: r.id, enabled: e.target.checked })} />
                 </td>
                 <td className="text-right">
-                  <Button variant="ghost" onClick={() => deleteRule.mutate(r.id)}>
+                  <Button data-testid="team.rules.delete" variant="ghost" onClick={() => deleteRule.mutate(r.id)}>
                     Delete
                   </Button>
                 </td>

@@ -22,7 +22,9 @@ export function FitDetailPage() {
         <span className="text-muted">/</span>
         <span className="font-semibold">{f.ship_name}</span>
         <span>{f.name}</span>
-        <Badge tone={statusTone(f.status)}>{f.status}</Badge>
+        <Badge tone={statusTone(f.status)} testId="fit.status.badge">
+          {f.status}
+        </Badge>
         {f.has_links ? <Badge tone="accent">links</Badge> : null}
         <span className="text-[11px] text-muted">
           {f.created_by_name ? `by ${f.created_by_name}, ` : ''}created {when(f.created_at)}
@@ -58,9 +60,12 @@ function Editor({ fit }: { fit: FitOut }) {
       title="Fit"
       actions={
         <div className="flex items-center gap-2">
-          <Button onClick={copy}>{copied ? 'Copied' : 'Copy EFT'}</Button>
+          <Button data-testid="fit.copy" onClick={copy}>
+            {copied ? 'Copied' : 'Copy EFT'}
+          </Button>
           {fit.can_edit ? (
             <Button
+              data-testid="fit.save"
               variant="primary"
               disabled={!dirty || patchFit.isPending}
               onClick={() => patchFit.mutate({ id: fit.id, body: { name, eft_text: eft, pyfa_summary: pyfa, reason: '' } })}
@@ -75,17 +80,17 @@ function Editor({ fit }: { fit: FitOut }) {
         <ErrorText error={patchFit.error} />
         {fit.can_edit ? (
           <Field label="Fit name">
-            <Input className="w-72" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input data-testid="fit.name" className="w-72" value={name} onChange={(e) => setName(e.target.value)} />
           </Field>
         ) : null}
         <Field label="EFT text">
-          <Textarea rows={Math.min(40, Math.max(12, eft.split('\n').length + 1))} value={eft} readOnly={!fit.can_edit} onChange={(e) => setEft(e.target.value)} />
+          <Textarea data-testid="fit.eft" rows={Math.min(40, Math.max(12, eft.split('\n').length + 1))} value={eft} readOnly={!fit.can_edit} onChange={(e) => setEft(e.target.value)} />
         </Field>
         <Field label="Pyfa stats block">
-          <Textarea rows={6} value={pyfa} readOnly={!fit.can_edit} placeholder="paste the Pyfa stats block to fill the numbers" onChange={(e) => setPyfa(e.target.value)} />
+          <Textarea data-testid="fit.pyfa" rows={6} value={pyfa} readOnly={!fit.can_edit} placeholder="paste the Pyfa stats block to fill the numbers" onChange={(e) => setPyfa(e.target.value)} />
         </Field>
         {fit.unresolved_names.length ? (
-          <p className="text-warn">
+          <p className="text-warn" data-testid="fit.unknown">
             Unknown items: <Mono>{fit.unresolved_names.join(', ')}</Mono>
           </p>
         ) : null}
@@ -130,10 +135,10 @@ function StatusPanel({ fit }: { fit: FitOut }) {
   useEffect(() => setStatus(fit.status), [fit.status])
   if (!me.data?.capabilities?.manage_library) return null
   return (
-    <Panel title="Status">
+    <Panel title="Status" testId="fit.status">
       <div className="flex flex-wrap items-end gap-2">
         <Field label="Status">
-          <Select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <Select data-testid="fit.status.select" value={status} onChange={(e) => setStatus(e.target.value)}>
             {FIT_STATUSES.map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -142,9 +147,10 @@ function StatusPanel({ fit }: { fit: FitOut }) {
           </Select>
         </Field>
         <Field label="Reason">
-          <Input className="w-64" value={reason} placeholder="why (goes to the audit log)" onChange={(e) => setReason(e.target.value)} />
+          <Input data-testid="fit.status.reason" className="w-64" value={reason} placeholder="why (goes to the audit log)" onChange={(e) => setReason(e.target.value)} />
         </Field>
         <Button
+          data-testid="fit.status.apply"
           variant="primary"
           disabled={status === fit.status || patchFit.isPending}
           onClick={() => {
@@ -182,7 +188,9 @@ function LegalityPanel({ fit }: { fit: FitOut }) {
       {result ? (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Badge tone={result.is_legal ? 'ok' : 'bad'}>{result.is_legal ? 'legal' : 'illegal'}</Badge>
+            <Badge tone={result.is_legal ? 'ok' : 'bad'} testId="fit.legality.verdict">
+              {result.is_legal ? 'legal' : 'illegal'}
+            </Badge>
             <Mono className="text-muted">
               {result.item_count} items checked · rev {result.revision}
             </Mono>

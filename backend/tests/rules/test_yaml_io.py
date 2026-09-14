@@ -2,8 +2,7 @@ import pytest
 
 from apps.rules import yaml_io
 from apps.rules.yaml_io import DocumentInvalid, dump_document, load_ruleset_document
-
-from .conftest import MINI_ATXXII
+from tests.conftest import MINI_ATXXII
 
 
 def test_mini_document_loads():

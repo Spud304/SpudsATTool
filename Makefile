@@ -1,4 +1,4 @@
-.PHONY: init run stop dev dev-db dev-backend dev-frontend test test-backend test-frontend lint gen-client build up upgrade backup logs
+.PHONY: init run stop playwright dev dev-db dev-backend dev-frontend test test-backend test-frontend lint gen-client build up upgrade backup logs
 
 COMPOSE     = docker compose -f deploy/docker-compose.yml --env-file deploy/.env
 COMPOSE_DEV = docker compose -f deploy/docker-compose.dev.yml
@@ -61,3 +61,7 @@ gen-client:      ## regenerate the typed API client from the running backend
 
 stop: ## kill dev servers left behind after Ctrl+C (orphaned uvicorn reload workers)
 	powershell -NoProfile -ExecutionPolicy Bypass -File scripts/stop-dev.ps1
+
+playwright: ## browser tests (pytest-playwright) against the running dev servers; needs `make run` in another terminal
+	cd backend && uv run --env-file .env python manage.py playwright_cleanup
+	cd backend && uv run pytest playwright_tests --browser chromium --tracing retain-on-failure -q

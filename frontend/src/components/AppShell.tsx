@@ -4,15 +4,15 @@ import clsx from 'clsx'
 import { useMe, useRulesets, useTeamMutations } from '@/lib/api/hooks'
 import { Badge, LinkButton, Mono, Select } from '@/components/ui'
 
-type NavItem = { to: string; label: string; show: (me: ReturnType<typeof useMe>['data']) => boolean }
+type NavItem = { to: string; label: string; id: string; show: (me: ReturnType<typeof useMe>['data']) => boolean }
 
 const NAV: NavItem[] = [
-  { to: '/', label: 'Home', show: () => true },
-  { to: '/scratchpad', label: 'Comp scratchpad', show: (me) => Boolean(me?.membership) },
-  { to: '/comps', label: 'Comps', show: (me) => Boolean(me?.capabilities?.browse_library) },
-  { to: '/fits', label: 'Fits', show: (me) => Boolean(me?.capabilities?.browse_library) },
-  { to: '/team', label: 'Team', show: (me) => Boolean(me?.membership) },
-  { to: '/team/audit', label: 'Audit', show: (me) => Boolean(me?.capabilities?.view_audit) },
+  { to: '/', label: 'Home', id: 'home', show: () => true },
+  { to: '/scratchpad', label: 'Comp scratchpad', id: 'scratchpad', show: (me) => Boolean(me?.membership) },
+  { to: '/comps', label: 'Comps', id: 'comps', show: (me) => Boolean(me?.capabilities?.browse_library) },
+  { to: '/fits', label: 'Fits', id: 'fits', show: (me) => Boolean(me?.capabilities?.browse_library) },
+  { to: '/team', label: 'Team', id: 'team', show: (me) => Boolean(me?.membership) },
+  { to: '/team/audit', label: 'Audit', id: 'audit', show: (me) => Boolean(me?.capabilities?.view_audit) },
 ]
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -29,6 +29,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link
               key={n.to}
               to={n.to}
+              data-testid={`nav.${n.id}`}
               className={clsx('rounded px-2 py-1 text-muted hover:bg-panel-2 hover:text-fg', pathname === n.to && 'bg-panel-2 text-fg')}
             >
               {n.label}
@@ -40,14 +41,17 @@ export function AppShell({ children }: { children: ReactNode }) {
           {me.isLoading ? null : me.data?.authenticated ? (
             <>
               <span>
-                {me.data.display_name} {me.data.membership ? <Badge tone="accent">{me.data.membership.role}</Badge> : <Badge tone="warn">no membership</Badge>}
+                <span data-testid="shell.user">{me.data.display_name}</span>{' '}
+                {me.data.membership ? <Badge tone="accent" testId="shell.role">{me.data.membership.role}</Badge> : <Badge tone="warn" testId="shell.role">no membership</Badge>}
               </span>
-              <a href="/auth/logout" className="hover:text-fg">
+              <a href="/auth/logout" className="hover:text-fg" data-testid="shell.logout">
                 Log out
               </a>
             </>
           ) : (
-            <LinkButton href={`/auth/login?next=${encodeURIComponent(pathname)}`}>Log in with EVE Online</LinkButton>
+            <LinkButton href={`/auth/login?next=${encodeURIComponent(pathname)}`} testId="shell.login">
+              Log in with EVE Online
+            </LinkButton>
           )}
         </div>
       </header>
@@ -61,20 +65,23 @@ export function AppShell({ children }: { children: ReactNode }) {
 function RulesetSwitcher({ active, canSwitch }: { active: string | null; canSwitch: boolean }) {
   const rulesets = useRulesets()
   const { patchTeam } = useTeamMutations()
-  if (!canSwitch || !rulesets.data?.length) {
+  if (!canSwitch) {
     return active ? (
       <span title="active ruleset">
-        <Mono className="text-fg">{active}</Mono>
+        <Mono className="text-fg" testId="shell.season">
+          {active}
+        </Mono>
       </span>
     ) : null
   }
+  const codes = rulesets.data?.map((r) => r.code) ?? (active ? [active] : [])
   return (
     <span className="flex items-center gap-1" title="active ruleset (admins can switch)">
       <span className="text-[11px]">season</span>
-      <Select value={active ?? ''} disabled={patchTeam.isPending} onChange={(e) => patchTeam.mutate({ active_ruleset: e.target.value })}>
-        {rulesets.data.map((r) => (
-          <option key={r.code} value={r.code}>
-            {r.code}
+      <Select data-testid="shell.season" value={active ?? ''} disabled={patchTeam.isPending || !rulesets.data} onChange={(e) => patchTeam.mutate({ active_ruleset: e.target.value })}>
+        {codes.map((code) => (
+          <option key={code} value={code}>
+            {code}
           </option>
         ))}
       </Select>

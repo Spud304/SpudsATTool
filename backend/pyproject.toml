@@ -33,6 +33,7 @@ dev = [
     "types-pyyaml>=6.0",
     "factory-boy>=3.3",
     "responses>=0.25",
+    "pytest-playwright>=0.9.0",
 ]
 
 [tool.pytest.ini_options]
@@ -53,5 +54,5 @@ ignore = ["E501"]
 python-version = "3.12"
 
 [tool.ty.src]
-include = ["apps", "config", "tests", "scripts"]
+include = ["apps", "config", "tests", "scripts", "playwright_tests"]
 

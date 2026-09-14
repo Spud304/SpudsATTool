@@ -12,10 +12,8 @@ from apps.rules import adapters
 from apps.rules.importer import import_ruleset
 from apps.rules.models import PointTableVersion
 from apps.rules.yaml_io import load_ruleset_document
-from tests.rules.conftest import MINI_ATXXII
+from tests.conftest import ABSO_FIT, ABSO_PYFA, MINI_ATXXII
 from tests.rules.engine import atxxii as at
-
-from .conftest import ABSO_FIT, ABSO_PYFA
 
 pytestmark = pytest.mark.django_db
 

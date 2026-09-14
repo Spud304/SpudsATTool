@@ -7,9 +7,7 @@ from apps.core.models import Team
 from apps.rules import selection
 from apps.rules.importer import import_ruleset
 from apps.rules.yaml_io import load_ruleset_document
-from tests.rules.conftest import MINI_ATXXII
-
-from .conftest import ABSO_FIT
+from tests.conftest import ABSO_FIT, MINI_ATXXII
 
 pytestmark = pytest.mark.django_db
 

@@ -361,7 +361,7 @@ Charts with Recharts; tables with TanStack Table (sortable, filterable, column v
 
 `.env` is the only file a self-hoster edits: `DOMAIN, ACME_EMAIL, SECRET_KEY, FIELD_ENCRYPTION_KEY, POSTGRES_PASSWORD, EVE_CLIENT_ID, EVE_CLIENT_SECRET, ESI_CONTACT_EMAIL, TEAM_NAME`, optional `BACKUP_RCLONE_REMOTE, ESI_COMPAT_DATE, ATTOOL_VERSION`. `bootstrap` creates the `Team`, loads the ATXXII starter ruleset fixture (values from `Configurables`), runs `import_sde` if `Ship` is empty, refuses placeholder secrets. First EVE login becomes admin and lands on a setup checklist. `make upgrade` = backup → pull → up. Images tagged `vX.Y.Z` on GHCR (amd64 + arm64). Self-hosters must register their own EVE SSO application with their callback URL: document this in `docs/SETUP.md`, it is where a non-developer captain will get stuck.
 
-Dev: `docker-compose.dev.yml` runs Postgres + Redis only; Django and Vite run natively with Vite proxying `/api /auth /ws`. `DEV_LOGIN_AS=<character_id>` local-only login shortcut for Playwright, refused when `DEBUG=False`.
+Dev: `docker-compose.dev.yml` runs Postgres + Redis only; Django and Vite run natively with Vite proxying `/api /auth /ws`. `/auth/dev-login?character_id=&name=&role=` is the local-only login shortcut (404 unless `DEV_LOGIN_ENABLED`, which only dev settings turn on); it is the seam the Playwright suite logs in through, so EVE SSO and ESI are never in the loop.
 
 ---
 
@@ -389,6 +389,8 @@ Dev: `docker-compose.dev.yml` runs Postgres + Redis only; Django and Vite run na
 ```
 
 Testing: pytest golden + Hypothesis tests for the engine; pytest-django against real Postgres for services (concurrency test: two threads patch one row → versions 1 and 2, two events in seq order); Channels `WebsocketCommunicator` tests for subscribe/replay/resync; parametrised permission-matrix test; SSO JWT tests with a local RSA key and fake JWKS; vitest for reducers and the TS engine port on the shared fixtures; Playwright smoke with two browser contexts (A changes a ship, B sees it within 1 s, totals update; `/me` shows the fit). CI: ruff, mypy (strict on engine and services), pytest with Postgres/Redis services, tsc, eslint, vitest, build, generated-client drift check, Compose-based e2e, release images on tag.
+
+Playwright harness (built 2026-09-14, Python `pytest-playwright` in `backend/playwright_tests/` so Paige can maintain it): runs against the servers `make run` already started; `make playwright` first runs `manage.py playwright_cleanup`, which deletes `pw_`-prefixed rows and the reserved test characters 900000001..900000099. Per-role sessions come from a `login_as("pilot")` fixture (its own browser context through dev-login), so one test can drive an admin and a pilot side by side. Test ids follow `area.element[.qualifier]` (`fits.new.save`, `comp.slot.3.hull`, `team.members.row.<id>`). First specs: navigation per role, fit suggest-and-promote with the audit trail, comp build/save/clone, invite join plus member management and admission rules, season switch. Chromium only; CI job deferred.
 
 ---
 

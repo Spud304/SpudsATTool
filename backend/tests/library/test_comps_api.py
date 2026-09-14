@@ -4,9 +4,8 @@ import pytest
 
 from apps.core.models import Team
 from apps.library.models import Fit
+from tests.conftest import ABSO_FIT
 from tests.rules.engine import atxxii as at
-
-from .conftest import ABSO_FIT
 
 RATTLESNAKE = 17918
 pytestmark = pytest.mark.django_db

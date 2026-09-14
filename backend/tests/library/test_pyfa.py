@@ -1,6 +1,5 @@
 from apps.library.pyfa import parse_pyfa_summary
-
-from .conftest import ABSO_PYFA
+from tests.conftest import ABSO_PYFA
 
 
 def test_sample_summary():

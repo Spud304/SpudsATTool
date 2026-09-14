@@ -7,8 +7,7 @@ from apps.library.models import FitStatus
 from apps.rules import adapters
 from apps.rules.engine import codes as c
 from apps.rules.models import BannedModuleType, ModuleRule, ModuleRuleScope
-
-from .conftest import ABSO_FIT, ABSO_PYFA
+from tests.conftest import ABSO_FIT, ABSO_PYFA
 
 pytestmark = pytest.mark.django_db
 

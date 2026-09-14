@@ -5,8 +5,7 @@ import pytest
 from apps.audit.models import AuditLog
 from apps.core.models import Team
 from apps.library.models import Fit
-
-from .conftest import ABSO_FIT, ABSO_PYFA
+from tests.conftest import ABSO_FIT, ABSO_PYFA
 
 pytestmark = pytest.mark.django_db
 

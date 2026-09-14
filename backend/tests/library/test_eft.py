@@ -2,8 +2,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from apps.library.eft import NO_HEADER, parse_eft
-
-from .conftest import ABSO_FIT
+from tests.conftest import ABSO_FIT
 
 
 def test_header_and_items():

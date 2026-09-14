@@ -15,14 +15,16 @@ export function Panel({
   actions,
   children,
   className,
+  testId,
 }: {
   title?: ReactNode
   actions?: ReactNode
   children: ReactNode
   className?: string
+  testId?: string
 }) {
   return (
-    <section className={clsx('rounded border border-line bg-panel', className)}>
+    <section className={clsx('rounded border border-line bg-panel', className)} data-testid={testId}>
       {title !== undefined ? (
         <header className="flex h-9 items-center justify-between border-b border-line px-3">
           <h2 className="text-[12px] font-semibold uppercase tracking-wide text-muted">{title}</h2>
@@ -56,9 +58,10 @@ export function Button({
   )
 }
 
-export function LinkButton({ href, children, variant = 'primary' }: { href: string; children: ReactNode; variant?: ButtonVariant }) {
+export function LinkButton({ href, children, variant = 'primary', testId }: { href: string; children: ReactNode; variant?: ButtonVariant; testId?: string }) {
   return (
     <a
+      data-testid={testId}
       href={href}
       className={clsx(
         'inline-flex h-7 items-center rounded border px-2.5 text-[12px] font-medium',
@@ -113,9 +116,10 @@ export function Checkbox(props: InputHTMLAttributes<HTMLInputElement>) {
 
 export type Tone = 'muted' | 'ok' | 'warn' | 'bad' | 'info' | 'accent'
 
-export function Badge({ tone = 'muted', children }: { tone?: Tone; children: ReactNode }) {
+export function Badge({ tone = 'muted', children, testId }: { tone?: Tone; children: ReactNode; testId?: string }) {
   return (
     <span
+      data-testid={testId}
       className={clsx(
         'inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium uppercase tracking-wide',
         tone === 'muted' && 'bg-panel-2 text-muted',
@@ -153,15 +157,27 @@ export function Field({ label, children }: { label: ReactNode; children: ReactNo
   )
 }
 
-export function Empty({ children }: { children: ReactNode }) {
-  return <p className="py-6 text-center text-muted">{children}</p>
+export function Empty({ children, testId }: { children: ReactNode; testId?: string }) {
+  return (
+    <p className="py-6 text-center text-muted" data-testid={testId}>
+      {children}
+    </p>
+  )
 }
 
-export function ErrorText({ error }: { error: unknown }) {
+export function ErrorText({ error, testId }: { error: unknown; testId?: string }) {
   if (!error) return null
-  return <p className="text-bad">{error instanceof Error ? error.message : String(error)}</p>
+  return (
+    <p className="text-bad" data-testid={testId}>
+      {error instanceof Error ? error.message : String(error)}
+    </p>
+  )
 }
 
-export function Mono({ children, className }: { children: ReactNode; className?: string }) {
-  return <span className={clsx('mono', className)}>{children}</span>
+export function Mono({ children, className, testId }: { children: ReactNode; className?: string; testId?: string }) {
+  return (
+    <span className={clsx('mono', className)} data-testid={testId}>
+      {children}
+    </span>
+  )
 }

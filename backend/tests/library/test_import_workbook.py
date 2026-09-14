@@ -3,8 +3,7 @@ from django.core.management import CommandError, call_command
 from openpyxl import Workbook
 
 from apps.library.models import Fit
-
-from .conftest import ABSO_FIT, ABSO_PYFA
+from tests.conftest import ABSO_FIT, ABSO_PYFA
 
 pytestmark = pytest.mark.django_db
 

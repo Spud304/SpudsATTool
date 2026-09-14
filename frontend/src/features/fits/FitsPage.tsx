@@ -26,8 +26,8 @@ export function FitsPage() {
         title={`Fits${fits.data ? ` (${fits.data.length})` : ''}`}
         actions={
           <div className="flex items-center gap-2">
-            <Input placeholder="search hull or fit" className="w-56" value={q} onChange={(e) => setQ(e.target.value)} />
-            <Select value={status} onChange={(e) => setStatus(e.target.value)}>
+            <Input data-testid="fits.search" placeholder="search hull or fit" className="w-56" value={q} onChange={(e) => setQ(e.target.value)} />
+            <Select data-testid="fits.status" value={status} onChange={(e) => setStatus(e.target.value)}>
               {STATUS_FILTERS.map((s) => (
                 <option key={s.value} value={s.value}>
                   {s.label}
@@ -61,7 +61,7 @@ export function FitsPage() {
                     </td>
                   </tr>
                   {rows.map((f) => (
-                    <tr key={f.id}>
+                    <tr key={f.id} data-testid={`fits.row.${f.id}`}>
                       <td>
                         <Link to="/fits/$fitId" params={{ fitId: String(f.id) }} className="text-accent hover:underline">
                           {f.name}
@@ -95,7 +95,7 @@ export function FitsPage() {
         ) : fits.isLoading ? (
           <Empty>Loading…</Empty>
         ) : (
-          <Empty>No fits match. Paste one on the right.</Empty>
+          <Empty testId="fits.empty">No fits match. Paste one on the right.</Empty>
         )}
       </Panel>
       <NewFitPanel />

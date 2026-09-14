@@ -157,19 +157,29 @@ function Builder({ comp }: { comp: CompOut }) {
           Comps
         </Link>
         <span className="text-muted">/</span>
-        {comp.can_edit ? <Input className="w-64 font-semibold" value={name} onChange={(e) => setName(e.target.value)} /> : <span className="font-semibold">{comp.name}</span>}
-        <Badge tone={compStatusTone(comp.status)}>{comp.status}</Badge>
-        <Mono className="text-muted">{comp.ruleset}</Mono>
+        {comp.can_edit ? (
+          <Input data-testid="comp.name" className="w-64 font-semibold" value={name} onChange={(e) => setName(e.target.value)} />
+        ) : (
+          <span className="font-semibold" data-testid="comp.name">
+            {comp.name}
+          </span>
+        )}
+        <Badge tone={compStatusTone(comp.status)} testId="comp.status.badge">
+          {comp.status}
+        </Badge>
+        <Mono className="text-muted" testId="comp.ruleset">
+          {comp.ruleset}
+        </Mono>
         <span className="text-[11px] text-muted">
           {comp.created_by_name ? `by ${comp.created_by_name}, ` : ''}updated {when(comp.updated_at)}
           {comp.reviewed_by_name ? `, reviewed by ${comp.reviewed_by_name}` : ''}
         </span>
         <span className="flex-1" />
-        <Button onClick={clone} disabled={cloneComp.isPending}>
+        <Button data-testid="comp.clone" onClick={clone} disabled={cloneComp.isPending}>
           Clone
         </Button>
         {comp.can_edit ? (
-          <Button variant="primary" disabled={!dirty || patchComp.isPending} onClick={save}>
+          <Button data-testid="comp.save" variant="primary" disabled={!dirty || patchComp.isPending} onClick={save}>
             Save
           </Button>
         ) : null}
@@ -202,13 +212,13 @@ function Builder({ comp }: { comp: CompOut }) {
                 const fit = slot.default_fit_id != null ? fitsById.get(slot.default_fit_id) : undefined
                 const showScripts = slot.show_scripts || (fit?.has_links ?? false)
                 return (
-                  <tr key={i} className={clsx(ev?.flags.length && 'bg-bad/10')}>
+                  <tr key={i} className={clsx(ev?.flags.length && 'bg-bad/10')} data-testid={`comp.slot.${i + 1}`}>
                     <td>
                       <Mono className="text-muted">{i + 1}</Mono>
                     </td>
                     <td>
                       {comp.can_edit ? (
-                        <HullInput listId="builder-hulls" className="w-44" value={ship?.name ?? ''} lookup={byName} onPick={(s) => update(i, { type_id: s?.type_id ?? null, default_fit_id: null })} />
+                        <HullInput listId="builder-hulls" className="w-44" testId={`comp.slot.${i + 1}.hull`} value={ship?.name ?? ''} lookup={byName} onPick={(s) => update(i, { type_id: s?.type_id ?? null, default_fit_id: null })} />
                       ) : (
                         ship?.name ?? <span className="text-muted">empty</span>
                       )}
@@ -218,17 +228,17 @@ function Builder({ comp }: { comp: CompOut }) {
                     </td>
                     {comp.flagship_enabled ? (
                       <td>
-                        <Checkbox checked={slot.is_flagship} disabled={!comp.can_edit} onChange={(e) => update(i, { is_flagship: e.target.checked })} />
+                        <Checkbox data-testid={`comp.slot.${i + 1}.flag`} checked={slot.is_flagship} disabled={!comp.can_edit} onChange={(e) => update(i, { is_flagship: e.target.checked })} />
                       </td>
                     ) : null}
                     <td>
-                      <Checkbox checked={slot.is_unique} disabled={!comp.can_edit} onChange={(e) => update(i, { is_unique: e.target.checked })} />
+                      <Checkbox data-testid={`comp.slot.${i + 1}.unique`} checked={slot.is_unique} disabled={!comp.can_edit} onChange={(e) => update(i, { is_unique: e.target.checked })} />
                     </td>
                     <td>
-                      <Input type="number" className="w-16" min={0} max={1000} value={slot.warp_in_km ?? ''} readOnly={!comp.can_edit} onChange={(e) => update(i, { warp_in_km: e.target.value === '' ? null : Number(e.target.value) })} />
+                      <Input data-testid={`comp.slot.${i + 1}.warp`} type="number" className="w-16" min={0} max={1000} value={slot.warp_in_km ?? ''} readOnly={!comp.can_edit} onChange={(e) => update(i, { warp_in_km: e.target.value === '' ? null : Number(e.target.value) })} />
                     </td>
                     <td>
-                      <Select value={slot.default_fit_id ?? ''} disabled={!comp.can_edit || slot.type_id == null} onChange={(e) => update(i, { default_fit_id: e.target.value === '' ? null : Number(e.target.value) })}>
+                      <Select data-testid={`comp.slot.${i + 1}.fit`} value={slot.default_fit_id ?? ''} disabled={!comp.can_edit || slot.type_id == null} onChange={(e) => update(i, { default_fit_id: e.target.value === '' ? null : Number(e.target.value) })}>
                         <option value="">{options.length ? 'no default fit' : 'no fits for hull'}</option>
                         {options.map((f) => (
                           <option key={f.id} value={f.id}>
@@ -241,7 +251,11 @@ function Builder({ comp }: { comp: CompOut }) {
                       {fit && fit.status !== 'active' ? <Badge tone="warn">{fit.status}</Badge> : null}
                     </td>
                     <td>
-                      {ev?.link_index ? <Mono className="text-accent">L{ev.link_index}</Mono> : null}
+                      {ev?.link_index ? (
+                        <Mono className="text-accent" testId={`comp.slot.${i + 1}.link`}>
+                          L{ev.link_index}
+                        </Mono>
+                      ) : null}
                       {showScripts ? (
                         <div className="mt-1 flex flex-wrap gap-1">
                           {Array.from({ length: 5 }, (_, k) => (
@@ -267,15 +281,15 @@ function Builder({ comp }: { comp: CompOut }) {
                           ))}
                         </div>
                       ) : comp.can_edit ? (
-                        <Button variant="ghost" onClick={() => update(i, { show_scripts: true })}>
+                        <Button data-testid={`comp.slot.${i + 1}.scripts`} variant="ghost" onClick={() => update(i, { show_scripts: true })}>
                           + scripts
                         </Button>
                       ) : null}
                     </td>
                     <td>
-                      <Input className="w-40" value={slot.ship_note} readOnly={!comp.can_edit} placeholder="ship note" onChange={(e) => update(i, { ship_note: e.target.value })} />
+                      <Input data-testid={`comp.slot.${i + 1}.note`} className="w-40" value={slot.ship_note} readOnly={!comp.can_edit} placeholder="ship note" onChange={(e) => update(i, { ship_note: e.target.value })} />
                     </td>
-                    <td className="text-right">
+                    <td className="text-right" data-testid={`comp.slot.${i + 1}.points`}>
                       {ev && ev.type_id != null ? (
                         <Mono>
                           {ev.total_points}
@@ -294,19 +308,21 @@ function Builder({ comp }: { comp: CompOut }) {
         </Panel>
 
         <div className="space-y-4">
-          <Panel title="Budget">
+          <Panel title="Budget" testId="comp.budget">
             <ErrorText error={evalError} />
             {evaluation ? (
               <div className="space-y-2">
                 <div className="text-lg">
-                  <Mono>
+                  <Mono testId="comp.budget.total">
                     {evaluation.total_points} / {evaluation.point_cap}
                   </Mono>{' '}
-                  <Badge tone={capTone(evaluation.cap_status)}>
+                  <Badge tone={capTone(evaluation.cap_status)} testId="comp.budget.status">
                     {evaluation.cap_status}
                     {evaluation.cap_status === 'UNDER' ? ` (${evaluation.unspent_points} unspent)` : ''}
                   </Badge>{' '}
-                  <Badge tone={evaluation.is_legal ? 'ok' : 'bad'}>{evaluation.is_legal ? 'legal' : 'illegal'}</Badge>
+                  <Badge tone={evaluation.is_legal ? 'ok' : 'bad'} testId="comp.budget.legal">
+                    {evaluation.is_legal ? 'legal' : 'illegal'}
+                  </Badge>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {sizes.map((s) => (
@@ -361,7 +377,7 @@ function Builder({ comp }: { comp: CompOut }) {
           <Panel title="Notes">
             <div className="space-y-2">
               <Field label="Archetype">
-                <Select value={archetypeId ?? ''} disabled={!comp.can_edit} onChange={(e) => setArchetypeId(e.target.value === '' ? null : Number(e.target.value))}>
+                <Select data-testid="comp.archetype" value={archetypeId ?? ''} disabled={!comp.can_edit} onChange={(e) => setArchetypeId(e.target.value === '' ? null : Number(e.target.value))}>
                   <option value="">none</option>
                   {(vocab.data?.archetypes ?? [])
                     .filter((a) => !a.is_retired || a.id === archetypeId)
@@ -374,10 +390,10 @@ function Builder({ comp }: { comp: CompOut }) {
                 </Select>
               </Field>
               <Field label="Comp notes">
-                <Textarea rows={4} value={notes} readOnly={!comp.can_edit} onChange={(e) => setNotes(e.target.value)} />
+                <Textarea data-testid="comp.notes" rows={4} value={notes} readOnly={!comp.can_edit} onChange={(e) => setNotes(e.target.value)} />
               </Field>
               <Field label="Ban theory">
-                <Textarea rows={3} value={banTheory} readOnly={!comp.can_edit} onChange={(e) => setBanTheory(e.target.value)} />
+                <Textarea data-testid="comp.bantheory" rows={3} value={banTheory} readOnly={!comp.can_edit} onChange={(e) => setBanTheory(e.target.value)} />
               </Field>
             </div>
           </Panel>
@@ -406,10 +422,10 @@ function StatusPanel({ comp }: { comp: CompOut }) {
   const [status, setStatus] = useState(comp.status)
   const [reason, setReason] = useState('')
   return (
-    <Panel title="Status">
+    <Panel title="Status" testId="comp.status">
       <div className="flex flex-wrap items-end gap-2">
         <Field label="Status">
-          <Select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <Select data-testid="comp.status.select" value={status} onChange={(e) => setStatus(e.target.value)}>
             {COMP_STATUSES.map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -418,9 +434,9 @@ function StatusPanel({ comp }: { comp: CompOut }) {
           </Select>
         </Field>
         <Field label="Reason">
-          <Input className="w-56" value={reason} placeholder="goes to the audit log" onChange={(e) => setReason(e.target.value)} />
+          <Input data-testid="comp.status.reason" className="w-56" value={reason} placeholder="goes to the audit log" onChange={(e) => setReason(e.target.value)} />
         </Field>
-        <Button variant="primary" disabled={status === comp.status || patchComp.isPending} onClick={() => patchComp.mutate({ id: comp.id, body: { status, reason } })}>
+        <Button data-testid="comp.status.apply" variant="primary" disabled={status === comp.status || patchComp.isPending} onClick={() => patchComp.mutate({ id: comp.id, body: { status, reason } })}>
           Apply
         </Button>
       </div>

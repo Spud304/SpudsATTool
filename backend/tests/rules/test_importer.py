@@ -15,8 +15,8 @@ from apps.rules.models import (
 )
 from apps.rules.yaml_io import load_ruleset_document
 from apps.sde.models import EveType
+from tests.conftest import MINI_ATXXII
 
-from .conftest import MINI_ATXXII
 from .engine import atxxii as at
 
 pytestmark = pytest.mark.django_db

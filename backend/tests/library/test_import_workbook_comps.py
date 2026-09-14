@@ -5,8 +5,7 @@ from openpyxl import Workbook
 from apps.library import services
 from apps.library.models import Comp
 from apps.sde.models import EveType
-
-from .conftest import ABSO_FIT
+from tests.conftest import ABSO_FIT
 
 pytestmark = pytest.mark.django_db
 

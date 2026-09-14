@@ -108,3 +108,13 @@ SDE settings (all optional): `INSTANCE_DIR` (default `backend/instance`), `SDE_I
 With both servers up, `http://127.0.0.1:5173/scratchpad` evaluates comps against the imported rulesets (`import_ruleset --path fixtures/rulesets/atxxii.yaml` first), and `/fits` holds the fit library. To seed it from the old practice organizer: `python manage.py import_workbook_fits <workbook.xlsx> [--dry-run]` reads its `Fit library` sheet and reports unknown items; `import_workbook_comps <workbook.xlsx> [--ruleset ATXXII] [--dry-run]` then loads `Comp library` and `Comp Notes` (run it after the fits so default fits resolve). Admins pick the season the team works in from the header; it defaults to the newest ruleset with a point table.
 
 Tests: `make test`, with `make dev-db` running. Backend tests use the dev Postgres on :5433 (override with `TEST_DATABASE_URL`). The typed API client is regenerated with `make gen-client` while the backend is running.
+
+### Playwright tests
+
+Browser tests are Python (`pytest-playwright`) in `backend/playwright_tests/` and run against the dev servers you already have up with `make run`. Prerequisites: `make run` in another terminal, the ATXXII ruleset imported and, for the comp tests, the SDE loaded. Then:
+
+```bash
+make playwright
+```
+
+Add `--headed` or `--tracing on` after `uv run pytest playwright_tests` to watch or record a run; failures keep a trace under `backend/test-results/`. The suite uses your dev database: every row it creates is named `pw_…`, invite notes start with `pw_`, admission rules use entity ids 900000000+, and the test members are dev-login characters 900000001 to 900000099. `make playwright` starts by running `manage.py playwright_cleanup`, which deletes exactly those rows and refuses to run outside dev settings. In a test, `login_as("pilot")` opens a fresh browser context logged in as that role, so one test can drive several members at once. New UI gets a `data-testid` in the `area.element[.qualifier]` style (`fits.new.save`, `comp.slot.3.hull`).

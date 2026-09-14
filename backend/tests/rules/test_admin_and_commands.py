@@ -6,8 +6,7 @@ from django.urls import reverse
 from apps.accounts.models import User
 from apps.rules import models as rules_models
 from apps.rules.models import Tournament
-
-from .conftest import MINI_ATXXII
+from tests.conftest import MINI_ATXXII
 
 pytestmark = pytest.mark.django_db
 

@@ -16,6 +16,7 @@ export function AuditPage() {
       actions={
         <div className="flex items-center gap-2">
           <Input
+            data-testid="audit.filter"
             placeholder="filter by action, e.g. membership.removed"
             className="w-72"
             value={action}
@@ -48,7 +49,7 @@ export function AuditPage() {
           </thead>
           <tbody>
             {items.map((e) => (
-              <tr key={e.id}>
+              <tr key={e.id} data-testid="audit.row">
                 <td className="whitespace-nowrap text-muted">
                   <Mono>{new Date(e.at).toLocaleString()}</Mono>
                 </td>

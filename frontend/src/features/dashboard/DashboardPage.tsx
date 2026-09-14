@@ -94,13 +94,13 @@ function ReviewQueuePanel() {
   const comps = useComps({ status: 'suggested' })
   const total = (fits.data?.length ?? 0) + (comps.data?.length ?? 0)
   return (
-    <Panel title={`Review queue${total ? ` (${total})` : ''}`}>
+    <Panel title={`Review queue${total ? ` (${total})` : ''}`} testId="dash.review">
       {total === 0 ? (
         <p className="text-muted">Nothing suggested right now.</p>
       ) : (
         <ul className="space-y-1">
           {(comps.data ?? []).slice(0, 5).map((c) => (
-            <li key={`c${c.id}`}>
+            <li key={`c${c.id}`} data-testid={`dash.review.item.comp.${c.id}`}>
               <Link to="/comps/$compId" params={{ compId: String(c.id) }} className="text-accent">
                 comp: {c.name}
               </Link>
@@ -108,7 +108,7 @@ function ReviewQueuePanel() {
             </li>
           ))}
           {(fits.data ?? []).slice(0, 5).map((f) => (
-            <li key={`f${f.id}`}>
+            <li key={`f${f.id}`} data-testid={`dash.review.item.fit.${f.id}`}>
               <Link to="/fits/$fitId" params={{ fitId: String(f.id) }} className="text-accent">
                 fit: {f.ship_name} / {f.name}
               </Link>

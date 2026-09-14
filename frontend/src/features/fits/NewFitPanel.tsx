@@ -46,21 +46,21 @@ export function NewFitPanel() {
   }
 
   return (
-    <Panel title="New fit from clipboard">
+    <Panel title="New fit from clipboard" testId="fits.new">
       <div className="space-y-2">
         <Field label="EFT text">
-          <Textarea rows={12} placeholder={'[Hull, Fit name]\nModule, Charge\n…'} value={eft} onChange={(e) => setEft(e.target.value)} />
+          <Textarea data-testid="fits.new.eft" rows={12} placeholder={'[Hull, Fit name]\nModule, Charge\n…'} value={eft} onChange={(e) => setEft(e.target.value)} />
         </Field>
         <Field label="Pyfa stats block (optional)">
-          <Textarea rows={5} placeholder={'DPS: …\nEHP: …\nSpeed: … m/s'} value={pyfa} onChange={(e) => setPyfa(e.target.value)} />
+          <Textarea data-testid="fits.new.pyfa" rows={5} placeholder={'DPS: …\nEHP: …\nSpeed: … m/s'} value={pyfa} onChange={(e) => setPyfa(e.target.value)} />
         </Field>
         <div className="flex flex-wrap items-end gap-2">
           <Field label="Fit name">
-            <Input className="w-56" placeholder={preview?.fit_name || 'from header'} value={name} onChange={(e) => setName(e.target.value)} />
+            <Input data-testid="fits.new.name" className="w-56" placeholder={preview?.fit_name || 'from header'} value={name} onChange={(e) => setName(e.target.value)} />
           </Field>
           {canManage ? (
             <Field label="Status">
-              <Select value={status} onChange={(e) => setStatus(e.target.value)}>
+              <Select data-testid="fits.new.status" value={status} onChange={(e) => setStatus(e.target.value)}>
                 {FIT_STATUSES.map((s) => (
                   <option key={s} value={s}>
                     {s}
@@ -71,11 +71,11 @@ export function NewFitPanel() {
           ) : (
             <span className="pb-1 text-[11px] text-muted">Lands as suggested until a theorycrafter activates it.</span>
           )}
-          <Button variant="primary" disabled={!preview?.ok || createFit.isPending} onClick={submit}>
+          <Button data-testid="fits.new.save" variant="primary" disabled={!preview?.ok || createFit.isPending} onClick={submit}>
             Save fit
           </Button>
         </div>
-        <ErrorText error={createFit.error} />
+        <ErrorText error={createFit.error} testId="fits.new.error" />
         {preview ? <PreviewBlock preview={preview} /> : null}
       </div>
     </Panel>
@@ -85,7 +85,7 @@ export function NewFitPanel() {
 function PreviewBlock({ preview }: { preview: ParseOut }) {
   const stats = preview.stats
   return (
-    <div className="space-y-1 border-t border-line pt-2 text-[12px]">
+    <div className="space-y-1 border-t border-line pt-2 text-[12px]" data-testid="fits.new.preview">
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone={preview.hull_type_id ? 'ok' : 'bad'}>{preview.hull_name || 'no hull'}</Badge>
         <span>{preview.fit_name}</span>
