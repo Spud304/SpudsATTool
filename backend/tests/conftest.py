@@ -176,7 +176,7 @@ def imported_atxxii(mini_doc):
     return ruleset, report
 
 
-# ---- library: modules, drones, charges and implants that fits mention ----
+# library: modules, drones, charges and implants that fits mention
 
 CHARGE, DRONE, IMPLANT, SUBSYSTEM = 8, 18, 20, 32
 EXTRA_GROUPS = {

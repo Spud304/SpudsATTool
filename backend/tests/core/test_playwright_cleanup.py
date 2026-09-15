@@ -10,6 +10,8 @@ from apps.audit.services import record
 from apps.library import comps
 from apps.library import services as fit_services
 from apps.library.models import Archetype, Comp, Fit
+from apps.scrims import roster, sessions
+from apps.scrims.models import Opponent, Pilot, Session
 from tests.conftest import ABSO_FIT
 
 pytestmark = pytest.mark.django_db
@@ -41,8 +43,17 @@ def test_cleanup_removes_only_playwright_rows(library_sde, imported_atxxii, sett
     AdmissionRule.objects.create(kind="corporation", entity_id=98_000_001, entity_name="real")
     record(actor=real_user, action="x.y", target_label="pw_fit_1")
     record(actor=real_user, action="x.y", target_label="kept")
+    roster.create_pilot(real_user, name="pw_merc")
+    roster.create_pilot(real_user, name="Real merc")
+    opp = roster.create_opponent(real_user, name="pw_opp")
+    sessions.create_session(real_user, title="pw_scrim", date=timezone.now(), opponent_id=opp.pk)
+    sessions.create_session(real_user, title="Real scrim", date=timezone.now())
 
     call_command("playwright_cleanup")
+
+    assert list(Session.objects.values_list("title", flat=True)) == ["Real scrim"]
+    assert not Opponent.objects.filter(name="pw_opp").exists()
+    assert set(Pilot.objects.values_list("name", flat=True)) == {"Real", "Real merc"}
 
     assert list(Fit.objects.values_list("name", flat=True)) == ["Real fit"]
     assert list(Comp.objects.values_list("name", flat=True)) == ["Real comp"]

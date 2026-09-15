@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "apps.sde",
     "apps.rules",
     "apps.library",
+    "apps.scrims",
     # Phase 2: apps.sessions
     # Phase 3: apps.analytics, apps.importer
 ]
@@ -76,6 +77,7 @@ DATABASES["default"].setdefault("OPTIONS", {})["pool"] = {"min_size": 1, "max_si
 DATABASES["default"]["OPTIONS"]["connect_timeout"] = 5
 
 REDIS_URL = env.str("REDIS_URL", "redis://localhost:6380/0")
+SCRIM_BROKER = env.str("SCRIM_BROKER", "redis")  # "memory" for single-process tests
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -114,7 +116,7 @@ STORAGES = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# ---- EVE SSO / ESI (used from Phase 0 onwards) ----
+# EVE SSO / ESI (used from Phase 0 onwards)
 EVE_SSO_DISCOVERY_URL = env.str(
     "EVE_SSO_DISCOVERY_URL", "https://login.eveonline.com/.well-known/oauth-authorization-server"
 )
@@ -131,7 +133,7 @@ ESI_USER_AGENT = (
     f"attool/{APP_VERSION} ({ESI_CONTACT_EMAIL}; +https://github.com/spudsattool/attool)"
 )
 
-# ---- Instance data (downloads, drop folders); a Docker volume in production ----
+# Instance data (downloads, drop folders); a Docker volume in production
 INSTANCE_DIR = env.path("INSTANCE_DIR", BASE_DIR / "instance")
 SDE_DIR = INSTANCE_DIR / "sde"
 SDE_INCLUDED_FILES = env.list("SDE_INCLUDED_FILES", sde_constants.DEFAULT_INCLUDED_FILES)

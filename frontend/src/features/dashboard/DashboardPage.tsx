@@ -1,6 +1,8 @@
 import { Link } from '@tanstack/react-router'
-import { useComps, useFits, useHealth, useMe } from '@/lib/api/hooks'
+import { useComps, useFits, useHealth, useMe, useScrims } from '@/lib/api/hooks'
 import { Badge, LinkButton, Mono, Panel } from '@/components/ui'
+import { RsvpButtons } from '@/features/scrims/RsvpButtons'
+import { whenAt } from '@/features/scrims/format'
 
 export function DashboardPage() {
   const me = useMe()
@@ -67,6 +69,7 @@ export function DashboardPage() {
           </li>
         </ul>
       </Panel>
+      {me.data.capabilities?.browse_scrims ? <UpcomingScrimsPanel /> : null}
       {me.data.capabilities?.manage_library ? <ReviewQueuePanel /> : null}
       {me.data.capabilities?.manage_members ? (
         <Panel title="Next steps">
@@ -121,6 +124,43 @@ function ReviewQueuePanel() {
             </li>
           ) : null}
         </ul>
+      )}
+    </Panel>
+  )
+}
+
+/** The next few nights, with the viewer's own RSVP right on the card. */
+function UpcomingScrimsPanel() {
+  const scrims = useScrims('upcoming')
+  return (
+    <Panel
+      title="Upcoming scrims"
+      testId="dash.scrims"
+      actions={
+        <Link to="/scrims" className="text-[11px] text-accent">
+          all scrims
+        </Link>
+      }
+    >
+      {scrims.data?.length ? (
+        <ul className="space-y-2">
+          {scrims.data.slice(0, 5).map((s) => (
+            <li key={s.id} data-testid={`dash.scrims.item.${s.id}`} className="flex flex-wrap items-center gap-2">
+              <Link to="/scrims/$scrimId" params={{ scrimId: String(s.id) }} className="text-accent">
+                {s.title}
+              </Link>
+              <span className="text-muted">
+                {whenAt(s.date)}
+                {s.opponent_name ? ` vs ${s.opponent_name}` : ''}
+              </span>
+              <RsvpButtons scrim={s} testPrefix={`dash.scrims.item.${s.id}`} />
+            </li>
+          ))}
+        </ul>
+      ) : scrims.isLoading ? (
+        <p className="text-muted">Loading…</p>
+      ) : (
+        <p className="text-muted">Nothing scheduled.</p>
       )}
     </Panel>
   )

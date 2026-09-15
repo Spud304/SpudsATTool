@@ -8,6 +8,7 @@ from django.db.models import Q
 from apps.accounts.models import AdmissionRule, EveCharacter, Invite, Membership, User
 from apps.audit.models import AuditLog
 from apps.library.models import Archetype, Comp, Fit
+from apps.scrims.models import Opponent, Pilot, Session
 
 PREFIX = "pw_"
 CHARACTER_RANGE = (900_000_001, 900_000_099)
@@ -28,6 +29,12 @@ class Command(BaseCommand):
         user_ids = list(users.values_list("pk", flat=True))
         counts: dict[str, int] = {}
         with transaction.atomic():
+            counts["scrims"] = Session.objects.filter(title__startswith=PREFIX).delete()[0]
+            counts["opponents"] = Opponent.objects.filter(name__startswith=PREFIX).delete()[0]
+            # Roster rows: hand-added pw_ pilots plus the ones the test logins create ("PW pilot").
+            counts["pilots"] = Pilot.objects.filter(
+                Q(name__startswith=PREFIX) | Q(name__startswith="PW ") | Q(user_id__in=user_ids)
+            ).delete()[0]
             counts["comps"] = Comp.objects.filter(name__startswith=PREFIX).delete()[0]
             counts["fits"] = Fit.objects.filter(name__startswith=PREFIX).delete()[0]
             counts["archetypes"] = Archetype.objects.filter(name__startswith=PREFIX).delete()[0]

@@ -61,6 +61,10 @@ Restore:
 docker compose -f deploy/docker-compose.yml --env-file deploy/.env exec -T db pg_restore -U attool -d attool --clean --if-exists < backups/attool-<stamp>.dump
 ```
 
+### Live scrim updates
+
+The scrim page holds one server-sent-events stream per open tab (`GET /api/scrims/<id>/events`) and posts a presence heartbeat every 15 s. Events fan out between workers over Redis pub/sub (`REDIS_URL`); `SCRIM_BROKER=memory` switches to an in-process broker for single-worker tests. Reverse proxies must pass it through unbuffered and uncompressed: the shipped Caddyfile excludes `text/event-stream` from `encode`; if you front the stack with your own nginx, add `proxy_buffering off;` and skip gzip for that location. The Vite dev proxy streams it without changes.
+
 ## 5. Roles
 
 | Role | Can |
@@ -117,4 +121,4 @@ Browser tests are Python (`pytest-playwright`) in `backend/playwright_tests/` an
 make playwright
 ```
 
-Add `--headed` or `--tracing on` after `uv run pytest playwright_tests` to watch or record a run; failures keep a trace under `backend/test-results/`. The suite uses your dev database: every row it creates is named `pw_…`, invite notes start with `pw_`, admission rules use entity ids 900000000+, and the test members are dev-login characters 900000001 to 900000099. `make playwright` starts by running `manage.py playwright_cleanup`, which deletes exactly those rows and refuses to run outside dev settings. In a test, `login_as("pilot")` opens a fresh browser context logged in as that role, so one test can drive several members at once. New UI gets a `data-testid` in the `area.element[.qualifier]` style (`fits.new.save`, `comp.slot.3.hull`).
+Add `--headed` or `--tracing on` after `uv run pytest playwright_tests` to watch or record a run; failures keep a trace under `backend/test-results/`. The suite uses your dev database: every row it creates is named `pw_…` (comps, fits, scrims, pilots, opponents), invite notes start with `pw_`, admission rules use entity ids 900000000+, and the test members are dev-login characters 900000001 to 900000099 (their auto-created roster pilots are named `PW <role>`). `make playwright` starts by running `manage.py playwright_cleanup`, which deletes exactly those rows and refuses to run outside dev settings. In a test, `login_as("pilot")` opens a fresh browser context logged in as that role, so one test can drive several members at once. New UI gets a `data-testid` in the `area.element[.qualifier]` style (`fits.new.save`, `comp.slot.3.hull`).

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ShipOut } from '@/lib/api/client'
 import { Input } from '@/components/ui'
 
@@ -10,6 +10,8 @@ export function HullInput({
   listId = 'hulls',
   className = 'w-56',
   testId,
+  onEnter,
+  onArrow,
 }: {
   value: string
   lookup: Map<string, ShipOut>
@@ -17,8 +19,13 @@ export function HullInput({
   listId?: string
   className?: string
   testId?: string
+  /** Called after Enter commits, e.g. to move focus to the next row. */
+  onEnter?: () => void
+  /** Up/Down between rows; only while not mid-edit, so the suggestion list keeps its arrow keys. */
+  onArrow?: (direction: -1 | 1) => void
 }) {
   const [text, setText] = useState(value)
+  const skipBlur = useRef(false)
   useEffect(() => setText(value), [value])
   const commit = () => {
     const t = text.trim()
@@ -35,8 +42,27 @@ export function HullInput({
       invalid={Boolean(text) && !lookup.has(text.trim())}
       value={text}
       onChange={(e) => setText(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => e.key === 'Enter' && commit()}
+      onBlur={() => {
+        if (skipBlur.current) {
+          skipBlur.current = false
+          return
+        }
+        commit()
+      }}
+      onKeyDown={(e) => {
+        if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && onArrow && text === value) {
+          e.preventDefault()
+          skipBlur.current = true // nothing typed, nothing to commit
+          onArrow(e.key === 'ArrowDown' ? 1 : -1)
+          return
+        }
+        if (e.key !== 'Enter') return
+        commit()
+        if (onEnter) {
+          skipBlur.current = true // the focus move blurs us; the value is already committed
+          onEnter()
+        }
+      }}
       placeholder="hull"
     />
   )

@@ -13,6 +13,7 @@ from apps.core.models import Team
 from apps.esi.client import EsiError, get_client
 
 from .models import (
+    ROLE_RANK,
     AdmissionRule,
     EveCharacter,
     Invite,
@@ -124,6 +125,10 @@ def _set_membership(user: User, *, role: str, source: str, note: str = "") -> Me
     if not user.is_active:
         user.is_active = True
         user.save(update_fields=["is_active"])
+    if ROLE_RANK[Role(role)] >= ROLE_RANK[Role.PILOT]:
+        from apps.scrims.roster import ensure_pilot_for  # roster row for anyone who can fly
+
+        ensure_pilot_for(user)
     return membership
 
 

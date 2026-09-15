@@ -421,6 +421,319 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/scrims": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Sessions */
+        get: operations["apps_scrims_api_list_sessions"];
+        put?: never;
+        /** Create Session */
+        post: operations["apps_scrims_api_create_session"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scrims/vocab": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Vocab */
+        get: operations["apps_scrims_api_vocab"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scrims/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Session */
+        get: operations["apps_scrims_api_get_session"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Session */
+        patch: operations["apps_scrims_api_patch_session"];
+        trace?: never;
+    };
+    "/api/scrims/{session_id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive Session */
+        post: operations["apps_scrims_api_archive_session"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scrims/{session_id}/rsvp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Rsvp */
+        put: operations["apps_scrims_api_put_rsvp"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scrims/{session_id}/attendance/{pilot_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Attendance */
+        patch: operations["apps_scrims_api_patch_attendance"];
+        trace?: never;
+    };
+    "/api/scrims/{session_id}/sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Set */
+        post: operations["apps_scrims_sets_api_create_set"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scrims/{session_id}/sets/{set_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Set */
+        delete: operations["apps_scrims_sets_api_delete_set"];
+        options?: never;
+        head?: never;
+        /** Patch Set */
+        patch: operations["apps_scrims_sets_api_patch_set"];
+        trace?: never;
+    };
+    "/api/scrims/{session_id}/sets/{set_id}/bans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Put Ban */
+        post: operations["apps_scrims_sets_api_put_ban"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scrims/{session_id}/sets/{set_id}/rounds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Round */
+        post: operations["apps_scrims_sets_api_add_round"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scrims/{session_id}/sets/{set_id}/rounds/{round_no}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Round */
+        delete: operations["apps_scrims_sets_api_delete_round"];
+        options?: never;
+        head?: never;
+        /** Patch Round */
+        patch: operations["apps_scrims_sets_api_patch_round"];
+        trace?: never;
+    };
+    "/api/scrims/{session_id}/sets/{set_id}/rounds/{round_no}/{side}/{slot_no}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Assignment */
+        patch: operations["apps_scrims_sets_api_patch_assignment"];
+        trace?: never;
+    };
+    "/api/scrims/{session_id}/sets/{set_id}/rounds/{round_no}/opp-lineup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Paste Opp Lineup */
+        post: operations["apps_scrims_sets_api_paste_opp_lineup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scrims/{session_id}/presence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Heartbeat */
+        post: operations["apps_scrims_sets_api_heartbeat"];
+        /** Leave */
+        delete: operations["apps_scrims_sets_api_leave"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pilots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Pilots */
+        get: operations["apps_scrims_api_list_pilots"];
+        put?: never;
+        /** Create Pilot */
+        post: operations["apps_scrims_api_create_pilot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pilots/{pilot_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Pilot */
+        patch: operations["apps_scrims_api_patch_pilot"];
+        trace?: never;
+    };
+    "/api/opponents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Opponents */
+        get: operations["apps_scrims_api_list_opponents"];
+        put?: never;
+        /** Create Opponent */
+        post: operations["apps_scrims_api_create_opponent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/opponents/{opponent_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Opponent */
+        patch: operations["apps_scrims_api_patch_opponent"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -499,6 +812,8 @@ export interface components {
             score: boolean;
             /** Browse Library */
             browse_library: boolean;
+            /** Browse Scrims */
+            browse_scrims: boolean;
         };
         /** CharacterOut */
         CharacterOut: {
@@ -1456,6 +1771,649 @@ export interface components {
             /** Ruleset */
             ruleset?: string | null;
         };
+        /** SessionSummaryOut */
+        SessionSummaryOut: {
+            /** Id */
+            id: number;
+            /** Title */
+            title: string;
+            /** Date */
+            date: string;
+            /** Kind */
+            kind: string;
+            /** Opponent Id */
+            opponent_id: number | null;
+            /** Opponent Name */
+            opponent_name: string | null;
+            /** System Name */
+            system_name: string;
+            /** Ruleset */
+            ruleset: string;
+            /** Stage */
+            stage: string | null;
+            /** Default Our Side */
+            default_our_side: string;
+            /** Is Archived */
+            is_archived: boolean;
+            /** My Rsvp */
+            my_rsvp: string | null;
+            /** My Rsvp Reason */
+            my_rsvp_reason: string;
+            tally: components["schemas"]["TallyOut"];
+            /** Sets */
+            sets: components["schemas"]["SetSummaryOut"][];
+            /** Created By Name */
+            created_by_name: string;
+        };
+        /** SetSummaryOut */
+        SetSummaryOut: {
+            /** Id */
+            id: number;
+            /** Index */
+            index: number;
+            /** Label */
+            label: string;
+            /** Comp Name */
+            comp_name: string | null;
+            /** Outcomes */
+            outcomes: string[];
+        };
+        /** TallyOut */
+        TallyOut: {
+            /** Yes */
+            yes: number;
+            /** No */
+            no: number;
+            /** Maybe */
+            maybe: number;
+            /** None */
+            none: number;
+        };
+        /** AttendanceOut */
+        AttendanceOut: {
+            /** Pilot Id */
+            pilot_id: number;
+            /** Pilot Name */
+            pilot_name: string;
+            /** User Id */
+            user_id: number | null;
+            /** Rsvp */
+            rsvp: string;
+            /** Rsvp Reason */
+            rsvp_reason: string;
+            /** Rsvp At */
+            rsvp_at: string | null;
+            /** Attendance */
+            attendance: string;
+            /** Removed Reason */
+            removed_reason: string;
+            /** Is Me */
+            is_me: boolean;
+        };
+        /** BanChipOut */
+        BanChipOut: {
+            /** Id */
+            id: number | null;
+            /** Order */
+            order: number | null;
+            /** Side */
+            side: string;
+            /** Is Ours */
+            is_ours: boolean;
+            /** Kind */
+            kind: string;
+            /** Index */
+            index: number;
+            /** Type Id */
+            type_id: number | null;
+            /** Ship Name */
+            ship_name: string | null;
+            /** In Effect From Round */
+            in_effect_from_round: number;
+        };
+        /** RecordOut */
+        RecordOut: {
+            /** Wins */
+            wins: number;
+            /** Losses */
+            losses: number;
+            /** Draws */
+            draws: number;
+        };
+        /** RoundDocOut */
+        RoundDocOut: {
+            /** Id */
+            id: number;
+            /** Round No */
+            round_no: number;
+            /** Outcome */
+            outcome: string;
+            /** Notes */
+            notes: string;
+            /** Banned Type Ids */
+            banned_type_ids: number[];
+            us: components["schemas"]["SideDocOut"];
+            opp: components["schemas"]["SideDocOut"];
+            score: components["schemas"]["ScoreOut"];
+        };
+        /** ScoreOut */
+        ScoreOut: {
+            us: components["schemas"]["SideScoreOut"];
+            opp: components["schemas"]["SideScoreOut"];
+            /** Differential */
+            differential: number;
+            /** Leader */
+            leader: string;
+            /** Indicator */
+            indicator: string;
+            /** Point Threshold */
+            point_threshold: number | null;
+        };
+        /** SessionOut */
+        SessionOut: {
+            /** Id */
+            id: number;
+            /** Title */
+            title: string;
+            /** Date */
+            date: string;
+            /** Kind */
+            kind: string;
+            /** Opponent Id */
+            opponent_id: number | null;
+            /** Opponent Name */
+            opponent_name: string | null;
+            /** System Name */
+            system_name: string;
+            /** Ruleset */
+            ruleset: string;
+            /** Stage */
+            stage: string | null;
+            /** Default Our Side */
+            default_our_side: string;
+            /** Is Archived */
+            is_archived: boolean;
+            /** My Rsvp */
+            my_rsvp: string | null;
+            /** My Rsvp Reason */
+            my_rsvp_reason: string;
+            tally: components["schemas"]["TallyOut"];
+            /** Sets */
+            sets: components["schemas"]["SetDocOut"][];
+            /** Created By Name */
+            created_by_name: string;
+            /** Moveme System */
+            moveme_system: string;
+            /** Motd */
+            motd: string;
+            /** Point Table Version */
+            point_table_version: number | null;
+            /** Attendance */
+            attendance: components["schemas"]["AttendanceOut"][];
+            /** Event Seq */
+            event_seq: number;
+            /** Can Manage */
+            can_manage: boolean;
+            /** Can Rsvp */
+            can_rsvp: boolean;
+        };
+        /** SetDocOut */
+        SetDocOut: {
+            /** Id */
+            id: number;
+            /** Index */
+            index: number;
+            /** Label */
+            label: string;
+            /** Comp Id */
+            comp_id: number | null;
+            /** Comp Name */
+            comp_name: string | null;
+            /** Our Archetype Id */
+            our_archetype_id: number | null;
+            /** Opp Archetype Id */
+            opp_archetype_id: number | null;
+            /** Our Side */
+            our_side: string;
+            /** Tactics Note */
+            tactics_note: string;
+            /** Link Note */
+            link_note: string;
+            /** Warp Calls */
+            warp_calls: string[];
+            /** Bans */
+            bans: components["schemas"]["BanChipOut"][];
+            /** Avalanche Bans */
+            avalanche_bans: components["schemas"]["BanChipOut"][];
+            /** Bans Per Side */
+            bans_per_side: number;
+            /** Bans Are Blind */
+            bans_are_blind: boolean;
+            /** Avalanche Enabled */
+            avalanche_enabled: boolean;
+            /** Extra Bans Owed */
+            extra_bans_owed: number;
+            /** Rounds */
+            rounds: components["schemas"]["RoundDocOut"][];
+            record: components["schemas"]["RecordOut"];
+        };
+        /** SideDocOut */
+        SideDocOut: {
+            /** Slots */
+            slots: components["schemas"]["SlotDocOut"][];
+            /** Total Points */
+            total_points: number;
+            /** Point Cap */
+            point_cap: number;
+            /** Cap Status */
+            cap_status: string;
+            /** Unspent Points */
+            unspent_points: number;
+            /** Is Legal */
+            is_legal: boolean;
+            /** Violations */
+            violations: components["schemas"]["ViolationOut"][];
+            /** Points Lost */
+            points_lost: number;
+            /** Dead Count */
+            dead_count: number;
+        };
+        /** SideScoreOut */
+        SideScoreOut: {
+            /** Fielded Points */
+            fielded_points: number;
+            /** Unspent Points */
+            unspent_points: number;
+            /** Points Lost */
+            points_lost: number;
+            /** Handicap Conceded */
+            handicap_conceded: number;
+            /** Points Conceded */
+            points_conceded: number;
+        };
+        /** SlotDocOut */
+        SlotDocOut: {
+            /** Id */
+            id: number;
+            /** Slot No */
+            slot_no: number;
+            /** Pilot Id */
+            pilot_id: number | null;
+            /** Pilot Name */
+            pilot_name: string | null;
+            /** Pilot User Id */
+            pilot_user_id: number | null;
+            /** Opp Pilot Name */
+            opp_pilot_name: string;
+            /** Type Id */
+            type_id: number | null;
+            /** Ship Name */
+            ship_name: string | null;
+            /** Hull Size */
+            hull_size: string | null;
+            /** Is Flagship */
+            is_flagship: boolean;
+            /** Is Unique */
+            is_unique: boolean;
+            /** Warp In Km */
+            warp_in_km: number | null;
+            /** Fit Id */
+            fit_id: number | null;
+            /** Fit Name */
+            fit_name: string | null;
+            /** Fit Text */
+            fit_text: string;
+            /** Load Default */
+            load_default: boolean;
+            /** Custom Note */
+            custom_note: string;
+            /** Repeat Note */
+            repeat_note: string;
+            /** Link Scripts */
+            link_scripts: string[];
+            /** Died */
+            died: boolean;
+            /** Has Links */
+            has_links: boolean;
+            /** Base Points */
+            base_points: number;
+            /** Inflation Points */
+            inflation_points: number;
+            /** Total Points */
+            total_points: number;
+            /** Is Banned */
+            is_banned: boolean;
+            /** Link Index */
+            link_index: number | null;
+            /** Flags */
+            flags: string[];
+        };
+        /** SessionCreateIn */
+        SessionCreateIn: {
+            /** Title */
+            title: string;
+            /**
+             * Date
+             * Format: date-time
+             */
+            date: string;
+            /**
+             * Kind
+             * @default practice
+             */
+            kind: string;
+            /** Opponent Id */
+            opponent_id?: number | null;
+            /** Stage Code */
+            stage_code?: string | null;
+            /**
+             * System Name
+             * @default
+             */
+            system_name: string;
+            /**
+             * Moveme System
+             * @default
+             */
+            moveme_system: string;
+            /**
+             * Motd
+             * @default
+             */
+            motd: string;
+            /**
+             * Default Our Side
+             * @default
+             */
+            default_our_side: string;
+        };
+        /** StageOut */
+        StageOut: {
+            /** Code */
+            code: string;
+            /** Label */
+            label: string;
+            /** Best Of */
+            best_of: number;
+            /** Bans Per Side */
+            bans_per_side: number;
+        };
+        /** VocabOut */
+        VocabOut: {
+            /** Warp Labels */
+            warp_labels: string[];
+            /** Kinds */
+            kinds: string[];
+            /** Sides */
+            sides: string[];
+            /** Rsvps */
+            rsvps: string[];
+            /** Attendance */
+            attendance: string[];
+            /** Stages */
+            stages: components["schemas"]["StageOut"][];
+            /** Active Ruleset */
+            active_ruleset: string | null;
+        };
+        /** SessionPatchIn */
+        SessionPatchIn: {
+            /** Title */
+            title?: string | null;
+            /** Date */
+            date?: string | null;
+            /** Kind */
+            kind?: string | null;
+            /** Opponent Id */
+            opponent_id?: number | null;
+            /** Stage Code */
+            stage_code?: string | null;
+            /** System Name */
+            system_name?: string | null;
+            /** Moveme System */
+            moveme_system?: string | null;
+            /** Motd */
+            motd?: string | null;
+            /** Default Our Side */
+            default_our_side?: string | null;
+        };
+        /** ArchiveIn */
+        ArchiveIn: {
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /** RsvpIn */
+        RsvpIn: {
+            /** Rsvp */
+            rsvp: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /** AttendanceIn */
+        AttendanceIn: {
+            /** Attendance */
+            attendance: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /** SetCreateIn */
+        SetCreateIn: {
+            /**
+             * Copy Previous
+             * @default true
+             */
+            copy_previous: boolean;
+            /**
+             * Label
+             * @default
+             */
+            label: string;
+        };
+        /** SetPatchIn */
+        SetPatchIn: {
+            /** Label */
+            label?: string | null;
+            /** Comp Id */
+            comp_id?: number | null;
+            /** Our Archetype Id */
+            our_archetype_id?: number | null;
+            /** Opp Archetype Id */
+            opp_archetype_id?: number | null;
+            /** Our Side */
+            our_side?: string | null;
+            /** Tactics Note */
+            tactics_note?: string | null;
+            /** Link Note */
+            link_note?: string | null;
+            /** Warp Calls */
+            warp_calls?: string[] | null;
+        };
+        /** DeleteIn */
+        DeleteIn: {
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
+        /** SetBanIn */
+        SetBanIn: {
+            /** Side */
+            side: string;
+            /**
+             * Kind
+             * @default standard
+             */
+            kind: string;
+            /** Index */
+            index: number;
+            /** Type Id */
+            type_id?: number | null;
+            /**
+             * In Effect From Round
+             * @default 1
+             */
+            in_effect_from_round: number;
+        };
+        /** RoundPatchIn */
+        RoundPatchIn: {
+            /** Outcome */
+            outcome?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** AssignmentPatchIn */
+        AssignmentPatchIn: {
+            /** Pilot Id */
+            pilot_id?: number | null;
+            /** Opp Pilot Name */
+            opp_pilot_name?: string | null;
+            /** Type Id */
+            type_id?: number | null;
+            /** Is Flagship */
+            is_flagship?: boolean | null;
+            /** Is Unique */
+            is_unique?: boolean | null;
+            /** Warp In Km */
+            warp_in_km?: number | null;
+            /** Fit Id */
+            fit_id?: number | null;
+            /** Load Default */
+            load_default?: boolean | null;
+            /** Custom Note */
+            custom_note?: string | null;
+            /** Link Scripts */
+            link_scripts?: string[] | null;
+            /** Died */
+            died?: boolean | null;
+        };
+        /** PasteOut */
+        PasteOut: {
+            set: components["schemas"]["SetDocOut"];
+            /** Unresolved */
+            unresolved: string[];
+        };
+        /** PasteIn */
+        PasteIn: {
+            /** Text */
+            text: string;
+        };
+        /** ViewerOut */
+        ViewerOut: {
+            /** User Id */
+            user_id: number;
+            /** Name */
+            name: string;
+            /** Focus */
+            focus: string | null;
+            /** At */
+            at: string;
+        };
+        /** PresenceIn */
+        PresenceIn: {
+            /** Focus */
+            focus?: string | null;
+        };
+        /** PilotOut */
+        PilotOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** User Id */
+            user_id: number | null;
+            /** User Name */
+            user_name: string | null;
+            /** Status */
+            status: string;
+            /** Is Merc */
+            is_merc: boolean;
+            /** Roles Text */
+            roles_text: string;
+            /** Notes */
+            notes: string;
+        };
+        /** PilotIn */
+        PilotIn: {
+            /** Name */
+            name: string;
+            /**
+             * Is Merc
+             * @default false
+             */
+            is_merc: boolean;
+            /**
+             * Roles Text
+             * @default
+             */
+            roles_text: string;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /** User Id */
+            user_id?: number | null;
+        };
+        /** PilotPatchIn */
+        PilotPatchIn: {
+            /** Name */
+            name?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Is Merc */
+            is_merc?: boolean | null;
+            /** Roles Text */
+            roles_text?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** User Id */
+            user_id?: number | null;
+        };
+        /** OpponentOut */
+        OpponentOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Notes */
+            notes: string;
+            /** Alliance Id */
+            alliance_id: number | null;
+            /** Is Active */
+            is_active: boolean;
+        };
+        /** OpponentIn */
+        OpponentIn: {
+            /** Name */
+            name: string;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /** Alliance Id */
+            alliance_id?: number | null;
+        };
+        /** OpponentPatchIn */
+        OpponentPatchIn: {
+            /** Name */
+            name?: string | null;
+            /** Notes */
+            notes?: string | null;
+            /** Alliance Id */
+            alliance_id?: number | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -2227,6 +3185,627 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CompOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_api_list_sessions: {
+        parameters: {
+            query?: {
+                when?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionSummaryOut"][];
+                };
+            };
+        };
+    };
+    apps_scrims_api_create_session: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_api_vocab: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_api_get_session: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_api_patch_session: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionPatchIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_api_archive_session: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArchiveIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_api_put_rsvp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RsvpIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_api_patch_attendance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+                pilot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttendanceIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_sets_api_create_set: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetDocOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_sets_api_delete_set: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+                set_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteIn"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    apps_scrims_sets_api_patch_set: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+                set_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPatchIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetDocOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_sets_api_put_ban: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+                set_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetBanIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetDocOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_sets_api_add_round: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+                set_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetDocOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_sets_api_delete_round: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+                set_id: number;
+                round_no: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetDocOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_sets_api_patch_round: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+                set_id: number;
+                round_no: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoundPatchIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetDocOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_sets_api_patch_assignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+                set_id: number;
+                round_no: number;
+                side: string;
+                slot_no: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignmentPatchIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetDocOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_sets_api_paste_opp_lineup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+                set_id: number;
+                round_no: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasteIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasteOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_sets_api_heartbeat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresenceIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewerOut"][];
+                };
+            };
+        };
+    };
+    apps_scrims_sets_api_leave: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewerOut"][];
+                };
+            };
+        };
+    };
+    apps_scrims_api_list_pilots: {
+        parameters: {
+            query?: {
+                status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotOut"][];
+                };
+            };
+        };
+    };
+    apps_scrims_api_create_pilot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PilotIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_api_patch_pilot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pilot_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PilotPatchIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_api_list_opponents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpponentOut"][];
+                };
+            };
+        };
+    };
+    apps_scrims_api_create_opponent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpponentIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpponentOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_api_patch_opponent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                opponent_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpponentPatchIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpponentOut"];
                 };
             };
         };

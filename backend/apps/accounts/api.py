@@ -60,6 +60,7 @@ class Capabilities(Schema):
     view_pilot_notes: bool
     score: bool
     browse_library: bool
+    browse_scrims: bool
 
 
 class MeOut(Schema):
@@ -185,6 +186,7 @@ def _capabilities(user, team: Team) -> dict:
         "view_pilot_notes": permissions.is_leadership(user),
         "score": theorycrafter or (team.pilots_can_score and pilot),
         "browse_library": permissions.can_browse_library(user),
+        "browse_scrims": permissions.can_browse_scrims(user),
     }
 
 
@@ -289,6 +291,10 @@ def patch_member(request: HttpRequest, user_id: int, payload: MemberPatch):
             if active:
                 membership.source = MembershipSource.EXPLICIT
         membership.save()
+        if permissions.has_role(membership.user, Role.PILOT):
+            from apps.scrims.roster import ensure_pilot_for
+
+            ensure_pilot_for(membership.user)
     after = _member_out(membership)
     record(
         actor=request.user,

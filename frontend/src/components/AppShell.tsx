@@ -11,7 +11,9 @@ const NAV: NavItem[] = [
   { to: '/scratchpad', label: 'Comp scratchpad', id: 'scratchpad', show: (me) => Boolean(me?.membership) },
   { to: '/comps', label: 'Comps', id: 'comps', show: (me) => Boolean(me?.capabilities?.browse_library) },
   { to: '/fits', label: 'Fits', id: 'fits', show: (me) => Boolean(me?.capabilities?.browse_library) },
+  { to: '/scrims', label: 'Scrims', id: 'scrims', show: (me) => Boolean(me?.capabilities?.browse_scrims) },
   { to: '/team', label: 'Team', id: 'team', show: (me) => Boolean(me?.membership) },
+  { to: '/team/pilots', label: 'Pilots', id: 'pilots', show: (me) => Boolean(me?.capabilities?.manage_scrims) },
   { to: '/team/audit', label: 'Audit', id: 'audit', show: (me) => Boolean(me?.capabilities?.view_audit) },
 ]
 
