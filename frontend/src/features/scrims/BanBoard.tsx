@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 import type { BanChip, CompSummaryOut, SetDoc, ShipOut } from '@/lib/api/client'
-import { Badge, Button, Input, Mono, Panel, Select, Textarea } from '@/components/ui'
+import { Badge, Button, Mono, Panel, Select, Textarea } from '@/components/ui'
 import { HullInput } from '@/features/comps/HullInput'
 import type { Live, Perms } from './shared'
-import { HULL_LIST_ID, focusProps, remoteProps } from './shared'
+import { HULL_LIST_ID, remoteProps } from './shared'
 import { useDebouncedField } from './useDebouncedField'
+import { MenuDots, useContextMenu, type MenuItem } from './ContextMenu'
 
 type Mutations = {
   patchSet: (body: Record<string, unknown>) => void
@@ -22,7 +23,9 @@ export function BanBoard({
   comps,
   compsLoading,
   m,
+  className,
 }: {
+  className?: string
   set: SetDoc
   stage: string | null
   perms: Perms
@@ -32,9 +35,19 @@ export function BanBoard({
   compsLoading: boolean
   m: Mutations
 }) {
-  const [showTactics, setShowTactics] = useState(Boolean(set.tactics_note))
+  const [showTactics, setShowTactics] = useState(true) // open by default; collapse by hand when the board needs the room
+  const menu = useContextMenu()
+  const setMenu: MenuItem[] = [
+    {
+      label: 'Delete set',
+      danger: true,
+      onClick: () => {
+        const reason = window.prompt(`Delete set ${set.index} and its ${set.rounds.length} round${set.rounds.length === 1 ? '' : 's'}? Reason (kept in the audit log):`)
+        if (reason !== null) m.deleteSet(reason)
+      },
+    },
+  ]
   const nextOrder = set.bans.find((b) => b.type_id == null)?.order ?? null
-  const label = useDebouncedField(set.label, (v) => m.patchSet({ label: v }))
   const tactics = useDebouncedField(set.tactics_note, (v) => m.patchSet({ tactics_note: v }))
   const byRound = new Map<number, BanChip[]>()
   for (const b of set.avalanche_bans) byRound.set(b.in_effect_from_round, [...(byRound.get(b.in_effect_from_round) ?? []), b])
@@ -45,14 +58,10 @@ export function BanBoard({
       title={
         <span className="flex items-center gap-2">
           Set {set.index} · bans
-          {perms.edit ? (
-            <Input data-testid="scrim.bans.label" className="h-6 w-32 font-normal normal-case tracking-normal" placeholder="label" value={label.value} onChange={(e) => label.onChange(e.target.value)} {...focusProps(live, `set.${set.id}.label`)} onBlur={() => { label.onBlur(); live.setFocus(null) }} />
-          ) : set.label ? (
-            <span className="font-normal normal-case tracking-normal text-fg">{set.label}</span>
-          ) : null}
         </span>
       }
       testId="scrim.bans"
+      className={className}
       actions={
         <span className="flex flex-wrap items-center justify-end gap-1.5">
           {perms.edit ? (
@@ -79,19 +88,8 @@ export function BanBoard({
             {stage ?? 'no stage'} · {set.bans_per_side} per side{set.bans_are_blind ? ' · blind' : ''}
           </Badge>
           {set.extra_bans_owed ? <Badge tone="warn">unique hull: +{set.extra_bans_owed} bans</Badge> : null}
-          {perms.manage ? (
-            <Button
-              variant="ghost"
-              className="h-6 px-1.5 text-bad"
-              data-testid="scrim.bans.delete"
-              onClick={() => {
-                const reason = window.prompt(`Delete set ${set.index}? Reason (kept in the audit log):`)
-                if (reason !== null) m.deleteSet(reason)
-              }}
-            >
-              delete set
-            </Button>
-          ) : null}
+          {perms.manage ? <MenuDots always testId="scrim.bans.menu" onClick={(e) => menu.open(e, setMenu)} /> : null}
+          {menu.element}
         </span>
       }
     >
@@ -169,7 +167,8 @@ function Chip({
       className={clsx(
         'flex min-w-0 items-center gap-2 rounded border px-2 py-1',
         chip.type_id == null && 'border-dashed',
-        avalanche ? 'border-warn bg-warn/10' : chip.is_ours ? 'border-accent bg-accent/10' : 'border-line bg-panel-2',
+        avalanche ? 'bg-[var(--ban-avalanche)]' : chip.side === 'A' ? 'bg-[var(--ban-a)]' : 'bg-[var(--ban-b)]', // side colours never move: Team A always bans first
+        chip.is_ours ? 'border-accent' : 'border-line',
         isNext && 'outline outline-2 outline-offset-1 outline-accent',
       )}
     >

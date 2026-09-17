@@ -21,12 +21,11 @@ const OUTCOMES: { value: string; label: string }[] = [
 
 export function ResultsColumn({ set, round, onRound, perms, m }: { set: SetDoc; round: RoundDoc; onRound: (n: number) => void; perms: Perms; m: Mutations }) {
   const score = round.score
-  const last = set.rounds[set.rounds.length - 1]
   return (
     <Panel
       title="Results"
       testId="scrim.results"
-      actions={<RoundTabs set={set} roundNo={round.round_no} onRound={onRound} onAdd={perms.edit ? m.addRound : undefined} testPrefix="scrim.results" />}
+      actions={<RoundTabs set={set} roundNo={round.round_no} onRound={onRound} onAdd={perms.edit ? m.addRound : undefined} onDelete={perms.manage ? m.deleteRound : undefined} testPrefix="scrim.results" />}
     >
       <ShipList label="Ours" side="US" doc={round.us.slots} lost={round.us.points_lost} perms={perms} onToggle={(s) => m.toggleDied(round.round_no, 'US', s)} />
       <div className="my-2 flex flex-col gap-0.5 rounded border border-accent bg-accent/10 px-2 py-1.5 text-center" data-testid="scrim.results.score">
@@ -57,11 +56,6 @@ export function ResultsColumn({ set, round, onRound, perms, m }: { set: SetDoc; 
           set {set.record.wins}–{set.record.losses}
           {set.record.draws ? ` (${set.record.draws} draw)` : ''}
         </div>
-        {perms.manage && set.rounds.length > 1 && round.round_no === last.round_no ? (
-          <button type="button" className="text-[11px] text-muted hover:text-bad" data-testid="scrim.results.removeround" onClick={() => m.deleteRound(round.round_no)}>
-            remove R{round.round_no}
-          </button>
-        ) : null}
       </div>
       <ShipList label="Theirs" side="OPP" doc={round.opp.slots} lost={round.opp.points_lost} perms={perms} onToggle={(s) => m.toggleDied(round.round_no, 'OPP', s)} />
       <p className="mt-1.5 text-[11px] leading-snug text-muted">{perms.score ? 'Click a ship to toggle its death.' : 'Scorers toggle deaths.'}</p>
@@ -76,7 +70,9 @@ function ShipList({ label, side, doc, lost, perms, onToggle }: { label: string; 
         <span>{label}</span>
         <Mono>lost {lost}</Mono>
       </div>
-      {doc.map((s) => {
+      {[...doc]
+        .sort((a, b) => (a.ship_name ?? '\uffff').localeCompare(b.ship_name ?? '\uffff') || a.slot_no - b.slot_no)
+        .map((s) => {
         const empty = s.type_id == null
         return (
           <button

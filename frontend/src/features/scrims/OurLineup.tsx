@@ -3,7 +3,7 @@ import type { AttendanceOut, FitSummaryOut, LinkScriptOut, PilotOut, RoundDoc, S
 import { Badge, Checkbox, Input, Mono, Panel, Select, Table } from '@/components/ui'
 import { HullInput } from '@/features/comps/HullInput'
 import type { Live, Perms } from './shared'
-import { HULL_LIST_ID, NO_SPINNER, focusShipRow, remoteProps, warpColor } from './shared'
+import { HULL_LIST_ID, NO_SPINNER, focusShipRow, linkColor, remoteProps, warpColor } from './shared'
 import { NoteCell } from './NoteCell'
 
 type Mutations = {
@@ -164,7 +164,7 @@ function OurRow({
   const groups: PilotOption['group'][] = ['attending', 'maybe', 'other']
   const fitOptions = s.fit_id != null && !fits.some((f) => f.id === s.fit_id) ? [{ id: s.fit_id, name: s.fit_name ?? `fit ${s.fit_id}`, status: 'unknown', has_links: s.has_links } as FitSummaryOut, ...fits] : fits
   return (
-    <tr data-testid={id} className={clsx(mine && 'bg-accent/10', (s.is_banned || duplicate) && 'bg-bad/10')}>
+    <tr data-testid={id} className={clsx(mine && 'outline outline-2 -outline-offset-2 outline-accent', (s.is_banned || duplicate) && 'bg-bad/25')}>
       <td>
         <Mono className="text-muted">{s.slot_no}</Mono>
       </td>
@@ -262,13 +262,13 @@ function OurRow({
             value={s.warp_in_km ?? ''}
             onChange={(e) => patch({ warp_in_km: e.target.value === '' ? null : Number(e.target.value) })}
             {...remoteProps(live, field('warp'))}
-            style={{ color: warpColor(s.warp_in_km), borderColor: warpColor(s.warp_in_km), ...remoteProps(live, field('warp')).style }}
+            style={{ backgroundColor: warpColor(s.warp_in_km), borderColor: warpColor(s.warp_in_km), color: s.warp_in_km != null ? '#0b1220' : undefined, ...remoteProps(live, field('warp')).style }}
             onFocus={() => live.setFocus(field('warp'))}
             onBlur={() => live.setFocus(null)}
           />
         ) : (
-          <Mono className="font-semibold" testId={`${id}.warp`}>
-            <span style={{ color: warpColor(s.warp_in_km) }}>{s.warp_in_km ?? ''}</span>
+          <Mono className="inline-block min-w-8 rounded px-1.5 text-center font-semibold" testId={`${id}.warp`}>
+            <span className="text-[#0b1220]" style={{ backgroundColor: warpColor(s.warp_in_km), display: 'block', borderRadius: 4 }}>{s.warp_in_km ?? ''}</span>
           </Mono>
         )}
       </td>
@@ -280,7 +280,8 @@ function OurRow({
               <Select
                 key={k}
                 data-testid={`${id}.script.${k + 1}`}
-                className="h-6 w-14 px-0.5"
+                className="h-6 w-14 px-0.5 text-[#0b1220]"
+                style={{ backgroundColor: linkColor(s.link_scripts[k] ?? '', linkScripts) }}
                 value={s.link_scripts[k] ?? ''}
                 onChange={(e) => {
                   const next = [...s.link_scripts]
@@ -298,7 +299,11 @@ function OurRow({
               </Select>
             ))
           ) : (
-            <Mono className="text-muted">{s.link_scripts.join(' ')}</Mono>
+            s.link_scripts.map((code) => (
+              <span key={code} className="mono rounded px-1 text-[#0b1220]" style={{ backgroundColor: linkColor(code, linkScripts) }}>
+                {code}
+              </span>
+            ))
           )}
         </span>
       </td>

@@ -111,7 +111,7 @@ function TheirRow({ slot: s, setId, perms, live, byName, patch }: { slot: SlotDo
   const id = `scrim.theirs.row.${s.slot_no}`
   const field = (name: string) => `set.${setId}.opp.${s.slot_no}.${name}`
   return (
-    <tr data-testid={id} className={clsx(s.is_banned && 'bg-bad/10')}>
+    <tr data-testid={id} className={clsx(s.is_banned && 'bg-bad/25')}>
       <td>
         <Mono className="text-muted">{s.slot_no}</Mono>
       </td>

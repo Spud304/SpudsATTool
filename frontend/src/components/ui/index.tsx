@@ -26,8 +26,8 @@ export function Panel({
   return (
     <section className={clsx('rounded border border-line bg-panel', className)} data-testid={testId}>
       {title !== undefined ? (
-        <header className="flex h-9 items-center justify-between border-b border-line px-3">
-          <h2 className="text-[12px] font-semibold uppercase tracking-wide text-muted">{title}</h2>
+        <header className="flex h-9 items-center justify-between border-b border-line bg-[var(--panel-head)] px-3">
+          <h2 className="text-[12px] font-semibold uppercase tracking-wide text-[var(--panel-head-fg)]">{title}</h2>
           {actions}
         </header>
       ) : null}

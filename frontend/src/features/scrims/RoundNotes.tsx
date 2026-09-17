@@ -11,6 +11,7 @@ export function RoundNotes({
   round,
   onRound,
   onAdd,
+  onDelete,
   perms,
   live,
   save,
@@ -19,6 +20,7 @@ export function RoundNotes({
   round: RoundDoc
   onRound: (n: number) => void
   onAdd?: () => void
+  onDelete?: (n: number) => void
   perms: Perms
   live: Live
   save: (roundNo: number, notes: string) => void
@@ -26,7 +28,7 @@ export function RoundNotes({
   const note = useDebouncedField(round.notes, (v) => save(round.round_no, v))
   const field = `round.${round.id}.notes`
   return (
-    <Panel title={`Notes · R${round.round_no}`} testId="scrim.notes" actions={<RoundTabs set={set} roundNo={round.round_no} onRound={onRound} onAdd={onAdd} testPrefix="scrim.notes" />}>
+    <Panel title={`Notes · R${round.round_no}`} testId="scrim.notes" actions={<RoundTabs set={set} roundNo={round.round_no} onRound={onRound} onAdd={onAdd} onDelete={onDelete} testPrefix="scrim.notes" />}>
       {perms.score ? (
         <textarea
           key={round.id}

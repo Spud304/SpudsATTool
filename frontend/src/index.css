@@ -33,22 +33,34 @@
   --warn: #e8b647;
   --bad: #ef6b6b;
   --info: #62c4d9;
+  --panel-head: var(--panel);
+  --panel-head-fg: var(--muted);
+  --ban-a: #3d2420;
+  --ban-b: #1a2c4d;
+  --ban-avalanche: #3a2a0d;
 }
 
 [data-theme="light"] {
   color-scheme: light;
-  --bg: #f5f6f8;
+  /* Google Sheets palette: white sheet, grey grid, Google's blue/green/yellow/red */
+  --bg: #f8f9fa;
   --panel: #ffffff;
-  --panel-2: #eef1f5;
-  --line: #d6dbe2;
-  --fg: #16191d;
-  --muted: #5d6673;
-  --accent: #2563eb;
+  --panel-2: #f1f3f4;
+  --line: #c0c4c8;
+  --fg: #202124;
+  --muted: #5f6368;
+  --accent: #1a73e8;
   --accent-fg: #ffffff;
-  --ok: #178a52;
-  --warn: #a86f00;
-  --bad: #c73a3a;
-  --info: #0e7a8f;
+  --ok: #188038;
+  --warn: #e37400;
+  --bad: #d93025;
+  --info: #007b83;
+  /* the sheet's own fills: Team A (bans first) salmon, Team B blue, avalanche yellow */
+  --panel-head: var(--panel);
+  --panel-head-fg: var(--muted);
+  --ban-a: #ffbba6;
+  --ban-b: #deebff;
+  --ban-avalanche: #ffffbf;
 }
 
 html, body, #root { height: 100%; }

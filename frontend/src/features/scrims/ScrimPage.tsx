@@ -93,62 +93,72 @@ function Board({ scrim, perms, stream }: { scrim: SessionOut; perms: Perms; stre
   return (
     <div className="overflow-x-auto">
       <datalist id={HULL_LIST_ID}>{(ships.data ?? []).map((s) => <option key={s.type_id} value={s.name} />)}</datalist>
-      {/* Four independent columns: a tall column never stretches the rows of its neighbours. */}
+      {/* Grid for the three left columns so the header and the ban board share a row height, and results starts level
+          with ours; the fits column sits outside the grid so its height never stretches the others. */}
       <div className="flex min-w-[1320px] items-start gap-2">
-        <div className="flex w-[230px] shrink-0 flex-col gap-2">
-          <Header scrim={scrim} status={stream.status} />
-          <AttendanceRail scrim={scrim} online={online} />
-          <SetStepper
-            sets={sets}
-            selectedId={set?.id ?? null}
-            onSelect={setSelectedSetId}
-            perms={perms}
-            pending={sm.createSet.isPending}
-            error={null}
-            onCreate={(copy) => sm.createSet.mutate({ copy_previous: copy, label: '' }, { onSuccess: (doc) => setSelectedSetId(doc.id) })}
-          />
-        </div>
-        {set && round && m ? (
-          <>
-            <div className="w-[210px] shrink-0">
-              <ResultsColumn set={set} round={round} onRound={(n) => selectRound(set.id, n)} perms={perms} m={m} />
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <ErrorText error={error} testId="scrim.error" />
-              <BanBoard set={set} stage={scrim.stage} perms={perms} live={live} byName={byName} comps={comps.data ?? []} compsLoading={comps.isLoading} m={m} />
-              <OurLineup set={set} round={round} perms={perms} live={live} byName={byName} fitsByShip={fitsByShip} pilots={options} warpLabels={scrimVocab.data?.warp_labels ?? []} linkScripts={compVocab.data?.link_scripts ?? []} m={m} />
-              <div className="flex items-start gap-2">
-                <div className="min-w-0 flex-1">
-                  <TheirLineup set={set} round={round} perms={perms} live={live} byName={byName} archetypes={compVocab.data?.archetypes ?? []} m={m} />
-                </div>
-                <div className="w-[380px] shrink-0">
-                  <RoundNotes set={set} round={round} onRound={(n) => selectRound(set.id, n)} onAdd={perms.edit ? m.addRound : undefined} perms={perms} live={live} save={(n, notes) => m.patchRound(n, { notes })} />
+        <div className="grid min-w-0 flex-1 gap-2" style={{ gridTemplateColumns: '230px 210px minmax(0,1fr)', gridTemplateAreas: '"scrim scrim bans" "rail results main"' }}>
+          <div style={{ gridArea: 'scrim' }} className="flex">
+            <Header scrim={scrim} status={stream.status} className="flex-1" />
+          </div>
+          <div style={{ gridArea: 'rail' }} className="flex flex-col gap-2 self-start">
+            <AttendanceRail scrim={scrim} online={online} />
+            <SetStepper
+              sets={sets}
+              selectedId={set?.id ?? null}
+              onSelect={setSelectedSetId}
+              perms={perms}
+              pending={sm.createSet.isPending}
+              error={null}
+              onCreate={(copy) => sm.createSet.mutate({ copy_previous: copy, label: '' }, { onSuccess: (doc) => setSelectedSetId(doc.id) })}
+              onDelete={(id, reason) => sm.deleteSet.mutate({ setId: id, reason })}
+            />
+          </div>
+          {set && round && m ? (
+            <>
+              <div style={{ gridArea: 'bans' }} className="flex flex-col gap-2">
+                <ErrorText error={error} testId="scrim.error" />
+                <BanBoard set={set} stage={scrim.stage} perms={perms} live={live} byName={byName} comps={comps.data ?? []} compsLoading={comps.isLoading} m={m} className="flex-1" />
+              </div>
+              <div style={{ gridArea: 'results' }} className="self-start">
+                <ResultsColumn set={set} round={round} onRound={(n) => selectRound(set.id, n)} perms={perms} m={m} />
+              </div>
+              <div style={{ gridArea: 'main' }} className="flex min-w-0 flex-col gap-2 self-start">
+                <OurLineup set={set} round={round} perms={perms} live={live} byName={byName} fitsByShip={fitsByShip} pilots={options} warpLabels={scrimVocab.data?.warp_labels ?? []} linkScripts={compVocab.data?.link_scripts ?? []} m={m} />
+                <div className="flex items-start gap-2">
+                  <div className="min-w-0 flex-1">
+                    <TheirLineup set={set} round={round} perms={perms} live={live} byName={byName} archetypes={compVocab.data?.archetypes ?? []} m={m} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <RoundNotes set={set} round={round} onRound={(n) => selectRound(set.id, n)} onAdd={perms.edit ? m.addRound : undefined} onDelete={perms.manage ? m.deleteRound : undefined} perms={perms} live={live} save={(n, notes) => m.patchRound(n, { notes })} />
+                  </div>
                 </div>
               </div>
+            </>
+          ) : (
+            <div style={{ gridArea: 'bans' }}>
+              <Panel title="Sets" testId="scrim.nosets">
+                <ErrorText error={error} testId="scrim.error" />
+                <Empty>
+                  {perms.manage ? (
+                    <span>
+                      No sets yet.{' '}
+                      <Button data-testid="scrim.nosets.new" variant="primary" disabled={sm.createSet.isPending} onClick={() => sm.createSet.mutate({ copy_previous: false, label: '' }, { onSuccess: (doc) => setSelectedSetId(doc.id) })}>
+                        Start set 1
+                      </Button>
+                    </span>
+                  ) : (
+                    'No sets yet; a captain starts the first one.'
+                  )}
+                </Empty>
+              </Panel>
             </div>
-            <div className="w-[290px] shrink-0">
-              <FitsColumn round={round} perms={perms} />
-            </div>
-          </>
-        ) : (
-          <div className="min-w-0 flex-1">
-            <Panel title="Sets" testId="scrim.nosets">
-              <ErrorText error={error} testId="scrim.error" />
-              <Empty>
-                {perms.manage ? (
-                  <span>
-                    No sets yet.{' '}
-                    <Button data-testid="scrim.nosets.new" variant="primary" disabled={sm.createSet.isPending} onClick={() => sm.createSet.mutate({ copy_previous: false, label: '' }, { onSuccess: (doc) => setSelectedSetId(doc.id) })}>
-                      Start set 1
-                    </Button>
-                  </span>
-                ) : (
-                  'No sets yet; a captain starts the first one.'
-                )}
-              </Empty>
-            </Panel>
+          )}
+        </div>
+        {set && round ? (
+          <div className="w-[290px] shrink-0">
+            <FitsColumn round={round} perms={perms} />
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   )
@@ -162,7 +172,7 @@ function StreamBadge({ status }: { status: StreamStatus }) {
   )
 }
 
-function Header({ scrim, status }: { scrim: SessionOut; status: StreamStatus }) {
+function Header({ scrim, status, className }: { scrim: SessionOut; status: StreamStatus; className?: string }) {
   const [editing, setEditing] = useState(false)
   const { patchScrim, archiveScrim } = useScrimMutations()
   if (editing) {
@@ -191,6 +201,7 @@ function Header({ scrim, status }: { scrim: SessionOut; status: StreamStatus }) 
         </span>
       }
       testId="scrim.header"
+      className={className}
       actions={
         scrim.can_manage ? (
           <span className="flex items-center gap-1">

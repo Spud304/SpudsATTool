@@ -3,6 +3,7 @@ import type { SetDoc } from '@/lib/api/client'
 import { Button, ErrorText, Panel } from '@/components/ui'
 import type { Perms } from './shared'
 import { outcomeLetter, outcomeTone } from './shared'
+import { useContextMenu, type MenuItem } from './ContextMenu'
 
 export function SetStepper({
   sets,
@@ -10,6 +11,7 @@ export function SetStepper({
   onSelect,
   perms,
   onCreate,
+  onDelete,
   pending,
   error,
 }: {
@@ -18,9 +20,21 @@ export function SetStepper({
   onSelect: (id: number) => void
   perms: Perms
   onCreate: (copyPrevious: boolean) => void
+  onDelete: (id: number, reason: string) => void
   pending: boolean
   error: unknown
 }) {
+  const menu = useContextMenu()
+  const items = (s: SetDoc): MenuItem[] => [
+    {
+      label: 'Delete set',
+      danger: true,
+      onClick: () => {
+        const reason = window.prompt(`Delete set ${s.index} and its ${s.rounds.length} round${s.rounds.length === 1 ? '' : 's'}? Reason (kept in the audit log):`)
+        if (reason !== null) onDelete(s.id, reason)
+      },
+    },
+  ]
   return (
     <Panel
       title="Sets"
@@ -42,19 +56,22 @@ export function SetStepper({
           const ours = s.our_side
           const theirs = ours === 'A' ? 'B' : 'A'
           return (
-            <button
+            <div
               key={s.id}
-              type="button"
+              role="button"
+              tabIndex={0}
               data-testid={`scrim.sets.card.${s.id}`}
               onClick={() => onSelect(s.id)}
-              className={clsx('flex flex-col gap-0.5 rounded border px-2 py-1.5 text-left text-[12px]', s.id === selectedId ? 'border-accent bg-accent/10' : 'border-line hover:border-muted')}
+              onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onSelect(s.id)}
+              onContextMenu={perms.manage ? (e) => menu.open(e, items(s)) : undefined}
+              className={clsx('flex cursor-pointer flex-col gap-0.5 rounded border px-2 py-1.5 text-left text-[12px]', s.id === selectedId ? 'border-accent bg-accent/10' : 'border-line hover:border-muted')}
             >
               <span className="flex items-center justify-between gap-2 font-semibold">
                 <span className="truncate">
                   Set {s.index}
-                  {s.label || s.comp_name ? ` · ${s.label || s.comp_name}` : ''}
+                  {s.comp_name ? ` · ${s.comp_name}` : ''}
                 </span>
-                <span className="flex gap-0.5">
+                <span className="flex items-center gap-0.5">
                   {s.rounds.map((r) => (
                     <i
                       key={r.round_no}
@@ -73,15 +90,15 @@ export function SetStepper({
                 </span>
               </span>
               <span className="text-muted">
-                {s.comp_name ? (s.label ? s.comp_name : '') : 'no comp'}
-                {s.comp_name && s.label ? ' · ' : ''}
+                {s.comp_name ? '' : 'no comp · '}
                 bans {filled(ours)} · {filled(theirs)}
                 {avalanche ? ` · avalanche ${avalanche}` : ''}
               </span>
-            </button>
+            </div>
           )
         })}
       </div>
+      {menu.element}
     </Panel>
   )
 }

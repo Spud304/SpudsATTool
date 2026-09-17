@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useFits } from '@/lib/api/hooks'
 import type { FitSummaryOut } from '@/lib/api/client'
-import { Badge, Empty, ErrorText, Input, Mono, Panel, Select, Table } from '@/components/ui'
+import { Badge, Button, Empty, ErrorText, Input, Mono, Panel, Select, Table } from '@/components/ui'
 import { NewFitPanel } from './NewFitPanel'
 import { num, statusTone, when } from './format'
 
@@ -20,6 +20,7 @@ export function FitsPage() {
   const [q, setQ] = useState('')
   const fits = useFits({ status: status || undefined, q: q.trim() || undefined })
   const groups = groupByHull(fits.data ?? [])
+  const [closed, setClosed] = useState<Record<string, boolean>>({}) // hull groups fold on a header click
   return (
     <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
       <Panel
@@ -34,6 +35,12 @@ export function FitsPage() {
                 </option>
               ))}
             </Select>
+            <Button data-testid="fits.expand" className="h-6 px-2" onClick={() => setClosed({})}>
+              Expand all
+            </Button>
+            <Button data-testid="fits.collapse" className="h-6 px-2" onClick={() => setClosed(Object.fromEntries(groups.map(([hull]) => [hull, true])))}>
+              Collapse all
+            </Button>
           </div>
         }
       >
@@ -56,11 +63,14 @@ export function FitsPage() {
               {groups.map(([hull, rows]) => (
                 <Fragment key={hull}>
                   <tr>
-                    <td colSpan={8} className="bg-panel-2 font-semibold">
-                      {hull} <span className="text-muted">({rows.length})</span>
+                    <td colSpan={8} className="bg-panel-2 p-0 font-semibold">
+                      <button type="button" data-testid={`fits.group.${hull}`} onClick={() => setClosed((c) => ({ ...c, [hull]: !c[hull] }))} className="flex w-full items-center gap-1.5 px-2 py-1 text-left hover:text-accent">
+                        <span className="text-[10px] text-muted">{closed[hull] ? '▸' : '▾'}</span>
+                        {hull} <span className="text-muted">({rows.length})</span>
+                      </button>
                     </td>
                   </tr>
-                  {rows.map((f) => (
+                  {closed[hull] ? null : rows.map((f) => (
                     <tr key={f.id} data-testid={`fits.row.${f.id}`}>
                       <td>
                         <Link to="/fits/$fitId" params={{ fitId: String(f.id) }} className="text-accent hover:underline">

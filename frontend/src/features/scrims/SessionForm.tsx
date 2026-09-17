@@ -94,7 +94,7 @@ export function SessionForm({
       }}
     >
       <Field label="Title">
-        <Input data-testid={`${testPrefix}.title`} value={d.title} onChange={(e) => set('title')(e.target.value)} placeholder="OF 99" />
+        <Input data-testid={`${testPrefix}.title`} value={d.title} onChange={(e) => set('title')(e.target.value)} placeholder="" />
       </Field>
       <div className="grid grid-cols-2 gap-2">
         <Field label="When">
