@@ -2,7 +2,7 @@ name: attool
 
 services:
   caddy:
-    image: ghcr.io/spudsattool/attool-frontend:${ATTOOL_VERSION:-latest}
+    image: ghcr.io/${GHCR_OWNER:-spud304}/attool-frontend:${ATTOOL_VERSION:-latest}
     build:
       context: ..
       dockerfile: deploy/Dockerfile.frontend
@@ -23,7 +23,7 @@ services:
         condition: service_healthy
 
   web:
-    image: ghcr.io/spudsattool/attool-backend:${ATTOOL_VERSION:-latest}
+    image: ghcr.io/${GHCR_OWNER:-spud304}/attool-backend:${ATTOOL_VERSION:-latest}
     build:
       context: ..
       dockerfile: deploy/Dockerfile.backend
@@ -49,7 +49,7 @@ services:
         condition: service_started
 
   scheduler:
-    image: ghcr.io/spudsattool/attool-backend:${ATTOOL_VERSION:-latest}
+    image: ghcr.io/${GHCR_OWNER:-spud304}/attool-backend:${ATTOOL_VERSION:-latest}
     build:
       context: ..
       dockerfile: deploy/Dockerfile.backend
