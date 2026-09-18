@@ -16,6 +16,7 @@ case "${1:-web}" in
     python manage.py migrate --noinput
     python manage.py collectstatic --noinput
     python manage.py bootstrap
+    python manage.py load_rulesets
     exec uvicorn config.asgi:application --host 0.0.0.0 --port 8000 --workers 2 --proxy-headers --forwarded-allow-ips="*"
     ;;
   scheduler)

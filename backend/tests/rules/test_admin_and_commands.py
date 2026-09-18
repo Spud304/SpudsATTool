@@ -67,3 +67,22 @@ def test_import_command_reports_schema_errors(tiny_sde, tmp_path):
     with pytest.raises(CommandError) as exc:
         call_command("import_ruleset", "--path", str(path))
     assert "docs/rulesets.md" in str(exc.value)
+
+
+def test_load_rulesets_waits_for_sde_then_imports_once(tmp_path, db, capsys):
+    (tmp_path / "mini.yaml").write_text(MINI_ATXXII, encoding="utf-8")
+    call_command("load_rulesets", dir=tmp_path)
+    assert "SDE not loaded yet" in capsys.readouterr().out
+    assert not Tournament.objects.exists()
+
+
+def test_load_rulesets_imports_new_and_leaves_existing(tmp_path, tiny_sde, capsys):
+    (tmp_path / "mini.yaml").write_text(MINI_ATXXII, encoding="utf-8")
+    call_command("load_rulesets", dir=tmp_path)
+    assert "imported ATXXII" in capsys.readouterr().out
+    tournament = Tournament.objects.get(code="ATXXII")
+    tournament.name = "renamed by an admin"
+    tournament.save(update_fields=["name"])
+    call_command("load_rulesets", dir=tmp_path)
+    assert "already present" in capsys.readouterr().out
+    assert Tournament.objects.get(code="ATXXII").name == "renamed by an admin"

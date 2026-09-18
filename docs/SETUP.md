@@ -42,6 +42,8 @@ The app mirrors CCP's Static Data Export into Postgres. Three ways to update it,
 - **Drop folder:** copy a CCP JSONL zip into the `instance` volume at `sde/incoming/`; the scheduler imports it within five minutes and moves it to `sde/archive/` (or `sde/failed/` with a `.error.txt` note).
 - **Command line:** `docker compose -f deploy/docker-compose.yml --env-file deploy/.env exec web python manage.py import_sde --path /app/instance/sde/incoming/<file>.zip` (also `--check-latest`, `--scan-incoming`, `--dry-run`, `--files types,groups`).
 
+The three shipped rulesets in `backend/fixtures/rulesets/` (ATXXII, ATXXI, AG7) are imported automatically after the first SDE import and on every web start; a tournament code already in the database is left untouched, so edits made through the app survive. `manage.py load_rulesets` runs the same step by hand.
+
 `/api/health` reports `sde_build` and `sde_stale`. Records are never deleted on re-import, only flagged removed, so your fits and comps keep valid references.
 
 ## 4. Operations

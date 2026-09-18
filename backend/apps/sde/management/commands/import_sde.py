@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 
 from django.conf import settings
+from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandError, CommandParser
 from django.utils import timezone
 
@@ -65,6 +66,9 @@ class Command(BaseCommand):
             except ImportFailed as exc:
                 self.stderr.write(str(exc))
                 raise CommandError(exc.remediation or "import failed") from exc
+        if not options["dry_run"] and not options["download_only"]:
+            # Shipped rulesets need ship names from the SDE, so they load once it is in.
+            call_command("load_rulesets", stdout=self.stdout, stderr=self.stderr)
 
     def _from_path(self, options: dict, files: list[str] | None) -> None:
         with open_source(options["path"]) as source:
