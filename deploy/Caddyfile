@@ -21,7 +21,7 @@
 		}
 	}
 
-	@backend path /api/* /auth/* /ws/* /admin/* /static/*
+	@backend path /api/* /auth/* /admin/* /static/*
 	handle @backend {
 		reverse_proxy web:8000
 	}

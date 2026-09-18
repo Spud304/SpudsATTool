@@ -4,7 +4,6 @@ DEBUG = False
 SECRET_KEY = "test-secret-key"
 ALLOWED_HOSTS = ["*"]
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
-CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 SCRIM_BROKER = "memory"
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 STORAGES["staticfiles"] = {  # noqa: F405

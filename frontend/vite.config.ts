@@ -21,7 +21,6 @@ export default defineConfig({
       '/auth': backend,
       '/admin': backend,
       '/static': backend,
-      '/ws': { target: backend.replace('http', 'ws'), ws: true },
     },
   },
   test: {

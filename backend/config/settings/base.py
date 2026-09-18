@@ -24,7 +24,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
-    "channels",
     "ninja",
     "apps.core",
     "apps.accounts",
@@ -78,12 +77,6 @@ DATABASES["default"]["OPTIONS"]["connect_timeout"] = 5
 
 REDIS_URL = env.str("REDIS_URL", "redis://localhost:6380/0")
 SCRIM_BROKER = env.str("SCRIM_BROKER", "redis")  # "memory" for single-process tests
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": [REDIS_URL]},
-    }
-}
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
