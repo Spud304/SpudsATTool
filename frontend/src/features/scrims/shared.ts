@@ -100,3 +100,23 @@ export function linkColor(code: string, scripts: { code: string; family: string 
   const family = scripts.find((l) => l.code === code)?.family
   return family ? LINK_FAMILY_COLORS[family] : undefined
 }
+
+/** Where a person left a scrim page: selected set and the round per set, kept in the browser. The pilot card reads it too. */
+export type Position = { setId: number | null; roundBySet: Record<number, number> }
+
+export function readPosition(scrimId: number): Position | null {
+  try {
+    const raw = window.localStorage.getItem(`attool.scrim.${scrimId}`)
+    return raw ? (JSON.parse(raw) as Position) : null
+  } catch {
+    return null
+  }
+}
+
+export function writePosition(scrimId: number, position: Position) {
+  try {
+    window.localStorage.setItem(`attool.scrim.${scrimId}`, JSON.stringify(position))
+  } catch {
+    // storage blocked or full: the page still works, it just forgets
+  }
+}

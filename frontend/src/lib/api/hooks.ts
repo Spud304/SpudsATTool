@@ -41,6 +41,10 @@ export const keys = {
   scrimVocab: ['scrims', 'vocab'] as const,
   pilots: (status?: string) => ['pilots', status ?? ''] as const,
   opponents: ['opponents'] as const,
+  scrimHistory: (id: number) => ['scrims', 'history', id] as const,
+  shareLinks: (id: number) => ['scrims', 'share-links', id] as const,
+  share: (token: string) => ['share', token] as const,
+  pilotHistory: (typeId: number, exclude: number) => ['pilots', 'history', typeId, exclude] as const,
 }
 
 export type ScrimWhen = 'upcoming' | 'past' | 'all'
@@ -80,19 +84,20 @@ export function useRulesets() {
   return useQuery({ queryKey: keys.rulesets, queryFn: async () => unwrap(await api.GET('/api/rulesets')) })
 }
 
-export function useRulesetShips(code: string) {
+export function useRulesetShips(code: string, enabled = true) {
   return useQuery({
     queryKey: keys.ships(code),
     queryFn: async () => unwrap(await api.GET('/api/rulesets/{code}/ships', { params: { path: { code } } })),
     staleTime: Infinity,
-    enabled: Boolean(code),
+    enabled: Boolean(code) && enabled,
   })
 }
 
-export function useFits(filters: FitFilters) {
+export function useFits(filters: FitFilters, enabled = true) {
   return useQuery({
     queryKey: keys.fits(filters),
     queryFn: async () => unwrap(await api.GET('/api/fits', { params: { query: filters } })),
+    enabled,
   })
 }
 
@@ -145,8 +150,8 @@ export function useComp(id: number) {
   })
 }
 
-export function useCompVocab() {
-  return useQuery({ queryKey: keys.compVocab, queryFn: async () => unwrap(await api.GET('/api/comps/vocab')), staleTime: 300_000 })
+export function useCompVocab(enabled = true) {
+  return useQuery({ queryKey: keys.compVocab, queryFn: async () => unwrap(await api.GET('/api/comps/vocab')), staleTime: 300_000, enabled })
 }
 
 export function useCompMutations() {
@@ -251,6 +256,14 @@ export function usePilots(status?: string, enabled = true) {
   })
 }
 
+export function useScrimHistory(id: number, enabled = true) {
+  return useQuery({
+    queryKey: keys.scrimHistory(id),
+    queryFn: async () => unwrap(await api.GET('/api/scrims/{session_id}/history', { params: { path: { session_id: id } } })),
+    enabled,
+  })
+}
+
 export function useOpponents(enabled = true) {
   return useQuery({ queryKey: keys.opponents, queryFn: async () => unwrap(await api.GET('/api/opponents')), enabled })
 }
@@ -330,9 +343,15 @@ export function upsertSet(session: SessionOut, doc: SetDoc): SessionOut {
 
 export function useSetMutations(sessionId: number) {
   const qc = useQueryClient()
-  const landed = (doc: SetDoc) => qc.setQueryData<SessionOut>(keys.scrim(sessionId), (old) => (old ? upsertSet(old, doc) : old))
-  const removed = (setId: number) =>
+  const refreshHistory = () => qc.invalidateQueries({ queryKey: keys.scrimHistory(sessionId) })
+  const landed = (doc: SetDoc) => {
+    qc.setQueryData<SessionOut>(keys.scrim(sessionId), (old) => (old ? upsertSet(old, doc) : old))
+    refreshHistory()
+  }
+  const removed = (setId: number) => {
     qc.setQueryData<SessionOut>(keys.scrim(sessionId), (old) => (old ? { ...old, sets: old.sets.filter((s) => s.id !== setId) } : old))
+    refreshHistory()
+  }
   return {
     createSet: useMutation({
       mutationFn: async (body: { copy_previous: boolean; label: string }) => unwrap(await api.POST('/api/scrims/{session_id}/sets', { params: { path: { session_id: sessionId } }, body })),
@@ -349,6 +368,20 @@ export function useSetMutations(sessionId: number) {
         return vars.setId
       },
       onSuccess: removed,
+    }),
+    restoreSet: useMutation({
+      mutationFn: async (vars: { setId: number }) =>
+        unwrap(await api.POST('/api/scrims/{session_id}/sets/{set_id}/restore', { params: { path: { session_id: sessionId, set_id: vars.setId } } })),
+      onSuccess: landed,
+    }),
+    restoreRound: useMutation({
+      mutationFn: async (vars: { setId: number; roundNo: number }) =>
+        unwrap(
+          await api.POST('/api/scrims/{session_id}/sets/{set_id}/rounds/{round_no}/restore', {
+            params: { path: { session_id: sessionId, set_id: vars.setId, round_no: vars.roundNo } },
+          }),
+        ),
+      onSuccess: landed,
     }),
     putBan: useMutation({
       mutationFn: async (vars: { setId: number; side: string; kind: string; index: number; type_id: number | null; in_effect_from_round?: number }) =>
@@ -403,4 +436,49 @@ export async function sendPresence(sessionId: number, focus: string | null) {
 
 export function leavePresence(sessionId: number) {
   void api.DELETE('/api/scrims/{session_id}/presence', { params: { path: { session_id: sessionId } } })
+}
+
+export function useSharedScrim(token: string) {
+  return useQuery({
+    queryKey: keys.share(token),
+    queryFn: async () => unwrap(await api.GET('/api/share/{token}', { params: { path: { token } } })),
+    retry: false,
+  })
+}
+
+export function useShareLinks(sessionId: number) {
+  return useQuery({
+    queryKey: keys.shareLinks(sessionId),
+    queryFn: async () => unwrap(await api.GET('/api/scrims/{session_id}/share', { params: { path: { session_id: sessionId } } })),
+  })
+}
+
+export function useShareMutations(sessionId: number) {
+  const qc = useQueryClient()
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: keys.shareLinks(sessionId) })
+    qc.invalidateQueries({ queryKey: keys.scrimHistory(sessionId) })
+  }
+  return {
+    createShare: useMutation({
+      mutationFn: async (body: { days: number }) => unwrap(await api.POST('/api/scrims/{session_id}/share', { params: { path: { session_id: sessionId } }, body })),
+      onSuccess: refresh,
+    }),
+    revokeShare: useMutation({
+      mutationFn: async (vars: { linkId: number }) =>
+        unwrap(await api.DELETE('/api/scrims/{session_id}/share/{link_id}', { params: { path: { session_id: sessionId, link_id: vars.linkId } } })),
+      onSuccess: refresh,
+    }),
+  }
+}
+
+/** Who flew this hull before, for the pilot dropdown; the current scrim is left out of the count. */
+export function usePilotHistory(typeId: number | null, excludeSession: number, enabled = true) {
+  return useQuery({
+    queryKey: keys.pilotHistory(typeId ?? 0, excludeSession),
+    queryFn: async () =>
+      unwrap(await api.GET('/api/pilots/history', { params: { query: { type_id: typeId ?? 0, exclude_session: excludeSession } } })),
+    enabled: enabled && typeId != null,
+    staleTime: 60_000,
+  })
 }

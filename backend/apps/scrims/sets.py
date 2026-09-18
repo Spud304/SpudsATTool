@@ -2,6 +2,8 @@
 
 from typing import Any
 
+from django.utils import timezone
+
 from apps.accounts.models import User
 from apps.audit.services import record
 from apps.library.constants import LINK_SCRIPTS
@@ -24,6 +26,7 @@ from .models import (
     Side,
 )
 from .roster import ScrimError
+from .sessions import scope
 
 _UNSET = object()
 
@@ -97,9 +100,12 @@ def create_set(
         ctx = derived.context_for(session)
         previous = session.sets.order_by("-index").first()
         our_side = session.default_our_side or (previous.our_side if previous else SIDE_A)
+        index = (previous.index + 1) if previous else 1
+        # A soft-deleted set holding this index loses its restore window to the new set.
+        Set.all_objects.filter(session=session, index=index, deleted_at__isnull=False).delete()
         the_set = Set.objects.create(
             session=session,
-            index=(previous.index + 1) if previous else 1,
+            index=index,
             label=label.strip()[:60],
             our_side=our_side,
             comp=previous.comp if (previous and copy_previous) else None,
@@ -123,6 +129,7 @@ def create_set(
             Assignment.objects.bulk_create(_blank_assignments(rnd, ctx.spec.fielded_pilots))
         record(
             actor=actor,
+            scope=scope(session),
             action="set.created",
             target=the_set,
             target_label=f"{session.title} set {the_set.index}",
@@ -138,19 +145,42 @@ def _set_in(session: Session, set_id: int) -> Set:
 
 
 def delete_set(actor: User, session_id: int, set_id: int, reason: str = "") -> None:
+    """Soft delete: the set drops out of every read and can be restored from the history drawer."""
     with events.locked(session_id) as session:
         the_set = _set_in(session, set_id)
-        label = f"{session.title} set {the_set.index}"
-        the_set.delete()
+        the_set.deleted_at = timezone.now()
+        the_set.deleted_by = actor
+        the_set.save(update_fields=["deleted_at", "deleted_by"])
         record(
             actor=actor,
+            scope=scope(session),
             action="set.deleted",
             target_type="scrims.set",
             target_id=str(set_id),
-            target_label=label,
+            target_label=f"{session.title} set {the_set.index}",
             reason=reason,
         )
         events.emit(session, events.KIND_SET_DELETED, {"set_id": set_id}, actor)
+
+
+def restore_set(actor: User, session_id: int, set_id: int) -> dict:
+    with events.locked(session_id) as session:
+        the_set = Set.all_objects.filter(
+            session=session, pk=set_id, deleted_at__isnull=False
+        ).first()
+        if the_set is None:
+            raise ScrimError(404, "no deleted set with that id on this scrim")
+        the_set.deleted_at = None
+        the_set.deleted_by = None
+        the_set.save(update_fields=["deleted_at", "deleted_by"])
+        record(
+            actor=actor,
+            scope=scope(session),
+            action="set.restored",
+            target=the_set,
+            target_label=f"{session.title} set {the_set.index}",
+        )
+        return _emit_set(session, the_set, actor)
 
 
 def _warp_calls(value: Any) -> list[str]:
@@ -320,7 +350,9 @@ def add_round(actor: User, session_id: int, set_id: int) -> dict:
     with events.locked(session_id) as session:
         the_set = _set_in(session, set_id)
         last = the_set.rounds.order_by("-round_no").first()
-        rnd = Round.objects.create(set=the_set, round_no=(last.round_no + 1) if last else 1)
+        round_no = (last.round_no + 1) if last else 1
+        Round.all_objects.filter(set=the_set, round_no=round_no, deleted_at__isnull=False).delete()
+        rnd = Round.objects.create(set=the_set, round_no=round_no)
         if last is not None:
             Assignment.objects.bulk_create(_copy_assignments(last, rnd))
         else:
@@ -331,6 +363,7 @@ def add_round(actor: User, session_id: int, set_id: int) -> dict:
 
 
 def delete_round(actor: User, session_id: int, set_id: int, round_no: int) -> dict:
+    """Soft delete of the last round; restore from the history drawer while no newer round exists."""
     with events.locked(session_id) as session:
         the_set = _set_in(session, set_id)
         rnd = _round_in(the_set, round_no)
@@ -339,10 +372,47 @@ def delete_round(actor: User, session_id: int, set_id: int, round_no: int) -> di
             raise ScrimError(409, "only the last round can be removed")
         if round_no == 1:
             raise ScrimError(409, "a set keeps its first round; delete the set instead")
-        rnd.delete()
+        rnd.deleted_at = timezone.now()
+        rnd.deleted_by = actor
+        rnd.save(update_fields=["deleted_at", "deleted_by"])
         the_set.bans.filter(
             kind=BanKind.AVALANCHE, in_effect_from_round__gt=round_no, ship__isnull=True
         ).delete()
+        record(
+            actor=actor,
+            scope=scope(session),
+            action="round.deleted",
+            target=rnd,
+            target_label=f"{session.title} set {the_set.index} R{round_no}",
+        )
+        return _emit_set(session, the_set, actor)
+
+
+def round_restorable(the_set: Set, rnd: Round) -> bool:
+    """A deleted round comes back only while nothing newer is live: later rounds copy from it."""
+    return not the_set.rounds.filter(round_no__gt=rnd.round_no).exists()
+
+
+def restore_round(actor: User, session_id: int, set_id: int, round_no: int) -> dict:
+    with events.locked(session_id) as session:
+        the_set = _set_in(session, set_id)
+        rnd = Round.all_objects.filter(
+            set=the_set, round_no=round_no, deleted_at__isnull=False
+        ).first()
+        if rnd is None:
+            raise ScrimError(404, f"set has no deleted round {round_no}")
+        if not round_restorable(the_set, rnd):
+            raise ScrimError(409, "a newer round exists; remove it before restoring this one")
+        rnd.deleted_at = None
+        rnd.deleted_by = None
+        rnd.save(update_fields=["deleted_at", "deleted_by"])
+        record(
+            actor=actor,
+            scope=scope(session),
+            action="round.restored",
+            target=rnd,
+            target_label=f"{session.title} set {the_set.index} R{round_no}",
+        )
         return _emit_set(session, the_set, actor)
 
 

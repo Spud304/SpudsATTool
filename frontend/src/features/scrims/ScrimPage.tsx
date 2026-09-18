@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from '@tanstack/react-router'
 import clsx from 'clsx'
 import type { AttendanceOut, FitSummaryOut, SessionOut, SetDoc, SlotDoc } from '@/lib/api/client'
@@ -17,15 +17,18 @@ import {
 import { Badge, Button, Empty, ErrorText, Mono, Panel } from '@/components/ui'
 import { BanBoard } from './BanBoard'
 import { FitsColumn } from './FitsColumn'
+import { HistoryDrawer } from './HistoryDrawer'
 import { OurLineup, pilotOptions } from './OurLineup'
 import { ResultsColumn } from './ResultsColumn'
+import { ReviewView } from './ReviewView'
 import { RoundNotes } from './RoundNotes'
 import { RsvpButtons } from './RsvpButtons'
 import { SessionForm } from './SessionForm'
 import { SetStepper } from './SetStepper'
+import { SharePanel } from './SharePanel'
 import { TheirLineup } from './TheirLineup'
 import { RSVP_LABELS, whenAt } from './format'
-import { HULL_LIST_ID, currentRound, remoteFocus, shipMaps, type Live, type Perms } from './shared'
+import { HULL_LIST_ID, currentRound, readPosition, remoteFocus, shipMaps, writePosition, type Live, type Perms } from './shared'
 import { useScrimStream, type StreamStatus } from './useScrimStream'
 
 /** The live scrim page: rail (header, attendance, sets) | results | bans over ours over theirs | fits. */
@@ -48,17 +51,25 @@ export function ScrimPage() {
   return <Board scrim={scrim.data} perms={perms} stream={stream} />
 }
 
-function Board({ scrim, perms, stream }: { scrim: SessionOut; perms: Perms; stream: ReturnType<typeof useScrimStream> }) {
-  const [selectedSetId, setSelectedSetId] = useState<number | null>(null)
-  const [roundBySet, setRoundBySet] = useState<Record<number, number>>({})
+export function Board({ scrim, perms, stream, shared = false }: { scrim: SessionOut; perms: Perms; stream: ReturnType<typeof useScrimStream>; shared?: boolean }) {
+  // The page comes back to the set and round you were on; the browser keeps it per scrim.
+  const remembered = useMemo(() => (shared ? null : readPosition(scrim.id)), [scrim.id, shared])
+  const [selectedSetId, setSelectedSetId] = useState<number | null>(remembered?.setId ?? null)
+  const [view, setView] = useState<'board' | 'review'>('board')
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
+  const [roundBySet, setRoundBySet] = useState<Record<number, number>>(remembered?.roundBySet ?? {})
+  useEffect(() => {
+    if (!shared) writePosition(scrim.id, { setId: selectedSetId, roundBySet })
+  }, [scrim.id, shared, selectedSetId, roundBySet])
   const sets = scrim.sets
   const set: SetDoc | null = sets.find((s) => s.id === selectedSetId) ?? sets[sets.length - 1] ?? null
   const round = set ? currentRound(set, roundBySet[set.id] ?? -1) : null
   const selectRound = (setId: number, n: number) => setRoundBySet((old) => ({ ...old, [setId]: n }))
 
-  const ships = useRulesetShips(scrim.ruleset)
+  const ships = useRulesetShips(scrim.ruleset, !shared)
   const { byName } = useMemo(() => shipMaps(ships.data), [ships.data])
-  const fits = useFits({ status: 'active' })
+  const fits = useFits({ status: 'active' }, !shared)
   const fitsByShip = useMemo(() => {
     const map = new Map<number, FitSummaryOut[]>()
     for (const f of fits.data ?? []) map.set(f.ship_id, [...(map.get(f.ship_id) ?? []), f])
@@ -67,10 +78,10 @@ function Board({ scrim, perms, stream }: { scrim: SessionOut; perms: Perms; stre
   }, [fits.data])
   const banned = round?.banned_type_ids ?? []
   const comps = useComps({ status: 'active', banned: banned.length ? banned.join(',') : undefined }, perms.edit)
-  const pilots = usePilots('active')
+  const pilots = usePilots('active', !shared)
   const options = useMemo(() => pilotOptions(scrim.attendance, pilots.data ?? []), [scrim.attendance, pilots.data])
-  const scrimVocab = useScrimVocab()
-  const compVocab = useCompVocab()
+  const scrimVocab = useScrimVocab(!shared)
+  const compVocab = useCompVocab(!shared)
   const sm = useSetMutations(scrim.id)
   const live: Live = { setFocus: stream.setFocus, remote: remoteFocus(stream.viewers, perms.userId) }
   const online = new Set(stream.viewers.map((v) => v.user_id))
@@ -98,7 +109,7 @@ function Board({ scrim, perms, stream }: { scrim: SessionOut; perms: Perms; stre
       <div className="flex min-w-[1320px] items-start gap-2">
         <div className="grid min-w-0 flex-1 gap-2" style={{ gridTemplateColumns: '230px 210px minmax(0,1fr)', gridTemplateAreas: '"scrim scrim bans" "rail results main"' }}>
           <div style={{ gridArea: 'scrim' }} className="flex">
-            <Header scrim={scrim} status={stream.status} className="flex-1" />
+            <Header scrim={scrim} status={stream.status} className="flex-1" view={view} onView={setView} onHistory={() => setHistoryOpen(true)} onShare={() => setShareOpen(true)} shared={shared} />
           </div>
           <div style={{ gridArea: 'rail' }} className="flex flex-col gap-2 self-start">
             <AttendanceRail scrim={scrim} online={online} />
@@ -113,7 +124,11 @@ function Board({ scrim, perms, stream }: { scrim: SessionOut; perms: Perms; stre
               onDelete={(id, reason) => sm.deleteSet.mutate({ setId: id, reason })}
             />
           </div>
-          {set && round && m ? (
+          {view === 'review' ? (
+            <div style={{ gridArea: 'bans' }} className="flex flex-col gap-2">
+              <ReviewView scrim={scrim} />
+            </div>
+          ) : set && round && m ? (
             <>
               <div style={{ gridArea: 'bans' }} className="flex flex-col gap-2">
                 <ErrorText error={error} testId="scrim.error" />
@@ -123,7 +138,7 @@ function Board({ scrim, perms, stream }: { scrim: SessionOut; perms: Perms; stre
                 <ResultsColumn set={set} round={round} onRound={(n) => selectRound(set.id, n)} perms={perms} m={m} />
               </div>
               <div style={{ gridArea: 'main' }} className="flex min-w-0 flex-col gap-2 self-start">
-                <OurLineup set={set} round={round} perms={perms} live={live} byName={byName} fitsByShip={fitsByShip} pilots={options} warpLabels={scrimVocab.data?.warp_labels ?? []} linkScripts={compVocab.data?.link_scripts ?? []} m={m} />
+                <OurLineup scrimId={scrim.id} set={set} round={round} perms={perms} live={live} byName={byName} fitsByShip={fitsByShip} pilots={options} warpLabels={scrimVocab.data?.warp_labels ?? []} linkScripts={compVocab.data?.link_scripts ?? []} m={m} />
                 <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
                     <TheirLineup set={set} round={round} perms={perms} live={live} byName={byName} archetypes={compVocab.data?.archetypes ?? []} m={m} />
@@ -154,12 +169,24 @@ function Board({ scrim, perms, stream }: { scrim: SessionOut; perms: Perms; stre
             </div>
           )}
         </div>
-        {set && round ? (
+        {set && round && view === 'board' && !shared ? (
           <div className="w-[290px] shrink-0">
             <FitsColumn round={round} perms={perms} />
           </div>
         ) : null}
       </div>
+      {shareOpen ? <SharePanel scrimId={scrim.id} onClose={() => setShareOpen(false)} /> : null}
+      {historyOpen ? (
+        <HistoryDrawer
+          scrimId={scrim.id}
+          perms={perms}
+          onClose={() => setHistoryOpen(false)}
+          onRestoreSet={(setId) => sm.restoreSet.mutate({ setId }, { onSuccess: (doc) => setSelectedSetId(doc.id) })}
+          onRestoreRound={(setId, roundNo) => sm.restoreRound.mutate({ setId, roundNo }, { onSuccess: (doc) => selectRound(doc.id, roundNo) })}
+          restoring={sm.restoreSet.isPending || sm.restoreRound.isPending}
+          error={sm.restoreSet.error ?? sm.restoreRound.error}
+        />
+      ) : null}
     </div>
   )
 }
@@ -172,7 +199,26 @@ function StreamBadge({ status }: { status: StreamStatus }) {
   )
 }
 
-function Header({ scrim, status, className }: { scrim: SessionOut; status: StreamStatus; className?: string }) {
+function Header({
+  scrim,
+  status,
+  className,
+  view,
+  onView,
+  onHistory,
+  onShare,
+  shared = false,
+}: {
+  scrim: SessionOut
+  status: StreamStatus
+  className?: string
+  view: 'board' | 'review'
+  onView: (v: 'board' | 'review') => void
+  onHistory: () => void
+  onShare: () => void
+  /** Public share-link view: no RSVP, history, export or share controls. */
+  shared?: boolean
+}) {
   const [editing, setEditing] = useState(false)
   const { patchScrim, archiveScrim } = useScrimMutations()
   if (editing) {
@@ -203,14 +249,44 @@ function Header({ scrim, status, className }: { scrim: SessionOut; status: Strea
       testId="scrim.header"
       className={className}
       actions={
-        scrim.can_manage ? (
-          <span className="flex items-center gap-1">
-            <Button variant="ghost" data-testid="scrim.header.edit" onClick={() => setEditing(true)}>
+        <span className="flex flex-wrap items-center justify-end gap-1">
+          <span className="flex rounded border border-line" role="tablist">
+            <button type="button" role="tab" data-testid="scrim.header.view.board" onClick={() => onView('board')} className={clsx('rounded-l px-2 py-0.5 text-[11px]', view === 'board' ? 'bg-accent/15 font-medium text-accent' : 'text-muted hover:text-fg')}>
+              Board
+            </button>
+            <button type="button" role="tab" data-testid="scrim.header.view.review" onClick={() => onView('review')} className={clsx('rounded-r px-2 py-0.5 text-[11px]', view === 'review' ? 'bg-accent/15 font-medium text-accent' : 'text-muted hover:text-fg')}>
+              Review
+            </button>
+          </span>
+          {shared ? (
+            <Badge tone="info">shared view</Badge>
+          ) : (
+            <Button variant="ghost" className="h-6 px-1.5" data-testid="scrim.header.history" onClick={onHistory}>
+              History
+            </Button>
+          )}
+          {shared ? null : (
+            <Link to="/scrims/$scrimId/me" params={{ scrimId: String(scrim.id) }} data-testid="scrim.header.me" className="inline-flex h-6 items-center rounded px-1.5 text-[12px] font-medium text-muted hover:bg-panel-2 hover:text-fg" title="your slot, big, for a second monitor">
+              My card
+            </Link>
+          )}
+          {shared ? null : (
+          <a href={`/api/scrims/${scrim.id}/export.csv`} download data-testid="scrim.header.export" className="inline-flex h-6 items-center rounded border border-transparent px-1.5 text-[12px] font-medium text-muted hover:bg-panel-2 hover:text-fg" title="match log, one row per pilot per round">
+            CSV
+          </a>
+          )}
+          {scrim.can_manage ? (
+          <>
+            <Button variant="ghost" className="h-6 px-1.5" data-testid="scrim.header.share" onClick={onShare}>
+              Share
+            </Button>
+            <Button variant="ghost" className="h-6 px-1.5" data-testid="scrim.header.edit" onClick={() => setEditing(true)}>
               Edit
             </Button>
             {!scrim.is_archived ? (
               <Button
                 variant="ghost"
+                className="h-6 px-1.5"
                 data-testid="scrim.header.archive"
                 onClick={() => {
                   const reason = window.prompt('Archive this scrim? Reason (kept in the audit log):')
@@ -220,8 +296,9 @@ function Header({ scrim, status, className }: { scrim: SessionOut; status: Strea
                 Archive
               </Button>
             ) : null}
-          </span>
-        ) : null
+          </>
+          ) : null}
+        </span>
       }
     >
       <h1 className="text-base font-semibold" data-testid="scrim.header.title">
@@ -257,9 +334,11 @@ function Header({ scrim, status, className }: { scrim: SessionOut; status: Strea
           {scrim.motd}
         </p>
       ) : null}
-      <div className="mt-2">
-        <RsvpButtons scrim={scrim} testPrefix="scrim" />
-      </div>
+      {shared ? null : (
+        <div className="mt-2">
+          <RsvpButtons scrim={scrim} testPrefix="scrim" />
+        </div>
+      )}
       <ErrorText error={archiveScrim.error} />
     </Panel>
   )

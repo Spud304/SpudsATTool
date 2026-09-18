@@ -17,6 +17,8 @@ class AuditLog(models.Model):
     before = models.JSONField(null=True, blank=True)
     after = models.JSONField(null=True, blank=True)
     at = models.DateTimeField(auto_now_add=True, db_index=True)
+    # Which larger thing this row belongs to (e.g. "scrims.session:12"), so one scrim's history is one query.
+    scope = models.CharField(max_length=64, blank=True, db_index=True)
 
     class Meta:
         db_table = "audit_log"

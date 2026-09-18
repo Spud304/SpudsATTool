@@ -9,6 +9,8 @@ import { CompScratchpad } from './features/scratchpad/CompScratchpad'
 import { ScrimPage } from './features/scrims/ScrimPage'
 import { ScrimsPage } from './features/scrims/ScrimsPage'
 import { PilotsPage } from './features/team/PilotsPage'
+import { SharePage } from './features/share/SharePage'
+import { PilotCardPage } from './features/scrims/PilotCardPage'
 import { AuditPage } from './features/team/AuditPage'
 import { TeamPage } from './features/team/TeamPage'
 
@@ -29,6 +31,8 @@ const routes = [
   createRoute({ getParentRoute: () => rootRoute, path: '/fits/$fitId', component: FitDetailPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/scrims', component: ScrimsPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/scrims/$scrimId', component: ScrimPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/share/$token', component: SharePage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/scrims/$scrimId/me', component: PilotCardPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/team', component: TeamPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/team/pilots', component: PilotsPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/team/audit', component: AuditPage }),

@@ -5,7 +5,6 @@ from typing import cast
 
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from ninja import Router, Schema
 from ninja.errors import HttpError
 
@@ -13,7 +12,7 @@ from apps.accounts import permissions
 from apps.accounts.models import User
 from apps.rules import selection
 
-from . import roster, sessions
+from . import roster, sessions, share, suggestions
 from .models import (
     Attendance,
     Opponent,
@@ -36,6 +35,13 @@ opponents_router = Router(tags=["scrims"])
 
 
 # schemas
+
+
+class PilotHistoryOut(Schema):
+    pilot_id: int
+    pilot_name: str
+    flights: int
+    last_date: str | None
 
 
 class PilotOut(Schema):
@@ -225,11 +231,13 @@ def _opponent_out(o: Opponent) -> dict:
     }
 
 
-def _my_row(session: Session, user: User) -> SessionAttendance | None:
+def _my_row(session: Session, user: User | None) -> SessionAttendance | None:
+    if user is None:
+        return None
     return next((a for a in session.attendance.all() if a.pilot.user_id == user.pk), None)
 
 
-def _summary(session: Session, user: User, has_pilot: bool) -> dict:
+def _summary(session: Session, user: User | None, has_pilot: bool) -> dict:
     mine = _my_row(session, user)
     return {
         "id": session.pk,
@@ -260,7 +268,7 @@ def _summary(session: Session, user: User, has_pilot: bool) -> dict:
     }
 
 
-def _attendance_rows(session: Session, user: User) -> list[dict]:
+def _attendance_rows(session: Session, user: User | None) -> list[dict]:
     order = {Rsvp.YES: 0, Rsvp.MAYBE: 1, Rsvp.NONE: 2, Rsvp.NO: 3}
     rows = sorted(session.attendance.all(), key=lambda a: (order[a.rsvp], a.pilot.name.lower()))
     return [
@@ -273,14 +281,18 @@ def _attendance_rows(session: Session, user: User) -> list[dict]:
             "rsvp_at": a.rsvp_at.isoformat() if a.rsvp_at else None,
             "attendance": a.attendance,
             "removed_reason": a.removed_reason,
-            "is_me": a.pilot.user_id == user.pk,
+            "is_me": user is not None and a.pilot.user_id == user.pk,
         }
         for a in rows
     ]
 
 
-def _full(session: Session, user: User) -> dict:
-    pilot = sessions.pilot_of(user)
+def session_document(session: Session, user: User | None, shared: bool = False) -> dict:
+    """The full scrim. `shared` is the public share-link view: no fit text, no permissions, nobody is "me"."""
+    pilot = sessions.pilot_of(user) if user is not None else None
+    sets = set_documents(session)
+    if shared:
+        sets = [share.strip_fit_text(doc) for doc in sets]
     return {
         **_summary(session, user, pilot is not None),
         "moveme_system": session.moveme_system,
@@ -288,10 +300,14 @@ def _full(session: Session, user: User) -> dict:
         "point_table_version": session.point_table_version_id,
         "attendance": _attendance_rows(session, user),
         "event_seq": session.event_seq,
-        "sets": set_documents(session),
-        "can_manage": permissions.can_manage_scrims(user),
-        "can_rsvp": pilot is not None and not sessions.is_past(session),
+        "sets": sets,
+        "can_manage": user is not None and not shared and permissions.can_manage_scrims(user),
+        "can_rsvp": pilot is not None and not shared and not sessions.is_past(session),
     }
+
+
+def _full(session: Session, user: User) -> dict:
+    return session_document(session, user)
 
 
 def _session(session_id: int) -> Session:
@@ -315,11 +331,11 @@ def list_sessions(request: HttpRequest, when: str = "upcoming"):
     permissions.require_scrim_access(request.user)
     user = cast(User, request.user)
     qs = sessions.queryset().prefetch_related("sets__comp", "sets__rounds")
-    today = timezone.localdate()
+    cutoff = sessions.past_cutoff()
     if when == "upcoming":
-        qs = qs.filter(date__date__gte=today, is_archived=False).order_by("date")
+        qs = qs.filter(date__gte=cutoff, is_archived=False).order_by("date")
     elif when == "past":
-        qs = qs.filter(date__date__lt=today) | qs.filter(is_archived=True)
+        qs = qs.filter(date__lt=cutoff) | qs.filter(is_archived=True)
         qs = qs.order_by("-date")
     elif when != "all":
         raise HttpError(422, "when must be upcoming, past or all")
@@ -407,6 +423,13 @@ def patch_attendance(request: HttpRequest, session_id: int, pilot_id: int, paylo
 
 
 # pilots
+
+
+@pilots_router.get("/history", response=list[PilotHistoryOut])
+def pilot_history(request: HttpRequest, type_id: int, exclude_session: int | None = None):
+    """Who has flown this hull in past scrims, most flights first; feeds the pilot dropdown."""
+    permissions.require_scrim_access(request.user)
+    return suggestions.pilot_history(type_id, exclude_session)
 
 
 @pilots_router.get("", response=list[PilotOut])

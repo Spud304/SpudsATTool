@@ -646,6 +646,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/scrims/{session_id}/export.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Csv */
+        get: operations["apps_scrims_sets_api_export_csv"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scrims/{session_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** History */
+        get: operations["apps_scrims_sets_api_history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scrims/{session_id}/sets/{set_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Set */
+        post: operations["apps_scrims_sets_api_restore_set"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scrims/{session_id}/sets/{set_id}/rounds/{round_no}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Round */
+        post: operations["apps_scrims_sets_api_restore_round"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/scrims/{session_id}/presence": {
         parameters: {
             query?: never;
@@ -659,6 +727,78 @@ export interface paths {
         post: operations["apps_scrims_sets_api_heartbeat"];
         /** Leave */
         delete: operations["apps_scrims_sets_api_leave"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scrims/{session_id}/share": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Shares */
+        get: operations["apps_scrims_share_api_list_shares"];
+        put?: never;
+        /** Create Share */
+        post: operations["apps_scrims_share_api_create_share"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/scrims/{session_id}/share/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke Share */
+        delete: operations["apps_scrims_share_api_revoke_share"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/share/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Shared Session */
+        get: operations["apps_scrims_share_api_shared_session"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pilots/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pilot History
+         * @description Who has flown this hull in past scrims, most flights first; feeds the pilot dropdown.
+         */
+        get: operations["apps_scrims_api_pilot_history"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2306,6 +2446,64 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** DeletedRoundOut */
+        DeletedRoundOut: {
+            /** Set Id */
+            set_id: number;
+            /** Set Index */
+            set_index: number;
+            /** Round No */
+            round_no: number;
+            /** Deleted At */
+            deleted_at: string;
+            /** Deleted By Name */
+            deleted_by_name: string;
+            /** Restorable */
+            restorable: boolean;
+        };
+        /** DeletedSetOut */
+        DeletedSetOut: {
+            /** Id */
+            id: number;
+            /** Index */
+            index: number;
+            /** Comp Name */
+            comp_name: string | null;
+            /** Rounds */
+            rounds: number;
+            /** Deleted At */
+            deleted_at: string;
+            /** Deleted By Name */
+            deleted_by_name: string;
+        };
+        /** HistoryEntryOut */
+        HistoryEntryOut: {
+            /** Id */
+            id: number;
+            /** Actor Name */
+            actor_name: string;
+            /** Action */
+            action: string;
+            /** Target Label */
+            target_label: string;
+            /** Reason */
+            reason: string;
+            /** After */
+            after: {
+                [key: string]: unknown;
+            } | null;
+            /** At */
+            at: string;
+        };
+        /** HistoryOut */
+        HistoryOut: {
+            /** Entries */
+            entries: components["schemas"]["HistoryEntryOut"][];
+            /** Deleted Sets */
+            deleted_sets: components["schemas"]["DeletedSetOut"][];
+            /** Deleted Rounds */
+            deleted_rounds: components["schemas"]["DeletedRoundOut"][];
+        };
         /** ViewerOut */
         ViewerOut: {
             /** User Id */
@@ -2321,6 +2519,44 @@ export interface components {
         PresenceIn: {
             /** Focus */
             focus?: string | null;
+        };
+        /** ShareLinkOut */
+        ShareLinkOut: {
+            /** Id */
+            id: number;
+            /** Token */
+            token: string;
+            /** Url */
+            url: string;
+            /** Created By Name */
+            created_by_name: string;
+            /** Created At */
+            created_at: string;
+            /** Expires At */
+            expires_at: string;
+            /** Revoked At */
+            revoked_at: string | null;
+            /** Is Live */
+            is_live: boolean;
+        };
+        /** ShareCreateIn */
+        ShareCreateIn: {
+            /**
+             * Days
+             * @default 7
+             */
+            days: number;
+        };
+        /** PilotHistoryOut */
+        PilotHistoryOut: {
+            /** Pilot Id */
+            pilot_id: number;
+            /** Pilot Name */
+            pilot_name: string;
+            /** Flights */
+            flights: number;
+            /** Last Date */
+            last_date: string | null;
         };
         /** PilotOut */
         PilotOut: {
@@ -3620,6 +3856,95 @@ export interface operations {
             };
         };
     };
+    apps_scrims_sets_api_export_csv: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    apps_scrims_sets_api_history: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_sets_api_restore_set: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+                set_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetDocOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_sets_api_restore_round: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+                set_id: number;
+                round_no: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetDocOut"];
+                };
+            };
+        };
+    };
     apps_scrims_sets_api_heartbeat: {
         parameters: {
             query?: never;
@@ -3664,6 +3989,122 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ViewerOut"][];
+                };
+            };
+        };
+    };
+    apps_scrims_share_api_list_shares: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareLinkOut"][];
+                };
+            };
+        };
+    };
+    apps_scrims_share_api_create_share: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShareCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareLinkOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_share_api_revoke_share: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: number;
+                link_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShareLinkOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_share_api_shared_session: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_api_pilot_history: {
+        parameters: {
+            query: {
+                type_id: number;
+                exclude_session?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotHistoryOut"][];
                 };
             };
         };

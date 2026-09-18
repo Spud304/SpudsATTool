@@ -95,7 +95,12 @@ def join_as(browser: Browser, join_url: str, character_id: int, name: str) -> tu
 
 @pytest.fixture(scope="session")
 def browser_context_args(browser_context_args):
-    return {**browser_context_args, "base_url": BASE_URL}
+    # The scrim page is desktop-only (four columns, ~1320px minimum); the default 1280 viewport squeezes it.
+    return {
+        **browser_context_args,
+        "base_url": BASE_URL,
+        "viewport": {"width": 1600, "height": 900},
+    }
 
 
 @pytest.fixture(scope="session", autouse=True)

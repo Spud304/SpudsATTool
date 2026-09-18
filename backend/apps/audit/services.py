@@ -16,6 +16,7 @@ def record(
     reason: str = "",
     before: Any = None,
     after: Any = None,
+    scope: str = "",
 ) -> AuditLog:
     if target is not None:
         target_type = target_type or target._meta.label_lower
@@ -32,4 +33,5 @@ def record(
         reason=reason,
         before=before,
         after=after,
+        scope=scope,
     )

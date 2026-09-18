@@ -126,6 +126,8 @@ EVE_CLIENT_SECRET = env.str("EVE_CLIENT_SECRET", "")
 EVE_SSO_SCOPES = env.list("EVE_SSO_SCOPES", ["publicData"])
 # Explicit redirect URI; when empty it is built from the request host, which dev proxies rewrite.
 EVE_CALLBACK_URL = env.str("EVE_CALLBACK_URL", "")
+# Origin users open the site at (scheme://host[:port]); share links are built from it. Empty: the request host.
+PUBLIC_ORIGIN = env.str("PUBLIC_ORIGIN", "").rstrip("/")
 ESI_BASE_URL = env.str("ESI_BASE_URL", "https://esi.evetech.net")
 ESI_COMPAT_DATE = env.str("ESI_COMPAT_DATE", "2026-08-01")
 ESI_CONTACT_EMAIL = env.str("ESI_CONTACT_EMAIL", "")

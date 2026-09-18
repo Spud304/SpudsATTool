@@ -5,6 +5,7 @@ import { HullInput } from '@/features/comps/HullInput'
 import type { Live, Perms } from './shared'
 import { HULL_LIST_ID, NO_SPINNER, focusShipRow, linkColor, remoteProps, warpColor } from './shared'
 import { NoteCell } from './NoteCell'
+import { usePilotHistory } from '@/lib/api/hooks'
 
 type Mutations = {
   patchSet: (body: Record<string, unknown>) => void
@@ -43,7 +44,9 @@ export function OurLineup({
   warpLabels,
   linkScripts,
   m,
+  scrimId,
 }: {
+  scrimId: number
   set: SetDoc
   round: RoundDoc
   perms: Perms
@@ -117,7 +120,7 @@ export function OurLineup({
         </thead>
         <tbody>
           {us.slots.map((s) => (
-            <OurRow key={s.slot_no} slot={s} set={set} round={round} perms={perms} live={live} byName={byName} fits={s.type_id != null ? fitsByShip.get(s.type_id) ?? [] : []} pilots={pilots} linkScripts={linkScripts} patch={(body) => m.patchSlot(round.round_no, 'US', s.slot_no, body)} />
+            <OurRow key={s.slot_no} slot={s} scrimId={scrimId} set={set} round={round} perms={perms} live={live} byName={byName} fits={s.type_id != null ? fitsByShip.get(s.type_id) ?? [] : []} pilots={pilots} linkScripts={linkScripts} patch={(body) => m.patchSlot(round.round_no, 'US', s.slot_no, body)} />
           ))}
         </tbody>
       </Table>
@@ -144,7 +147,9 @@ function OurRow({
   pilots,
   linkScripts,
   patch,
+  scrimId,
 }: {
+  scrimId: number
   slot: SlotDoc
   set: SetDoc
   round: RoundDoc
@@ -162,6 +167,8 @@ function OurRow({
   const field = (name: string) => `set.${set.id}.us.${s.slot_no}.${name}`
   const duplicate = s.flags.includes('DUPLICATE_PILOT')
   const groups: PilotOption['group'][] = ['attending', 'maybe', 'other']
+  const history = usePilotHistory(s.type_id, scrimId, perms.edit)
+  const flew = history.data ?? []
   const fitOptions = s.fit_id != null && !fits.some((f) => f.id === s.fit_id) ? [{ id: s.fit_id, name: s.fit_name ?? `fit ${s.fit_id}`, status: 'unknown', has_links: s.has_links } as FitSummaryOut, ...fits] : fits
   return (
     <tr data-testid={id} className={clsx(mine && 'outline outline-2 -outline-offset-2 outline-accent', (s.is_banned || duplicate) && 'bg-bad/25')}>
@@ -173,6 +180,15 @@ function OurRow({
           <Select data-testid={`${id}.pilot`} className="h-6 max-w-[150px]" value={s.pilot_id ?? ''} onChange={(e) => patch({ pilot_id: e.target.value === '' ? null : Number(e.target.value) })} {...remoteProps(live, field('pilot'))} onFocus={() => live.setFocus(field('pilot'))} onBlur={() => live.setFocus(null)}>
             <option value="">{'—'}</option>
             {s.pilot_id != null && !pilots.some((p) => p.id === s.pilot_id) ? <option value={s.pilot_id}>{s.pilot_name}</option> : null}
+            {flew.length ? (
+              <optgroup label="flew this hull">
+                {flew.map((h) => (
+                  <option key={`h${h.pilot_id}`} value={h.pilot_id}>
+                    {h.pilot_name} ({h.flights})
+                  </option>
+                ))}
+              </optgroup>
+            ) : null}
             {groups.map((g) => {
               const opts = pilots.filter((p) => p.group === g)
               return opts.length ? (

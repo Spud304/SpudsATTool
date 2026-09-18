@@ -71,6 +71,11 @@ export type ScoreDoc = Schemas['ScoreOut']
 export type SetPatchIn = Schemas['SetPatchIn']
 export type AssignmentPatchIn = Schemas['AssignmentPatchIn']
 export type ViewerOut = Schemas['ViewerOut']
+export type HistoryOut = Schemas['HistoryOut']
+export type ShareLinkOut = Schemas['ShareLinkOut']
+export type HistoryEntryOut = Schemas['HistoryEntryOut']
+export type DeletedSetOut = Schemas['DeletedSetOut']
+export type DeletedRoundOut = Schemas['DeletedRoundOut']
 
 export class ApiError extends Error {
   status: number

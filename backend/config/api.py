@@ -9,6 +9,8 @@ from apps.library.comps_api import router as comps_router
 from apps.rules.api import router as rules_router
 from apps.scrims.api import opponents_router, pilots_router
 from apps.scrims.api import router as scrims_router
+from apps.scrims.share_api import public_router as share_public_router
+from apps.scrims.share_api import router as share_router
 
 # django_auth is cookie-based, so ninja enforces CSRF on unsafe methods automatically.
 api = NinjaAPI(
@@ -24,6 +26,8 @@ api.add_router("/audit", audit_router)
 api.add_router("/rulesets", rules_router)
 api.add_router("/fits", library_router)
 api.add_router("/comps", comps_router)
+scrims_router.add_router("", share_router)
 api.add_router("/scrims", scrims_router)
+api.add_router("/share", share_public_router)
 api.add_router("/pilots", pilots_router)
 api.add_router("/opponents", opponents_router)

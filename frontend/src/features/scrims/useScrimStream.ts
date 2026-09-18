@@ -15,7 +15,11 @@ type Message = { seq: number | null; kind: string; payload: Record<string, unkno
  * header and attendance events refetch the session; presence arrives as the viewer list.
  * Also owns the presence heartbeat: call `setFocus` from fields so others see where you are.
  */
-export function useScrimStream(sessionId: number, enabled: boolean) {
+export type StreamOptions = { url?: string; queryKey?: readonly unknown[]; presence?: boolean }
+
+export function useScrimStream(sessionId: number, enabled: boolean, options: StreamOptions = {}) {
+  const { url = `/api/scrims/${sessionId}/events`, queryKey, presence = true } = options
+  const keyString = JSON.stringify(queryKey ?? keys.scrim(sessionId)) // a stable dependency; callers pass fresh arrays
   const qc = useQueryClient()
   const [status, setStatus] = useState<StreamStatus>('connecting')
   const [viewers, setViewers] = useState<ViewerOut[]>([])
@@ -25,9 +29,9 @@ export function useScrimStream(sessionId: number, enabled: boolean) {
   useEffect(() => {
     if (!enabled) return
     let lastFrame = Date.now()
-    const key = keys.scrim(sessionId)
+    const key = JSON.parse(keyString) as readonly unknown[]
     const refetch = () => void qc.invalidateQueries({ queryKey: key })
-    const source = new EventSource(`/api/scrims/${sessionId}/events`)
+    const source = new EventSource(url)
     const alive = () => {
       lastFrame = Date.now()
       setStatus('live')
@@ -56,7 +60,9 @@ export function useScrimStream(sessionId: number, enabled: boolean) {
     const watchdog = window.setInterval(() => {
       if (Date.now() - lastFrame > WATCHDOG_MS) setStatus('offline')
     }, 5_000)
-    const beat = () => void sendPresence(sessionId, focusRef.current).catch(() => undefined)
+    const beat = () => {
+      if (presence) void sendPresence(sessionId, focusRef.current).catch(() => undefined)
+    }
     beat()
     const heartbeat = window.setInterval(beat, HEARTBEAT_MS)
     return () => {
@@ -64,13 +70,13 @@ export function useScrimStream(sessionId: number, enabled: boolean) {
       window.clearInterval(watchdog)
       window.clearInterval(heartbeat)
       window.clearTimeout(focusTimer.current)
-      leavePresence(sessionId)
+      if (presence) leavePresence(sessionId)
     }
-  }, [sessionId, enabled, qc])
+  }, [sessionId, enabled, qc, url, keyString, presence])
 
   /** Fields report focus here; a change is pushed after a short pause so typing does not spam the server. */
   const setFocus = (field: string | null) => {
-    if (focusRef.current === field) return
+    if (!presence || focusRef.current === field) return
     focusRef.current = field
     window.clearTimeout(focusTimer.current)
     focusTimer.current = window.setTimeout(() => void sendPresence(sessionId, focusRef.current).catch(() => undefined), 300)

@@ -1,6 +1,6 @@
 """Scrim sessions and attendance. Sets, rounds and the live stream arrive in part B."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.db import transaction
 from django.utils import timezone
@@ -25,6 +25,11 @@ from .models import (
 from .roster import ScrimError
 
 _UNSET = object()
+
+
+def scope(session: Session) -> str:
+    """Audit scope for everything that happens on one scrim."""
+    return f"scrims.session:{session.pk}"
 
 
 def _opponent(opponent_id: int | None) -> Opponent | None:
@@ -95,7 +100,13 @@ def create_session(
             SessionAttendance(session=session, pilot=pilot)
             for pilot in Pilot.objects.filter(status=PilotStatus.ACTIVE)
         )
-    record(actor=actor, action="scrim.created", target=session, after=_snapshot(session))
+    record(
+        actor=actor,
+        scope=scope(session),
+        action="scrim.created",
+        target=session,
+        after=_snapshot(session),
+    )
     return session
 
 
@@ -151,6 +162,7 @@ def update_session(actor: User, session: Session, **fields) -> Session:
     if diff or "motd" in fields:
         record(
             actor=actor,
+            scope=scope(session),
             action="scrim.updated",
             target=session,
             before={k: v[0] for k, v in diff.items()},
@@ -164,7 +176,13 @@ def archive_session(actor: User, session: Session, reason: str = "") -> Session:
     if not session.is_archived:
         session.is_archived = True
         session.save(update_fields=["is_archived", "updated_at"])
-        record(actor=actor, action="scrim.archived", target=session, reason=reason)
+        record(
+            actor=actor,
+            scope=scope(session),
+            action="scrim.archived",
+            target=session,
+            reason=reason,
+        )
     events.notify(session.pk, events.KIND_SESSION, actor)
     return session
 
@@ -173,8 +191,17 @@ def pilot_of(user: User) -> Pilot | None:
     return Pilot.objects.filter(user=user).first()
 
 
+# A scrim counts as over this long after its start time. Comparing instants avoids the server's
+# UTC calendar day flipping a 7 pm US-evening scrim into "yesterday" at 8 pm local.
+PAST_AFTER = timedelta(hours=8)
+
+
+def past_cutoff():
+    return timezone.now() - PAST_AFTER
+
+
 def is_past(session: Session) -> bool:
-    return timezone.localdate(session.date) < timezone.localdate()
+    return session.date < past_cutoff()
 
 
 def set_rsvp(actor: User, session: Session, rsvp: str, reason: str = "") -> SessionAttendance:
@@ -214,6 +241,7 @@ def set_attendance(
     if attendance == Attendance.NO_SHOW:
         record(
             actor=actor,
+            scope=scope(session),
             action="scrim.no_show_removed",
             target=session,
             reason=reason,
@@ -222,6 +250,7 @@ def set_attendance(
     elif before != attendance:
         record(
             actor=actor,
+            scope=scope(session),
             action="scrim.attendance_set",
             target=session,
             after={"pilot": pilot.name, "attendance": attendance},

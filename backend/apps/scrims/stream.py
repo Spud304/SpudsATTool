@@ -14,7 +14,7 @@ from ninja.errors import HttpError
 
 from apps.accounts import permissions
 
-from . import broker, events, presence
+from . import broker, events, presence, share
 from .models import ChangeEvent, Session
 
 REPLAY_CAP: int = 500
@@ -50,18 +50,25 @@ def _replay(session_id: int, since: int) -> tuple[list[dict], int]:
 
 
 async def event_stream(
-    session_id: int, since: int, *, keepalive: float = KEEPALIVE_SECONDS
+    session_id: int,
+    since: int,
+    *,
+    keepalive: float = KEEPALIVE_SECONDS,
+    public: bool = False,
 ) -> AsyncGenerator[str, None]:
+    """`public` is a share-link viewer: set documents lose their fit text and presence is not sent."""
+    scrub = share.strip_fit_text_from_message if public else (lambda m: m)
     sub = broker.get_broker().subscribe(session_id)
     await sub.open()  # subscribe first, replay second: nothing slips between the two
     try:
         replayed, last_seq = await sync_to_async(_replay)(session_id, since)
         for message in replayed:
-            yield format_event(message)
-        viewers = await sync_to_async(presence.snapshot)(session_id)
-        yield format_event(
-            {"seq": None, "kind": events.KIND_PRESENCE, "payload": {"viewers": viewers}}
-        )
+            yield format_event(scrub(message))
+        if not public:
+            viewers = await sync_to_async(presence.snapshot)(session_id)
+            yield format_event(
+                {"seq": None, "kind": events.KIND_PRESENCE, "payload": {"viewers": viewers}}
+            )
         while True:
             message = await sub.get(keepalive)
             if message is None:
@@ -76,7 +83,9 @@ async def event_stream(
                         {"seq": seq, "kind": events.KIND_RESYNC, "payload": {"reason": "gap"}}
                     )
                 last_seq = seq
-            yield format_event(message)
+            if public and message.get("kind") == events.KIND_PRESENCE:
+                continue
+            yield format_event(scrub(message))
     finally:
         await sub.close()
 
@@ -100,6 +109,18 @@ async def events_view(request: HttpRequest, session_id: int) -> HttpResponseBase
         return JsonResponse({"detail": str(exc)}, status=exc.status_code)
     response = StreamingHttpResponse(
         event_stream(session_id, _since(request)), content_type="text/event-stream"
+    )
+    response["Cache-Control"] = "no-cache"
+    response["X-Accel-Buffering"] = "no"
+    return response
+
+
+async def share_events_view(request: HttpRequest, token: str) -> HttpResponseBase:
+    session = await sync_to_async(share.resolve)(token)
+    if session is None:
+        return JsonResponse({"detail": "this share link is not valid"}, status=404)
+    response = StreamingHttpResponse(
+        event_stream(session.pk, _since(request), public=True), content_type="text/event-stream"
     )
     response["Cache-Control"] = "no-cache"
     response["X-Accel-Buffering"] = "no"

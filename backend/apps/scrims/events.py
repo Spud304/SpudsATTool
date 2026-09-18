@@ -42,6 +42,8 @@ def emit(session: Session, kind: str, payload: dict, actor=None) -> ChangeEvent:
         payload=payload,
         actor=actor if getattr(actor, "is_authenticated", False) else None,
     )
+    # The stream replays at most 500 events; older ones are dead weight (each carries a set document).
+    ChangeEvent.objects.filter(session=session, seq__lt=event.seq - 500).delete()
     message = as_message(event)
     transaction.on_commit(lambda: broker.get_broker().publish(session.pk, message))
     return event

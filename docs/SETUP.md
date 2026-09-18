@@ -61,6 +61,10 @@ Restore:
 docker compose -f deploy/docker-compose.yml --env-file deploy/.env exec -T db pg_restore -U attool -d attool --clean --if-exists < backups/attool-<stamp>.dump
 ```
 
+### Share links
+
+Captains can hand out `/share/<token>` links that show one scrim read-only to anyone, no EVE login. The link is built from `PUBLIC_ORIGIN` (set it to the origin people open the site at, e.g. `https://at.example.org`; in dev it defaults to the Vite origin), so that domain must be reachable by the people you share with. Links expire (default 7 days), can be revoked from the scrim's Share panel, and stop working when the scrim is archived. Fit text is never shown on a shared page.
+
 ### Live scrim updates
 
 The scrim page holds one server-sent-events stream per open tab (`GET /api/scrims/<id>/events`) and posts a presence heartbeat every 15 s. Events fan out between workers over Redis pub/sub (`REDIS_URL`); `SCRIM_BROKER=memory` switches to an in-process broker for single-worker tests. Reverse proxies must pass it through unbuffered and uncompressed: the shipped Caddyfile excludes `text/event-stream` from `encode`; if you front the stack with your own nginx, add `proxy_buffering off;` and skip gzip for that location. The Vite dev proxy streams it without changes.

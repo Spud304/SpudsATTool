@@ -77,6 +77,16 @@ class WarpInLabel(models.Model):
         return self.label
 
 
+class LiveManager(models.Manager):
+    """Default manager for soft-deleted rows: hides them everywhere, including reverse relations.
+
+    `all_objects` on the same model reaches the deleted rows for restore and purge.
+    """
+
+    def get_queryset(self):
+        return super().get_queryset().filter(deleted_at__isnull=True)
+
+
 class SessionKind(models.TextChoices):
     PRACTICE = "practice", "Practice"
     SCRIM = "scrim", "Scrim"
@@ -206,6 +216,13 @@ class Set(models.Model):
     link_note = models.CharField(max_length=300, blank=True)
     warp_calls = models.JSONField(default=list, blank=True)  # four labels, 1st..4th
     created_at = models.DateTimeField(auto_now_add=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    deleted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+
+    objects = LiveManager()
+    all_objects = models.Manager()
 
     if TYPE_CHECKING:
         session_id: int
@@ -234,6 +251,13 @@ class Round(models.Model):
     round_no = models.PositiveSmallIntegerField()
     outcome = models.CharField(max_length=5, choices=Outcome.choices, default=Outcome.NONE)
     notes = models.TextField(blank=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    deleted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+
+    objects = LiveManager()
+    all_objects = models.Manager()
 
     if TYPE_CHECKING:
         set_id: int
@@ -345,3 +369,26 @@ class ChangeEvent(models.Model):
         db_table = "scrims_change_event"
         ordering = ["seq"]
         constraints = [models.UniqueConstraint(fields=["session", "seq"], name="scrims_event_uniq")]
+
+
+class ShareLink(models.Model):
+    """A public, read-only view of one scrim for whoever holds the token; fit text stays hidden."""
+
+    session = models.ForeignKey(Session, on_delete=models.CASCADE, related_name="share_links")
+    token = models.CharField(max_length=64, unique=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    revoked_at = models.DateTimeField(null=True, blank=True)
+
+    if TYPE_CHECKING:
+        session_id: int
+
+    class Meta:
+        db_table = "scrims_share_link"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"share {self.token[:8]} for {self.session}"

@@ -15,6 +15,7 @@ from apps.accounts.models import User
 from apps.rules.api import ViolationOut
 
 from . import derived, presence, sets
+from .history import history_document
 from .models import Assignment, LineupSide, Session
 from .roster import ScrimError
 
@@ -193,6 +194,40 @@ class PasteOut(Schema):
     unresolved: list[str]
 
 
+class HistoryEntryOut(Schema):
+    id: int
+    actor_name: str
+    action: str
+    target_label: str
+    reason: str
+    after: dict | None
+    at: str
+
+
+class DeletedSetOut(Schema):
+    id: int
+    index: int
+    comp_name: str | None
+    rounds: int
+    deleted_at: str
+    deleted_by_name: str
+
+
+class DeletedRoundOut(Schema):
+    set_id: int
+    set_index: int
+    round_no: int
+    deleted_at: str
+    deleted_by_name: str
+    restorable: bool
+
+
+class HistoryOut(Schema):
+    entries: list[HistoryEntryOut]
+    deleted_sets: list[DeletedSetOut]
+    deleted_rounds: list[DeletedRoundOut]
+
+
 class PresenceIn(Schema):
     focus: str | None = None
 
@@ -340,6 +375,41 @@ def paste_opp_lineup(
 
 
 # presence
+
+
+@router.get("/{session_id}/export.csv")
+def export_csv(request: HttpRequest, session_id: int):
+    from django.http import HttpResponse
+
+    from apps.library.models import Archetype
+
+    from .export import csv_filename, match_log_csv
+
+    session = _session(session_id)
+    permissions.require_view_session(request.user, session)
+    text = match_log_csv(session, {a.pk: a.name for a in Archetype.objects.all()})
+    response = HttpResponse(text, content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="{csv_filename(session)}"'
+    return response
+
+
+@router.get("/{session_id}/history", response=HistoryOut)
+def history(request: HttpRequest, session_id: int):
+    session = _session(session_id)
+    permissions.require_view_session(request.user, session)
+    return history_document(session)
+
+
+@router.post("/{session_id}/sets/{set_id}/restore", response=SetDocOut)
+def restore_set(request: HttpRequest, session_id: int, set_id: int):
+    user = _manager(request, _session(session_id))
+    return _wrap(lambda: sets.restore_set(user, session_id, set_id))
+
+
+@router.post("/{session_id}/sets/{set_id}/rounds/{round_no}/restore", response=SetDocOut)
+def restore_round(request: HttpRequest, session_id: int, set_id: int, round_no: int):
+    user = _manager(request, _session(session_id))
+    return _wrap(lambda: sets.restore_round(user, session_id, set_id, round_no))
 
 
 @router.post("/{session_id}/presence", response=list[ViewerOut])
