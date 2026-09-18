@@ -1,6 +1,8 @@
 .PHONY: init run stop playwright dev dev-db dev-backend dev-frontend test test-backend test-frontend lint gen-client build up upgrade backup logs
 
-COMPOSE     = docker compose -f deploy/docker-compose.yml --env-file deploy/.env
+# With PROXY_NETWORK set in deploy/.env the stack sits behind an existing reverse proxy (docs/DEPLOY.md).
+PROXY_FILE  = $(shell grep -qs '^PROXY_NETWORK=.' deploy/.env && echo -f deploy/docker-compose.proxy.yml)
+COMPOSE     = docker compose -f deploy/docker-compose.yml $(PROXY_FILE) --env-file deploy/.env
 COMPOSE_DEV = docker compose -f deploy/docker-compose.dev.yml
 
 ## ---- self-hosting (production, one VPS) ----
@@ -14,7 +16,7 @@ init:            ## create deploy/.env with generated secrets (does not overwrit
 	  echo "wrote deploy/.env; now set DOMAIN, ACME_EMAIL, EVE_CLIENT_ID, EVE_CLIENT_SECRET, ESI_CONTACT_EMAIL, TEAM_NAME" )
 
 up:              ## start (or update) the production stack
-	$(COMPOSE) pull
+	$(COMPOSE) pull --ignore-buildable
 	$(COMPOSE) up -d --remove-orphans
 
 build:           ## build images locally instead of pulling

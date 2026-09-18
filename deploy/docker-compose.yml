@@ -14,6 +14,7 @@ services:
     environment:
       DOMAIN: ${DOMAIN}
       ACME_EMAIL: ${ACME_EMAIL}
+      SITE_ADDRESS: ${SITE_ADDRESS:-${DOMAIN}}
     volumes:
       - caddy_data:/data
       - caddy_config:/config

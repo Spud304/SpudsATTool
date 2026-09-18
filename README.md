@@ -2,7 +2,7 @@
 
 A self-hosted organizer for EVE Online tournament teams (Alliance Tournament, Anger Games): comps, fits, scrims with live scoring, RSVP, statistics, and EVE SSO access control. Replaces the practice-organizer Google Sheet.
 
-- **Self-host it:** [docs/SETUP.md](docs/SETUP.md)
+- **Self-host it:** [docs/SETUP.md](docs/SETUP.md); behind an existing proxy: [docs/DEPLOY.md](docs/DEPLOY.md)
 - **Architecture and roadmap:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - **Research behind the design:** `docs/research/` (local only, not committed: contains the source workbook and notes with pilot names)
 

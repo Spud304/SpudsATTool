@@ -1,0 +1,19 @@
+# Behind an existing reverse proxy on the same box (nginx, Nginx Proxy Manager, Traefik).
+# Included by the Makefile when PROXY_NETWORK is set in deploy/.env.
+# Caddy then serves plain HTTP on the proxy's Docker network and publishes no ports;
+# the outer proxy owns 80/443 and the certificate and forwards to http://attool-caddy:80.
+
+services:
+  caddy:
+    container_name: attool-caddy
+    ports: !reset []
+    environment:
+      SITE_ADDRESS: ":80"
+    networks:
+      - default
+      - proxy
+
+networks:
+  proxy:
+    name: ${PROXY_NETWORK}
+    external: true

@@ -32,7 +32,7 @@ Admins are declared, not first-come: `ADMIN_CHARACTER_IDS` lists the EVE charact
 
 Locked out? `docker compose ... exec web python manage.py grant_admin <character id>` grants admin to any character, logged in before or not.
 
-Caddy obtains a TLS certificate automatically once DNS for `DOMAIN` resolves to the box. Ports 80 and 443 must be reachable. Watch the first boot with `make logs`.
+Caddy obtains a TLS certificate automatically once DNS for `DOMAIN` resolves to the box. Ports 80 and 443 must be reachable. Watch the first boot with `make logs`. If another reverse proxy already owns those ports on the box, see [DEPLOY.md](DEPLOY.md).
 
 ## 3. Ship data (SDE)
 

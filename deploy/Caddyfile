@@ -1,8 +1,14 @@
 {
 	email {$ACME_EMAIL}
+	servers {
+		# Behind another reverse proxy (SITE_ADDRESS=:80) the X-Forwarded-* headers it sets must be kept,
+		# or Django sees http and rejects the CSRF origin. Docker networks are private ranges.
+		trusted_proxies static private_ranges
+	}
 }
 
-{$DOMAIN} {
+# SITE_ADDRESS is the domain (Caddy gets the certificate) or :80 when another proxy terminates TLS.
+{$SITE_ADDRESS} {
 	# Compress the usual web types only: the scrim event stream (text/event-stream) must pass through unbuffered.
 	encode zstd gzip {
 		match {
@@ -15,7 +21,7 @@
 		}
 	}
 
-	@backend path /api/* /auth/* /ws/* /admin/* /static/* /share/*
+	@backend path /api/* /auth/* /ws/* /admin/* /static/*
 	handle @backend {
 		reverse_proxy web:8000
 	}
