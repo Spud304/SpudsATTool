@@ -427,6 +427,7 @@ Sizes relative; assume a solo dev at ~10 h/week. Phase 2 is the critical path; s
 - Comp scratchpad as a whole: a cleanup pass to bring it to parity with the rest of the app (ui primitives, tokens, light theme, hull input with Enter and arrow navigation, test ids), covering the three scratchpad items above in one slice.
 - Admin-defined roles. Today `Role` is a fixed enum ranked admin > captain > theorycrafter > pilot > guest > viewer, and every permission check compares ranks. Custom roles need a `Role` table with a permission set per role (browse scrims, edit sets, score, manage comps and fits, manage members, view audit), the existing six seeded as defaults, and the checks rewritten against permissions instead of ranks. Larger than the other items here; treat as its own slice.
 - Comp Scratchpad: Decision Point, per user or shared across entire team? Maybe each person gets their own and everyone can look at others?
+- Audit Log: Filter by more than just actions (e.g., by user, by date range, by target)
 
 ---
 
