@@ -428,6 +428,9 @@ Sizes relative; assume a solo dev at ~10 h/week. Phase 2 is the critical path; s
 - Admin-defined roles. Today `Role` is a fixed enum ranked admin > captain > theorycrafter > pilot > guest > viewer, and every permission check compares ranks. Custom roles need a `Role` table with a permission set per role (browse scrims, edit sets, score, manage comps and fits, manage members, view audit), the existing six seeded as defaults, and the checks rewritten against permissions instead of ranks. Larger than the other items here; treat as its own slice.
 - Comp Scratchpad: Decision Point, per user or shared across entire team? Maybe each person gets their own and everyone can look at others?
 - Audit Log: Filter by more than just actions (e.g., by user, by date range, by target)
+- Scrims: When a new pilot gets added to the team they should appear automatically in the upcoming scrims with an empty slot, ready for RSVP and attendance tracking.
+- New Tab: For those Admin Defined Roles, also allows for adding new statuses, archetypes, and other custom attributes that may be needed for the team. Basically anything that is in
+an enum and a captain might want to be able to extend at a later date.
 
 ---
 

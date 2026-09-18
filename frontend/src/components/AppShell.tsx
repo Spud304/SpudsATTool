@@ -9,6 +9,7 @@ type NavItem = { to: string; label: string; id: string; show: (me: ReturnType<ty
 const NAV: NavItem[] = [
   { to: '/', label: 'Home', id: 'home', show: () => true },
   { to: '/scratchpad', label: 'Comp scratchpad', id: 'scratchpad', show: (me) => Boolean(me?.membership) },
+  { to: '/points', label: 'Points', id: 'points', show: (me) => Boolean(me?.membership) },
   { to: '/comps', label: 'Comps', id: 'comps', show: (me) => Boolean(me?.capabilities?.browse_library) },
   { to: '/fits', label: 'Fits', id: 'fits', show: (me) => Boolean(me?.capabilities?.browse_library) },
   { to: '/scrims', label: 'Scrims', id: 'scrims', show: (me) => Boolean(me?.capabilities?.browse_scrims) },

@@ -4,6 +4,7 @@ import { api, unwrap, type BanIn, type EvaluateOut, type SlotIn } from '@/lib/ap
 import { useRulesets, useRulesetShips } from '@/lib/api/hooks'
 import { Badge, Button, Checkbox, Empty, ErrorText, Input, Mono, Panel, Select, Table } from '@/components/ui'
 import { HullInput } from '@/features/comps/HullInput'
+import { PointsView } from '@/features/points/PointsView'
 
 /** Utilitarian harness for the rules engine: pick a ruleset, fill slots, read the evaluation. */
 export function CompScratchpad() {
@@ -79,10 +80,15 @@ function Editor({ code, fielded, flagship }: { code: string; fielded: number; fl
     setBanText('')
   }
   const update = (i: number, patch: Partial<SlotState>) => setSlots((prev) => prev.map((s, j) => (j === i ? { ...s, ...patch } : s)))
+  const fillNextEmpty = (type_id: number) =>
+    setSlots((prev) => {
+      const i = prev.findIndex((s) => s.type_id == null)
+      return i === -1 ? prev : prev.map((s, j) => (j === i ? { ...s, type_id } : s))
+    })
   const evalBySlot = new Map((result?.slots ?? []).map((s) => [s.slot_no, s]))
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
+    <div className="grid gap-4 lg:grid-cols-[1fr_420px]">
       <div>
         <datalist id="hulls">{(ships.data ?? []).map((s) => <option key={s.type_id} value={s.name} />)}</datalist>
         <Table>
@@ -108,7 +114,7 @@ function Editor({ code, fielded, flagship }: { code: string; fielded: number; fl
                     <Mono className="text-muted">{i + 1}</Mono>
                   </td>
                   <td>
-                    <HullInput value={ship?.name ?? ''} lookup={byName} onPick={(s) => update(i, { type_id: s?.type_id ?? null })} />
+                    <HullInput value={ship?.name ?? ''} lookup={byName} onPick={(s) => update(i, { type_id: s?.type_id ?? null })} testId={`scratchpad.slot.${i + 1}.hull`} />
                   </td>
                   <td className="text-muted">{ship?.ship_class ?? ''}</td>
                   <td>
@@ -153,38 +159,43 @@ function Editor({ code, fielded, flagship }: { code: string; fielded: number; fl
         </div>
       </div>
 
-      <Panel title="Evaluation">
-        <ErrorText error={error} />
-        {result ? (
-          <div className="space-y-3">
-            <div className="text-lg">
-              <Mono>
-                {result.total_points} / {result.point_cap}
-              </Mono>{' '}
-              <Badge tone={result.cap_status === 'EXACT' ? 'ok' : result.cap_status === 'OVER' ? 'bad' : 'warn'}>
-                {result.cap_status}
-                {result.cap_status === 'UNDER' ? ` (${result.unspent_points} unspent)` : ''}
-              </Badge>
+      <div className="space-y-4">
+        <Panel title="Evaluation">
+          <ErrorText error={error} />
+          {result ? (
+            <div className="space-y-3">
+              <div className="text-lg">
+                <Mono>
+                  {result.total_points} / {result.point_cap}
+                </Mono>{' '}
+                <Badge tone={result.cap_status === 'EXACT' ? 'ok' : result.cap_status === 'OVER' ? 'bad' : 'warn'}>
+                  {result.cap_status}
+                  {result.cap_status === 'UNDER' ? ` (${result.unspent_points} unspent)` : ''}
+                </Badge>
+              </div>
+              <Badge tone={result.is_legal ? 'ok' : 'bad'}>{result.is_legal ? 'legal' : 'illegal'}</Badge>
+              <ul className="space-y-1 text-[12px]">
+                {result.violations.map((v, i) => (
+                  <li key={i} className={clsx(v.severity === 'error' && 'text-bad', v.severity === 'warning' && 'text-warn', v.severity === 'info' && 'text-muted')}>
+                    <Mono>{v.code}</Mono> {v.message}
+                    {v.slot_nos.length ? <Mono className="text-muted"> [{v.slot_nos.join(',')}]</Mono> : null}
+                  </li>
+                ))}
+                {result.violations.length === 0 ? <li className="text-muted">no violations</li> : null}
+              </ul>
+              <details>
+                <summary className="cursor-pointer text-muted">raw response</summary>
+                <pre className="mono max-h-96 overflow-auto text-[11px]">{JSON.stringify(result, null, 2)}</pre>
+              </details>
             </div>
-            <Badge tone={result.is_legal ? 'ok' : 'bad'}>{result.is_legal ? 'legal' : 'illegal'}</Badge>
-            <ul className="space-y-1 text-[12px]">
-              {result.violations.map((v, i) => (
-                <li key={i} className={clsx(v.severity === 'error' && 'text-bad', v.severity === 'warning' && 'text-warn', v.severity === 'info' && 'text-muted')}>
-                  <Mono>{v.code}</Mono> {v.message}
-                  {v.slot_nos.length ? <Mono className="text-muted"> [{v.slot_nos.join(',')}]</Mono> : null}
-                </li>
-              ))}
-              {result.violations.length === 0 ? <li className="text-muted">no violations</li> : null}
-            </ul>
-            <details>
-              <summary className="cursor-pointer text-muted">raw response</summary>
-              <pre className="mono max-h-96 overflow-auto text-[11px]">{JSON.stringify(result, null, 2)}</pre>
-            </details>
-          </div>
-        ) : (
-          <Empty>Fill a slot to evaluate.</Empty>
-        )}
-      </Panel>
+          ) : (
+            <Empty>Fill a slot to evaluate.</Empty>
+          )}
+        </Panel>
+        <Panel title="Points" testId="scratchpad.points">
+          <PointsView code={code} compact onPick={(s) => fillNextEmpty(s.type_id)} />
+        </Panel>
+      </div>
     </div>
   )
 }

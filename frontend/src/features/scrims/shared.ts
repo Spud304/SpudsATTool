@@ -86,7 +86,7 @@ export function warpColor(km: number | null | undefined): string | undefined {
 }
 
 /** A number input without the browser's spinner arrows. */
-export const NO_SPINNER = '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none'
+export { NO_SPINNER } from '@/lib/styles'
 
 /** Focus another row's hull box in the same lineup table; rows are 1..N, anything outside is ignored. */
 export function focusShipRow(table: 'ours' | 'theirs', slotNo: number) {

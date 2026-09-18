@@ -6,6 +6,7 @@ import { CompsPage } from './features/comps/CompsPage'
 import { FitDetailPage } from './features/fits/FitDetailPage'
 import { FitsPage } from './features/fits/FitsPage'
 import { CompScratchpad } from './features/scratchpad/CompScratchpad'
+import { PointsPage } from './features/points/PointsPage'
 import { ScrimPage } from './features/scrims/ScrimPage'
 import { ScrimsPage } from './features/scrims/ScrimsPage'
 import { PilotsPage } from './features/team/PilotsPage'
@@ -25,6 +26,7 @@ const rootRoute = createRootRoute({
 const routes = [
   createRoute({ getParentRoute: () => rootRoute, path: '/', component: DashboardPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/scratchpad', component: CompScratchpad }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/points', component: PointsPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/comps', component: CompsPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/comps/$compId', component: CompBuilderPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/fits', component: FitsPage }),
