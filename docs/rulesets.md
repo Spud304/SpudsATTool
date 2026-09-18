@@ -82,17 +82,21 @@ module_rules:
   by_group:
     - { groups: [Sensor Dampener, Weapon Disruptor], max_meta_level: 4, hulls: bonused_only }
     - { categories: [Implant], max_meta_level: 3 }
-  banned_types: [Bastion Module I]
+  banned_types: [Gecko, Aralez]
   banned_groups: [Booster]   # drugs of any sort
+  allowed_name_patterns: ["Cerebral Accelerator$"]        # exempt from every check
+  banned_name_patterns: ["^'(Augmented|Integrated)'\s"]    # regex on the item name
   flagship: { allowed_meta_groups: [Tech I, Tech II, Faction, Deadspace, Officer], groups: [] }
 ```
 
-`by_group` entries need `groups` or `categories` (SDE names) and at least one of `max_meta_level`, `allowed_meta_groups`. `hulls: bonused_only` restricts the module to hulls with a bonus to it.
+`by_group` entries need `groups` or `categories` (SDE names) and at least one of `max_meta_level`, `allowed_meta_groups`. `hulls: bonused_only` restricts the module to hulls with a bonus to it. A rule that names the item's SDE group replaces any rule that only names its category (so `Cyber Leadership` mindlinks escape the `Implant` meta cap).
+
+`allowed_name_patterns` and `banned_name_patterns` are Python regular expressions matched against the item name, for distinctions the SDE does not carry: navy drones and `'Augmented'` drones share the Faction meta group, and cerebral accelerators sit in the banned `Booster` group. An allowed match skips every other check; a banned match is a `BANNED_TYPE` error. Patterns are trimmed like every other string in the document, so write `\s` rather than a trailing space.
 
 How a fit is checked (`apps/rules/engine/modules.py`):
 
 - Every EFT line (modules, charges, drones, implants, cargo) is resolved to an SDE type; unknown names are `UNRESOLVED_ITEM` warnings and never make a fit illegal.
-- `banned_types` → `BANNED_TYPE` error; `banned_groups` (whole SDE groups, e.g. `Booster` for drugs) → `BANNED_GROUP` error.
+- `allowed_name_patterns` first: a match is legal and skips the rest. Then `banned_name_patterns` and `banned_types` → `BANNED_TYPE` error; `banned_groups` (whole SDE groups, e.g. `Booster` for drugs) → `BANNED_GROUP` error.
 - `default.allowed_meta_groups` applies to **modules and drones only**. Charges, implants, subsystems and deployables are checked only by `by_group` entries that name them.
 - A `by_group` entry with `allowed_meta_groups` replaces the default set for its groups or categories. With the flagship toggle on, `flagship.allowed_meta_groups` is added on top (for every family when `groups` is empty). Meta group misses are `META_GROUP_NOT_ALLOWED` errors.
 - `max_meta_level` compares against the SDE `metaLevel`. Hardwiring implants have none, so the grade digit in the name is used (`EE-603` is 3, which is what CCP means by Meta 3). `hulls: bonused_only` misses are warnings until hull bonuses are checked. Elsewhere `META_LEVEL_TOO_HIGH` is an error; a missing level is `META_LEVEL_UNKNOWN`.

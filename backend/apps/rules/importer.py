@@ -23,6 +23,8 @@ from .models import (
     HullSizeRule,
     Legality,
     MappingSource,
+    ModuleNamePattern,
+    ModuleNamePatternKind,
     ModuleRule,
     ModuleRuleScope,
     PointTableEntry,
@@ -500,6 +502,21 @@ def _write(doc, effective, plans, resolved, report, replace_points, new_hash) ->
         ruleset.banned_module_groups.all().delete()
         BannedModuleGroup.objects.bulk_create(
             BannedModuleGroup(ruleset=ruleset, group=resolved.groups[g]) for g in mr.banned_groups
+        )
+        ruleset.module_name_patterns.all().delete()
+        ModuleNamePattern.objects.bulk_create(
+            [
+                ModuleNamePattern(
+                    ruleset=ruleset, kind=ModuleNamePatternKind.ALLOWED, pattern=p, sort_order=i
+                )
+                for i, p in enumerate(mr.allowed_name_patterns)
+            ]
+            + [
+                ModuleNamePattern(
+                    ruleset=ruleset, kind=ModuleNamePatternKind.BANNED, pattern=p, sort_order=i
+                )
+                for i, p in enumerate(mr.banned_name_patterns)
+            ]
         )
         report.derived["module_rules"] = 1 + len(mr.by_group) + (1 if mr.flagship else 0)
 

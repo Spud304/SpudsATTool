@@ -421,6 +421,8 @@ Sizes relative; assume a solo dev at ~10 h/week. Phase 2 is the critical path; s
 - Members must not be able to change their own role or status. Today `PATCH /api/team/members/{user_id}` only protects the last active admin; a captain or admin can demote or suspend themselves. Reject `user_id == request.user` with 403 and hide the controls on the Team page for the viewer's own row. (Paige, 2026-09-18)
 - Theme toggle in the header (light is the default; dark tokens exist).
 - MotD field grows with its text instead of a fixed height.
+- Comp scratchpad: keep its contents when the tab is left (save to local storage or the server), add a Clear all button and a Move to comp editor button that opens the builder with the same hulls, and add a tab listing every ship in the season's ruleset with its point value. (Paige, 2026-09-18)
+- Comp editor: the warp-in box should be a plain number field without the spinner arrows, like the scrim page. (Paige, 2026-09-18)
 
 ---
 

@@ -164,3 +164,80 @@ def test_unresolved_is_warning_and_lines_merge():
 
 def test_no_rules_means_everything_legal():
     assert evaluate_fit_modules([item("x", meta=ABYSSAL)], ModuleRulesSpec()).violations == ()
+
+
+LOGI_DRONE, LEADERSHIP = 640, 744
+
+ATXXII_DRONES = ModuleRulesSpec(
+    default_allowed_meta_group_ids=frozenset({T1, T2}),
+    by_group=(
+        GroupModuleRule(
+            group_ids=frozenset({100}), allowed_meta_group_ids=frozenset({T1, FACTION})
+        ),
+        GroupModuleRule(group_ids=frozenset({LOGI_DRONE}), allowed_meta_group_ids=frozenset({T1})),
+        GroupModuleRule(category_ids=frozenset({IMPLANT}), max_meta_level=3),
+        GroupModuleRule(
+            group_ids=frozenset({LEADERSHIP}), allowed_meta_group_ids=frozenset({T1, T2, FACTION})
+        ),
+    ),
+    banned_type_ids=frozenset({777}),
+    banned_group_ids=frozenset({303}),
+    allowed_name_patterns=("Cerebral Accelerator$",),
+    banned_name_patterns=("^'(Augmented|Integrated)'\\s", "-\\d{3}-I$"),
+    meta_group_names={T1: "Tech I", T2: "Tech II", FACTION: "Faction"},
+)
+
+
+def drone(name, meta, level, group=100, type_id=5):
+    return item(name, type_id=type_id, category=DRONE, group=group, meta=meta, level=level)
+
+
+def test_atxxii_drones_navy_allowed_t2_and_named_variants_banned():
+    ok = [drone("Republic Fleet Warrior", FACTION, 6), drone("Warrior I", T1, 0)]
+    assert evaluate_fit_modules(ok, ATXXII_DRONES).violations == ()
+    t2 = evaluate_fit_modules([drone("Warrior II", T2, 5)], ATXXII_DRONES)
+    assert not t2.is_legal and codes_of(t2) == {(c.META_GROUP_NOT_ALLOWED, "error")}
+    named = evaluate_fit_modules(
+        [
+            drone("'Augmented' Hobgoblin", FACTION, 8),
+            drone("'Integrated' Warrior", FACTION, 6),
+            drone("Inshore EC-300-I", FACTION, 6),
+            drone("Gecko", FACTION, 6, type_id=777),
+        ],
+        ATXXII_DRONES,
+    )
+    assert {v.code for v in named.violations} == {c.BANNED_TYPE} and len(named.violations) == 4
+    assert named.violations[0].data["pattern"].startswith("^")
+    logi = evaluate_fit_modules(
+        [drone("Light Armor Maintenance Bot II", T2, 5, group=LOGI_DRONE)], ATXXII_DRONES
+    )
+    assert not logi.is_legal
+
+
+def test_group_rule_replaces_category_rule_so_mindlinks_pass_the_implant_cap():
+    mindlink = item(
+        "Federation Navy Command Mindlink",
+        category=IMPLANT,
+        group=LEADERSHIP,
+        meta=FACTION,
+        level=None,
+    )
+    assert evaluate_fit_modules([mindlink], ATXXII_DRONES).violations == ()
+    hardwiring = item(
+        "Zainou 'Gnome' Shield Management SM-705",
+        category=IMPLANT,
+        group=749,
+        meta=None,
+        level=None,
+    )
+    ev = evaluate_fit_modules([hardwiring], ATXXII_DRONES)
+    assert not ev.is_legal and codes_of(ev) == {(c.META_LEVEL_TOO_HIGH, "error")}
+
+
+def test_allowed_pattern_exempts_from_banned_group():
+    accelerator = item(
+        "Standard Cerebral Accelerator", category=IMPLANT, group=303, meta=FACTION, level=8
+    )
+    pill = item("Standard Blue Pill Booster", category=IMPLANT, group=303, meta=T1, level=None)
+    ev = evaluate_fit_modules([accelerator, pill], ATXXII_DRONES)
+    assert codes_of(ev) == {(c.BANNED_GROUP, "error")} and len(ev.violations) == 1

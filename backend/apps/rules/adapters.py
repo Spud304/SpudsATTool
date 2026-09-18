@@ -19,7 +19,15 @@ from .engine.types import (
     SizeRule,
     StageSpec,
 )
-from .models import Legality, ModuleRuleScope, PointTableVersion, Ruleset, Stage, TablePurpose
+from .models import (
+    Legality,
+    ModuleNamePatternKind,
+    ModuleRuleScope,
+    PointTableVersion,
+    Ruleset,
+    Stage,
+    TablePurpose,
+)
 
 CACHE_SIZE = 16
 
@@ -88,7 +96,10 @@ def build_module_rules(ruleset: Ruleset) -> ModuleRulesSpec:
                 )
             )
     banned_groups = dict(ruleset.banned_module_groups.values_list("group_id", "group__name"))
+    patterns = list(ruleset.module_name_patterns.values_list("kind", "pattern"))
     return ModuleRulesSpec(
+        allowed_name_patterns=tuple(p for k, p in patterns if k == ModuleNamePatternKind.ALLOWED),
+        banned_name_patterns=tuple(p for k, p in patterns if k == ModuleNamePatternKind.BANNED),
         default_allowed_meta_group_ids=default_allowed,
         by_group=tuple(by_group),
         flagship=flagship,

@@ -191,3 +191,38 @@ def test_no_point_table_raises(tiny_sde):
     ruleset = import_ruleset(doc, report=ImportReport(source="nopoints"))
     with pytest.raises(adapters.NoPointTable):
         adapters.engine_inputs_for(ruleset)
+
+
+def test_name_patterns_import_export_and_validate(mini_doc, tiny_sde):
+    doc = mini_doc.model_copy(deep=True)
+    assert doc.module_rules is not None
+    doc.module_rules.allowed_name_patterns = ["Cerebral Accelerator$"]
+    doc.module_rules.banned_name_patterns = ["^'(Augmented|Integrated)'\\s"]
+    ruleset = import_ruleset(doc, report=ImportReport(source="patterns"))
+    assert list(ruleset.module_name_patterns.values_list("kind", "pattern")) == [
+        ("allowed", "Cerebral Accelerator$"),
+        ("banned", "^'(Augmented|Integrated)'\\s"),
+    ]
+    text = export_ruleset(ruleset)
+    again = load_ruleset_document(text)
+    assert again.module_rules is not None
+    assert again.module_rules.banned_name_patterns == ["^'(Augmented|Integrated)'\\s"]
+    from apps.rules.adapters import build_module_rules
+
+    spec = build_module_rules(ruleset)
+    assert spec.allowed_name_patterns == ("Cerebral Accelerator$",)
+    assert spec.banned_name_patterns == ("^'(Augmented|Integrated)'\\s",)
+
+
+def test_invalid_pattern_is_a_document_error():
+    import pytest
+
+    from apps.rules.yaml_io import DocumentInvalid
+    from tests.conftest import MINI_ATXXII
+
+    bad = MINI_ATXXII.replace(
+        "  banned_groups: [Booster]", "  banned_groups: [Booster]\n  banned_name_patterns: ['(']"
+    )
+    with pytest.raises(DocumentInvalid) as exc:
+        load_ruleset_document(bad)
+    assert "not a valid regex" in str(exc.value)

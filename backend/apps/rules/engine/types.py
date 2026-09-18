@@ -208,6 +208,8 @@ class ModuleRulesSpec:
     flagship: FlagshipModuleRule | None = None
     banned_type_ids: frozenset[int] = frozenset()
     banned_group_ids: frozenset[int] = frozenset()
+    allowed_name_patterns: tuple[str, ...] = ()
+    banned_name_patterns: tuple[str, ...] = ()
     meta_group_names: Mapping[int, str] = field(default_factory=dict)
     group_names: Mapping[int, str] = field(default_factory=dict)
 

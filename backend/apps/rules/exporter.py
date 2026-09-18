@@ -116,6 +116,14 @@ def export_document(ruleset: Ruleset) -> RulesetDocument:
             "banned_groups": sorted(
                 b.group.name for b in ruleset.banned_module_groups.select_related("group")
             ),
+            "allowed_name_patterns": list(
+                ruleset.module_name_patterns.filter(kind="allowed").values_list(
+                    "pattern", flat=True
+                )
+            ),
+            "banned_name_patterns": list(
+                ruleset.module_name_patterns.filter(kind="banned").values_list("pattern", flat=True)
+            ),
             "flagship": (
                 {
                     "allowed_meta_groups": sorted(m.name for m in flag.allowed_meta_groups.all()),

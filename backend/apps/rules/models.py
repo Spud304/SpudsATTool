@@ -160,6 +160,7 @@ class Ruleset(models.Model):
         module_rules: "RelatedManager[ModuleRule]"
         banned_module_types: "RelatedManager[BannedModuleType]"
         banned_module_groups: "RelatedManager[BannedModuleGroup]"
+        module_name_patterns: "RelatedManager[ModuleNamePattern]"
         text_sections: "RelatedManager[TextSection]"
 
     class Meta:
@@ -439,6 +440,26 @@ class BannedModuleType(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["ruleset", "type"], name="rules_banned_module_uniq")
         ]
+
+
+class ModuleNamePatternKind(models.TextChoices):
+    ALLOWED = "allowed", "Allowed"
+    BANNED = "banned", "Banned"
+
+
+class ModuleNamePattern(models.Model):
+    """Regex on item names; `allowed` exempts matches from every check, `banned` fails them."""
+
+    ruleset = models.ForeignKey(
+        Ruleset, on_delete=models.CASCADE, related_name="module_name_patterns"
+    )
+    kind = models.CharField(max_length=8, choices=ModuleNamePatternKind.choices)
+    pattern = models.CharField(max_length=200)
+    sort_order = models.SmallIntegerField(default=0)
+
+    class Meta:
+        db_table = "rules_module_name_pattern"
+        ordering = ["kind", "sort_order"]
 
 
 class BannedModuleGroup(models.Model):

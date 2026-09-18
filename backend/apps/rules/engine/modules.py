@@ -45,6 +45,19 @@ def evaluate_fit_modules(
                 item,
             )
             continue
+        if any(re.search(p, item.name) for p in rules.allowed_name_patterns):
+            continue
+        banned_by = next((p for p in rules.banned_name_patterns if re.search(p, item.name)), None)
+        if banned_by is not None:
+            violate(
+                codes.BANNED_TYPE,
+                codes.SEVERITY_ERROR,
+                f"{item.name} is banned",
+                item,
+                type_id=item.type_id,
+                pattern=banned_by,
+            )
+            continue
         if item.type_id in rules.banned_type_ids:
             violate(
                 codes.BANNED_TYPE,
@@ -66,12 +79,16 @@ def evaluate_fit_modules(
             )
             continue
 
+        # A rule naming the item's group is more specific than one naming its category and replaces it.
         matching = [
-            r
-            for r in rules.by_group
-            if (item.group_id is not None and item.group_id in r.group_ids)
-            or (item.category_id is not None and item.category_id in r.category_ids)
+            r for r in rules.by_group if item.group_id is not None and item.group_id in r.group_ids
         ]
+        if not matching:
+            matching = [
+                r
+                for r in rules.by_group
+                if item.category_id is not None and item.category_id in r.category_ids
+            ]
 
         allowed: frozenset[int] | None = None
         specific = [r for r in matching if r.allowed_meta_group_ids is not None]

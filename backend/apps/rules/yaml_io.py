@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import re
 from datetime import date
 from typing import Any, Literal
 
@@ -177,7 +178,21 @@ class ModuleRulesDoc(_Base):
     by_group: list[ModuleRuleDoc] = []
     banned_types: list[str] = []
     banned_groups: list[str] = []  # whole SDE groups, e.g. Booster (drugs)
+    # Regular expressions on item names, for rules the SDE cannot express (navy and 'Augmented'
+    # drones share one meta group). An allowed pattern exempts the item from every other check.
+    allowed_name_patterns: list[str] = []
+    banned_name_patterns: list[str] = []
     flagship: FlagshipModuleDoc | None = None
+
+    @model_validator(mode="after")
+    def _patterns_compile(self) -> "ModuleRulesDoc":
+        for field in ("allowed_name_patterns", "banned_name_patterns"):
+            for pattern in getattr(self, field):
+                try:
+                    re.compile(pattern)
+                except re.error as exc:
+                    raise ValueError(f"{field}: {pattern!r} is not a valid regex ({exc})") from exc
+        return self
 
 
 class TextSectionDoc(_Base):
