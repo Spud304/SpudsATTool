@@ -20,7 +20,8 @@ case "${1:-web}" in
     ;;
   scheduler)
     wait_for_db
-    exec supercronic /app/deploy/crontab
+    # Full path: as PID 1 supercronic re-executes itself from argv[0], which fails for a bare name.
+    exec /usr/local/bin/supercronic /app/deploy/crontab
     ;;
   *)
     exec "$@"

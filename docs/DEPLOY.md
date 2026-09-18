@@ -44,7 +44,7 @@ When `PROXY_NETWORK` is set the Makefile adds `deploy/docker-compose.proxy.yml`,
 Check from the host before touching the proxy:
 
 ```bash
-docker run --rm --network aa-docker_default curlimages/curl -si http://attool-caddy/api/health | head -20
+docker run --rm --network aa-docker_default curlimages/curl -si -H "Host: at22.playwfire.org" http://attool-caddy/api/health | head -20
 ```
 
 ## 3. Add the host in Nginx Proxy Manager
@@ -52,7 +52,7 @@ docker run --rm --network aa-docker_default curlimages/curl -si http://attool-ca
 Hosts → Proxy Hosts → Add:
 
 - **Details.** Domain name `$DOMAIN`. Scheme `http`, forward hostname `attool-caddy`, port `80`. Turn on **Websockets Support** (it sets `proxy_http_version 1.1` and the `Upgrade` headers, which the event stream also needs). Leave **Cache Assets** off. **Block Common Exploits** is fine.
-- **SSL.** Request a new Let's Encrypt certificate, **Force SSL**, **HTTP/2 Support**, **HSTS Enabled**. DNS for `$DOMAIN` must already resolve. On the homelab the zone is on Cloudflare with the proxy on (the existing `auth.playwfire.org` resolves to Cloudflare addresses), so `at22` should be set up the same way: an A record to the box's public IP, proxied, and the zone's SSL mode at Full (strict). Cloudflare passes the event stream through unchanged; it closes idle connections after 100 s and the stream sends a `ping` every 20 s, so that limit is not reached.
+- **SSL.** Request a new Let's Encrypt certificate, **Force SSL**, **HTTP/2 Support**, **HSTS Enabled**. DNS for `$DOMAIN` must already resolve. On the homelab the zone is on Cloudflare with the proxy on (the existing `auth.playwfire.org` resolves to Cloudflare addresses), so `at22` should be set up the same way: an A record to the box's public IP, proxied, and the zone's SSL mode at Full (strict). Turn on **Always Use HTTPS** in the Cloudflare zone so plain `http://` requests redirect (Proxy Manager's Force SSL only sees traffic that reaches it over HTTP). Cloudflare passes the event stream through unchanged; it closes idle connections after 100 s and the stream sends a `ping` every 20 s, so that limit is not reached.
 - **Advanced.** The scrim page holds a server-sent-events stream open per tab. nginx buffers proxied responses by default and would hold the events back, so paste:
 
 ```nginx
