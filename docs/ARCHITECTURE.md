@@ -423,6 +423,8 @@ Sizes relative; assume a solo dev at ~10 h/week. Phase 2 is the critical path; s
 - MotD field grows with its text instead of a fixed height.
 - Comp scratchpad: keep its contents when the tab is left (save to local storage or the server), add a Clear all button and a Move to comp editor button that opens the builder with the same hulls, and add a tab listing every ship in the season's ruleset with its point value. (Paige, 2026-09-18)
 - Comp editor: the warp-in box should be a plain number field without the spinner arrows, like the scrim page. (Paige, 2026-09-18)
+- Comp scratchpad: paste a hull list from the clipboard, one hull per line or comma separated, and fill the slots from it. (Paige, 2026-09-18)
+- Comp scratchpad as a whole: a cleanup pass to bring it to parity with the rest of the app (ui primitives, tokens, light theme, hull input with Enter and arrow navigation, test ids), covering the three scratchpad items above in one slice. (Paige, 2026-09-18)
 
 ---
 
