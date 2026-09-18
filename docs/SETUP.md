@@ -19,7 +19,7 @@ The callback URL must match your domain exactly, including `https://`.
 git clone <repo> attool && cd attool
 make init                 # writes deploy/.env with generated secrets
 $EDITOR deploy/.env       # set DOMAIN, ACME_EMAIL, EVE_CLIENT_ID, EVE_CLIENT_SECRET, ESI_CONTACT_EMAIL, TEAM_NAME, ADMIN_CHARACTER_IDS
-make up                   # pulls images and starts caddy, web, scheduler, db, redis
+make up                   # pulls images and starts caddy, web, scheduler, db, redis (or `make build` first to build them here)
 ```
 
 ### Admins and first login
@@ -115,7 +115,7 @@ Dev settings pin `EVE_CALLBACK_URL` to `http://127.0.0.1:5173/auth/callback`; th
 
 SDE settings (all optional): `INSTANCE_DIR` (default `backend/instance`), `SDE_INCLUDED_FILES`, `SDE_TYPE_CATEGORIES`, `SDE_AUTO_DOWNLOAD`, `SDE_STALE_DAYS`, `SDE_LATEST_URL`, `SDE_DOWNLOAD_URL`. Load ship data locally with `uv run python manage.py import_sde --check-latest` (about 95 MB download).
 
-With both servers up, `http://127.0.0.1:5173/scratchpad` evaluates comps against the imported rulesets (`import_ruleset --path fixtures/rulesets/atxxii.yaml` first), and `/fits` holds the fit library. To seed it from the old practice organizer: `python manage.py import_workbook_fits <workbook.xlsx> [--dry-run]` reads its `Fit library` sheet and reports unknown items; `import_workbook_comps <workbook.xlsx> [--ruleset ATXXII] [--dry-run]` then loads `Comp library` and `Comp Notes` (run it after the fits so default fits resolve). Admins pick the season the team works in from the header; it defaults to the newest ruleset with a point table.
+With both servers up, `http://127.0.0.1:5173/scratchpad` evaluates comps against the imported rulesets (they load automatically at the end of `import_sde`; `python manage.py load_rulesets` runs the same step by hand), `/points` lists every legal hull with its points, and `/fits` holds the fit library. To seed it from the old practice organizer: `python manage.py import_workbook_fits <workbook.xlsx> [--dry-run]` reads its `Fit library` sheet and reports unknown items; `import_workbook_comps <workbook.xlsx> [--ruleset ATXXII] [--dry-run]` then loads `Comp library` and `Comp Notes` (run it after the fits so default fits resolve). Admins pick the season the team works in from the header; it defaults to the newest ruleset with a point table.
 
 Tests: `make test`, with `make dev-db` running. Backend tests use the dev Postgres on :5433 (override with `TEST_DATABASE_URL`). The typed API client is regenerated with `make gen-client` while the backend is running.
 

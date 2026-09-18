@@ -8,15 +8,22 @@ A self-hosted organizer for EVE Online tournament teams (Alliance Tournament, An
 
 ## Status
 
-Skeleton plus two Phase 1 slices: the SDE loader (`backend/apps/sde`) that mirrors CCP's JSONL Static Data Export into Postgres, and the rules layer (`backend/apps/rules`): tournament rulesets as YAML documents (`docs/rulesets.md`, fixtures in `backend/fixtures/rulesets/`), a validating importer/exporter, a pure rules engine for comp legality, points with duplicate inflation, bans and round scoring, and a `/scratchpad` page that exercises it. EVE SSO login with env-declared admins, invite links, corp/alliance admission rules, roles and an audit log are in (`backend/apps/accounts`, `apps/audit`). The fit library (`backend/apps/library`, `/fits`) parses EFT text and Pyfa stats, runs the Suggested → Active review flow and checks module legality against a ruleset. The comp library (`/comps`) builds and browses team compositions against the season's ruleset with live points, legality and a ban simulator. Phases are built one at a time from `docs/ARCHITECTURE.md` section 13.
+Deployed and in use for the AT XXII season (first production install 2026-09-18, see `docs/DEPLOY.md`). Built so far, in the order of `docs/ARCHITECTURE.md` section 13:
+
+- **Foundations:** EVE SSO login with env-declared admins, invite links, corp/alliance admission rules re-checked hourly, roles plus a leadership flag, an audit log (`apps/accounts`, `apps/audit`); the SDE mirror with automatic CCP downloads (`apps/sde`); tournament rulesets as YAML documents with a validating importer/exporter and a pure rules engine for comp legality, points with duplicate inflation, bans, round scoring and module legality (`apps/rules`, `docs/rulesets.md`). The three shipped rulesets load themselves once the SDE is in.
+- **Libraries:** the fit library (`/fits`: EFT and Pyfa parsing, Suggested to Active review, module legality per ruleset) and the comp library (`/comps`: builder with live evaluation, stat rollups, ban theory), both importable from the old workbook (`apps/library`).
+- **Scrims** (`apps/scrims`, `/scrims`): roster and opponents, scrim creation with RSVP and roll call, sets with bans in stage order and avalanche bans, rounds copied forward, lineups with comp load, derived points and scores, live updates over server-sent events with presence, soft delete with restore and a per-scrim history drawer, a review tab, the match-log CSV, read-only share links (`/share/<token>`) and a pilot card (`/scrims/:id/me`).
+- **Tools:** the comp scratchpad (`/scratchpad`) and the points viewer (`/points`).
+
+Not built yet: the workbook importer for past sessions and the stats pages (Phase 3), the Phase 1 leftovers (ruleset upload page, points-revision importer, hull mapping review, per-object history tabs, team notes, TypeScript engine port) and the small items in section 13.1.
 
 ## Layout
 
 ```
-backend/    Django project (config/, apps/{core,accounts,audit,esi,sde,rules,library}, fixtures/rulesets, scripts/, tests/, playwright_tests/)
+backend/    Django project (config/, apps/{core,accounts,audit,esi,sde,rules,library,scrims}, fixtures/rulesets, scripts/, tests/, playwright_tests/)
 frontend/   React + TypeScript SPA (Vite)
 deploy/     docker-compose.yml, Caddyfile, Dockerfiles, entrypoint, crontab, backup script
-docs/       setup guide, architecture plan (research/ is local-only)
+docs/       SETUP.md (self-hosting), DEPLOY.md (behind an existing proxy), ARCHITECTURE.md (plan and roadmap), rulesets.md (YAML schema); research/ is local-only
 ```
 
 ## Development quick start
@@ -31,7 +38,7 @@ Browse the dev app at `http://127.0.0.1:5173`, not `localhost` (see docs/SETUP.m
 ## Tests
 
 ```bash
-make test              # backend pytest (needs the dev DB containers) + frontend tsc/vitest
+make test              # backend pytest (needs the dev DB containers) + frontend tsc (no vitest suites exist yet)
 make test-backend      # cd backend && uv run pytest -q
 make test-frontend     # cd frontend && npx tsc -b && npm test
 make lint              # ruff, ty, eslint

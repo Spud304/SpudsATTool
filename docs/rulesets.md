@@ -1,6 +1,6 @@
 # Ruleset documents
 
-A tournament edition's rules are one YAML file. Admins import it (`manage.py import_ruleset --path FILE`, later an admin upload page); the database is derived from it, and `manage.py export_ruleset CODE` produces the same canonical document back. Names everywhere (hulls, classes, SDE group and meta-group names), never ids. Unknown keys are errors. Every problem in a document is reported at once as `path: message`.
+A tournament edition's rules are one YAML file. The shipped files import themselves once the SDE is loaded (`manage.py load_rulesets`, run after every SDE import and on web start; a tournament code already in the database is left alone). Admins import a changed or new file with `manage.py import_ruleset --path FILE` (an upload page is still to come); the database is derived from it, and `manage.py export_ruleset CODE` produces the same canonical document back. Names everywhere (hulls, classes, SDE group and meta-group names), never ids. Unknown keys are errors. Every problem in a document is reported at once as `path: message`.
 
 Shipped documents live in `backend/fixtures/rulesets/`: `atxxii.yaml` (generated from the team workbook by `backend/scripts/gen_atxxii_from_workbook.py`), `atxxi.yaml` and `ag7.yaml` (hand-written, `verified: false`).
 

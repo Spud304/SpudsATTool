@@ -95,7 +95,7 @@ The nginx container must be on the same Docker network as `attool-caddy`, or for
 
 ## 5. Operations
 
-Same as SETUP.md: `make upgrade` (backup, then rebuild and restart), `make backup`, `make logs`. Because images are built locally, upgrading is `git pull && make build && make up`. Off-box backup copies need `rclone` on the scheduler image's host side only if `BACKUP_RCLONE_REMOTE` is set; leave it empty to keep nightly dumps in the `backups` volume.
+Same as SETUP.md: `make upgrade` (backup, then rebuild and restart), `make backup`, `make logs`. Because images are built locally, upgrading is `git pull && make build && make up`. Nightly dumps land in the `backups` volume. The backend image does not include `rclone`, so `BACKUP_RCLONE_REMOTE` only prints a warning today; copy the volume off the box by other means or leave it empty.
 
 ## Checklist for a first night
 
