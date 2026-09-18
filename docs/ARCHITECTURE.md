@@ -418,13 +418,14 @@ Sizes relative; assume a solo dev at ~10 h/week. Phase 2 is the critical path; s
 
 ### 13.1 Small items (QoL backlog)
 
-- Members must not be able to change their own role or status. Today `PATCH /api/team/members/{user_id}` only protects the last active admin; a captain or admin can demote or suspend themselves. Reject `user_id == request.user` with 403 and hide the controls on the Team page for the viewer's own row. (Paige, 2026-09-18)
+- Members must not be able to change their own role or status. Today `PATCH /api/team/members/{user_id}` only protects the last active admin; a captain or admin can demote or suspend themselves. Reject `user_id == request.user` with 403 and hide the controls on the Team page for the viewer's own row.
 - Theme toggle in the header (light is the default; dark tokens exist).
 - MotD field grows with its text instead of a fixed height.
-- Comp scratchpad: keep its contents when the tab is left (save to local storage or the server), add a Clear all button and a Move to comp editor button that opens the builder with the same hulls, and add a tab listing every ship in the season's ruleset with its point value. (Paige, 2026-09-18)
-- Comp editor: the warp-in box should be a plain number field without the spinner arrows, like the scrim page. (Paige, 2026-09-18)
-- Comp scratchpad: paste a hull list from the clipboard, one hull per line or comma separated, and fill the slots from it. (Paige, 2026-09-18)
-- Comp scratchpad as a whole: a cleanup pass to bring it to parity with the rest of the app (ui primitives, tokens, light theme, hull input with Enter and arrow navigation, test ids), covering the three scratchpad items above in one slice. (Paige, 2026-09-18)
+- Comp scratchpad: keep its contents when the tab is left (save to local storage or the server), add a Clear all button and a Move to comp editor button that opens the builder with the same hulls, and add a tab listing every ship in the season's ruleset with its point value
+- Comp editor: the warp-in box should be a plain number field without the spinner arrows, like the scrim page
+- Comp scratchpad: paste a hull list from the clipboard, one hull per line or comma separated, and fill the slots from it
+- Comp scratchpad as a whole: a cleanup pass to bring it to parity with the rest of the app (ui primitives, tokens, light theme, hull input with Enter and arrow navigation, test ids), covering the three scratchpad items above in one slice.
+- Admin-defined roles. Today `Role` is a fixed enum ranked admin > captain > theorycrafter > pilot > guest > viewer, and every permission check compares ranks. Custom roles need a `Role` table with a permission set per role (browse scrims, edit sets, score, manage comps and fits, manage members, view audit), the existing six seeded as defaults, and the checks rewritten against permissions instead of ranks. Larger than the other items here; treat as its own slice. (Paige, 2026-09-18)
 
 ---
 
