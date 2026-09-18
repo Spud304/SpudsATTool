@@ -207,7 +207,7 @@ def test_atxxii_drones_navy_allowed_t2_and_named_variants_banned():
         ATXXII_DRONES,
     )
     assert {v.code for v in named.violations} == {c.BANNED_TYPE} and len(named.violations) == 4
-    assert named.violations[0].data["pattern"].startswith("^")
+    assert named.violations[0].data["pattern"] == "^'(Augmented|Integrated)'\s"
     logi = evaluate_fit_modules(
         [drone("Light Armor Maintenance Bot II", T2, 5, group=LOGI_DRONE)], ATXXII_DRONES
     )
