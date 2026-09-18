@@ -31,7 +31,10 @@ export function useScrimStream(sessionId: number, enabled: boolean, options: Str
     let lastFrame = Date.now()
     const key = JSON.parse(keyString) as readonly unknown[]
     const refetch = () => void qc.invalidateQueries({ queryKey: key })
-    const source = new EventSource(url)
+    // Start after the document we already hold: without `since` the server replays every stored
+    // change from the beginning and the page visibly re-applies them. Reconnects send Last-Event-ID.
+    const since = qc.getQueryData<SessionOut>(key)?.event_seq ?? 0
+    const source = new EventSource(`${url}?since=${since}`)
     const alive = () => {
       lastFrame = Date.now()
       setStatus('live')
