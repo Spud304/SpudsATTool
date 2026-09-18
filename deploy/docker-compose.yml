@@ -50,6 +50,9 @@ services:
 
   scheduler:
     image: ghcr.io/spudsattool/attool-backend:${ATTOOL_VERSION:-latest}
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
     restart: unless-stopped
     env_file: .env
     environment:
