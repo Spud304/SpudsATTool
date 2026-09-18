@@ -421,6 +421,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/scratchpad": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Scratchpad */
+        get: operations["apps_library_scratchpad_api_get_scratchpad"];
+        /** Put Scratchpad */
+        put: operations["apps_library_scratchpad_api_put_scratchpad"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/scrims": {
         parameters: {
             query?: never;
@@ -1910,6 +1928,44 @@ export interface components {
             name?: string | null;
             /** Ruleset */
             ruleset?: string | null;
+        };
+        /** ScratchSlotIn */
+        ScratchSlotIn: {
+            /** Type Id */
+            type_id?: number | null;
+            /**
+             * Is Flagship
+             * @default false
+             */
+            is_flagship: boolean;
+            /**
+             * Has Links
+             * @default false
+             */
+            has_links: boolean;
+        };
+        /** ScratchpadOut */
+        ScratchpadOut: {
+            /** Ruleset */
+            ruleset: string | null;
+            /** Slots */
+            slots: components["schemas"]["ScratchSlotIn"][];
+            /** Bans */
+            bans: number[];
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /** ScratchpadIn */
+        ScratchpadIn: {
+            /** Ruleset */
+            ruleset?: string | null;
+            /** Slots */
+            slots: components["schemas"]["ScratchSlotIn"][];
+            /**
+             * Bans
+             * @default []
+             */
+            bans: number[];
         };
         /** SessionSummaryOut */
         SessionSummaryOut: {
@@ -3421,6 +3477,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CompOut"];
+                };
+            };
+        };
+    };
+    apps_library_scratchpad_api_get_scratchpad: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScratchpadOut"];
+                };
+            };
+        };
+    };
+    apps_library_scratchpad_api_put_scratchpad: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScratchpadIn"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScratchpadOut"];
                 };
             };
         };

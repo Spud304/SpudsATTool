@@ -4,6 +4,7 @@ import {
   unwrap,
   type CompCreateIn,
   type CompPatchIn,
+  type ScratchpadIn,
   type FitCreateIn,
   type FitPatchIn,
   type MemberPatch,
@@ -44,6 +45,7 @@ export const keys = {
   scrimHistory: (id: number) => ['scrims', 'history', id] as const,
   shareLinks: (id: number) => ['scrims', 'share-links', id] as const,
   share: (token: string) => ['share', token] as const,
+  scratchpad: ['scratchpad'] as const,
   pilotHistory: (typeId: number, exclude: number) => ['pilots', 'history', typeId, exclude] as const,
 }
 
@@ -481,4 +483,19 @@ export function usePilotHistory(typeId: number | null, excludeSession: number, e
     enabled: enabled && typeId != null,
     staleTime: 60_000,
   })
+}
+
+/** The member's saved comp scratchpad; the page saves it back as they work. */
+export function useScratchpad(enabled = true) {
+  return useQuery({ queryKey: keys.scratchpad, queryFn: async () => unwrap(await api.GET('/api/scratchpad')), enabled, staleTime: Infinity })
+}
+
+export function useScratchpadMutations() {
+  const qc = useQueryClient()
+  return {
+    save: useMutation({
+      mutationFn: async (body: ScratchpadIn) => unwrap(await api.PUT('/api/scratchpad', { body })),
+      onSuccess: (doc) => qc.setQueryData(keys.scratchpad, doc),
+    }),
+  }
 }

@@ -171,3 +171,20 @@ class CompSlot(models.Model):
 
     def __str__(self) -> str:
         return f"{self.comp_id}#{self.slot_no}"
+
+
+class Scratchpad(models.Model):
+    """One member's comp scratchpad, saved so leaving the page loses nothing. Private, not audited."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="scratchpad"
+    )
+    ruleset = models.ForeignKey(
+        "rules.Ruleset", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    slots = models.JSONField(default=list)  # [{type_id, is_flagship, has_links}, ...]
+    bans = models.JSONField(default=list)  # [type_id, ...]
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "library_scratchpad"
