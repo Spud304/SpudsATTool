@@ -415,6 +415,13 @@ Sizes relative; assume a solo dev at ~10 h/week. Phase 2 is the critical path; s
 | **3 History + analytics** | openpyxl importer for the workbook (libraries + 30 sessions; set blocks located by scanning column Y for "Set #"; dates from tab names; hidden sheets archived; hidden column M ban codes; cross-checks against cached totals and the sheet's own data-log rows); Django-Q2 for the long-running import; `v_match_log` CSV/API export; stats pages (pilot survival, ship death rates, comp W/L by opponent and archetype, ban frequency, attendance over time, per-opponent history). | M-L | Historical OF 99 renders identically to the sheet; the R users get the same CSV. |
 | **4 Nice-to-haves** | ESI fit push; Anger Games ruleset row (exercises data-driven rules; add code rules only if needed); Challonge bracket import; opponent scouting (zKillboard lookups); `dogma-engine` WASM fit stats, extended to comp-level numbers (Paige, 2026-09-17: with the SDE and every fit in the lineup known, apply command bursts, links and other fleet effects across the comp and show real EHP/DPS/speed per slot instead of the pasted Pyfa summary); team-wide library change notifications; flagship series tracking. | S-M each | Independent; ship as demanded. |
 
+
+### 13.1 Small items (QoL backlog)
+
+- Members must not be able to change their own role or status. Today `PATCH /api/team/members/{user_id}` only protects the last active admin; a captain or admin can demote or suspend themselves. Reject `user_id == request.user` with 403 and hide the controls on the Team page for the viewer's own row. (Paige, 2026-09-18)
+- Theme toggle in the header (light is the default; dark tokens exist).
+- MotD field grows with its text instead of a fixed height.
+
 ---
 
 ## 14. Decisions still open (recommended defaults in bold; the plan proceeds on these unless Paige says otherwise)
