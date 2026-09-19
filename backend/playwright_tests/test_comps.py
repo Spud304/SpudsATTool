@@ -24,6 +24,7 @@ def test_theorycrafter_builds_saves_and_clones_a_legal_comp(login_as):
     theo.page.get_by_test_id("comps.new.status").select_option("construction")
     theo.page.get_by_test_id("comps.new.create").click()
     expect(theo.page).to_have_url(COMP_URL)
+    expect(theo.page.get_by_test_id("toast").first).to_have_text("Comp created")
     url = theo.page.url
     expect(theo.page.get_by_test_id("comp.status.badge")).to_have_text("construction")
 

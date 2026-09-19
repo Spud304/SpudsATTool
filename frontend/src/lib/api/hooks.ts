@@ -126,10 +126,12 @@ export function useFitMutations() {
       mutationFn: async (body: { eft_text: string; pyfa_summary: string }) => unwrap(await api.POST('/api/fits/parse', { body })),
     }),
     createFit: useMutation({
+      meta: { toast: 'Fit added' },
       mutationFn: async (body: FitCreateIn) => unwrap(await api.POST('/api/fits', { body })),
       onSuccess: refreshFits,
     }),
     patchFit: useMutation({
+      meta: { toast: 'Fit saved' },
       mutationFn: async (vars: { id: number; body: FitPatchIn }) =>
         unwrap(await api.PATCH('/api/fits/{fit_id}', { params: { path: { fit_id: vars.id } }, body: vars.body })),
       onSuccess: refreshFits,
@@ -161,20 +163,24 @@ export function useCompMutations() {
   const refreshComps = () => qc.invalidateQueries({ queryKey: ['comps'] })
   return {
     createComp: useMutation({
+      meta: { toast: 'Comp created' },
       mutationFn: async (body: CompCreateIn) => unwrap(await api.POST('/api/comps', { body })),
       onSuccess: refreshComps,
     }),
     patchComp: useMutation({
+      meta: { toast: 'Comp saved' },
       mutationFn: async (vars: { id: number; body: CompPatchIn }) =>
         unwrap(await api.PATCH('/api/comps/{comp_id}', { params: { path: { comp_id: vars.id } }, body: vars.body })),
       onSuccess: refreshComps,
     }),
     cloneComp: useMutation({
+      meta: { toast: 'Comp cloned' },
       mutationFn: async (vars: { id: number; name?: string | null; ruleset?: string | null }) =>
         unwrap(await api.POST('/api/comps/{comp_id}/clone', { params: { path: { comp_id: vars.id } }, body: { name: vars.name ?? null, ruleset: vars.ruleset ?? null } })),
       onSuccess: refreshComps,
     }),
     createArchetype: useMutation({
+      meta: { toast: 'Archetype added' },
       mutationFn: async (body: { name: string; description: string; sort_order: number }) => unwrap(await api.POST('/api/comps/archetypes', { body })),
       onSuccess: refreshComps,
     }),
@@ -187,6 +193,7 @@ export function useTeamMutations() {
   const refresh = (...groups: readonly (readonly string[])[]) => groups.forEach((k) => qc.invalidateQueries({ queryKey: k }))
   return {
     patchTeam: useMutation({
+      meta: { toast: 'Team settings saved' },
       mutationFn: async (body: TeamPatch) => unwrap(await api.PATCH('/api/team', { body })),
       onSuccess: () => {
         refresh(keys.me)
@@ -195,35 +202,42 @@ export function useTeamMutations() {
       },
     }),
     patchMember: useMutation({
+      meta: { toast: 'Member updated' },
       mutationFn: async (vars: { userId: number; body: MemberPatch }) =>
         unwrap(await api.PATCH('/api/team/members/{user_id}', { params: { path: { user_id: vars.userId } }, body: vars.body })),
       onSuccess: () => refresh(keys.members, keys.me),
     }),
     removeMember: useMutation({
+      meta: { toast: 'Member removed' },
       mutationFn: async (vars: { userId: number; reason: string }) =>
         unwrap(await api.DELETE('/api/team/members/{user_id}', { params: { path: { user_id: vars.userId } }, body: { reason: vars.reason } })),
       onSuccess: () => refresh(keys.members),
     }),
     createInvite: useMutation({
+      meta: { toast: 'Invite created' },
       mutationFn: async (body: { role: Role; uses: number; expires_in_hours: number; note: string }) =>
         unwrap(await api.POST('/api/team/invites', { body })),
       onSuccess: () => refresh(keys.invites),
     }),
     revokeInvite: useMutation({
+      meta: { toast: 'Invite revoked' },
       mutationFn: async (id: number) => unwrap(await api.DELETE('/api/team/invites/{invite_id}', { params: { path: { invite_id: id } } })),
       onSuccess: () => refresh(keys.invites),
     }),
     createRule: useMutation({
+      meta: { toast: 'Admission rule added' },
       mutationFn: async (body: { kind: 'corporation' | 'alliance'; entity_id: number; entity_name: string; default_role: Role; enabled: boolean }) =>
         unwrap(await api.POST('/api/team/admission-rules', { body })),
       onSuccess: () => refresh(keys.rules),
     }),
     patchRule: useMutation({
+      meta: { toast: 'Admission rule saved' },
       mutationFn: async (vars: { id: number; enabled: boolean }) =>
         unwrap(await api.PATCH('/api/team/admission-rules/{rule_id}', { params: { path: { rule_id: vars.id } }, body: { enabled: vars.enabled } })),
       onSuccess: () => refresh(keys.rules),
     }),
     deleteRule: useMutation({
+      meta: { toast: 'Admission rule removed' },
       mutationFn: async (id: number) => unwrap(await api.DELETE('/api/team/admission-rules/{rule_id}', { params: { path: { rule_id: id } } })),
       onSuccess: () => refresh(keys.rules),
     }),
@@ -280,14 +294,17 @@ export function useScrimMutations() {
   const path = (id: number) => ({ params: { path: { session_id: id } } })
   return {
     createScrim: useMutation({
+      meta: { toast: 'Scrim created' },
       mutationFn: async (body: SessionCreateIn) => unwrap(await api.POST('/api/scrims', { body })),
       onSuccess: landed,
     }),
     patchScrim: useMutation({
+      meta: { toast: 'Scrim saved' },
       mutationFn: async (vars: { id: number; body: SessionPatchIn }) => unwrap(await api.PATCH('/api/scrims/{session_id}', { ...path(vars.id), body: vars.body })),
       onSuccess: landed,
     }),
     archiveScrim: useMutation({
+      meta: { toast: 'Scrim archived' },
       mutationFn: async (vars: { id: number; reason: string }) =>
         unwrap(await api.POST('/api/scrims/{session_id}/archive', { ...path(vars.id), body: { reason: vars.reason } })),
       onSuccess: landed,
@@ -316,19 +333,23 @@ export function useRosterMutations() {
   const refreshOpponents = () => qc.invalidateQueries({ queryKey: keys.opponents })
   return {
     createPilot: useMutation({
+      meta: { toast: 'Pilot added' },
       mutationFn: async (body: PilotIn) => unwrap(await api.POST('/api/pilots', { body })),
       onSuccess: refreshPilots,
     }),
     patchPilot: useMutation({
+      meta: { toast: 'Pilot saved' },
       mutationFn: async (vars: { id: number; body: PilotPatchIn }) =>
         unwrap(await api.PATCH('/api/pilots/{pilot_id}', { params: { path: { pilot_id: vars.id } }, body: vars.body })),
       onSuccess: refreshPilots,
     }),
     createOpponent: useMutation({
+      meta: { toast: 'Opponent added' },
       mutationFn: async (body: OpponentIn) => unwrap(await api.POST('/api/opponents', { body })),
       onSuccess: refreshOpponents,
     }),
     patchOpponent: useMutation({
+      meta: { toast: 'Opponent saved' },
       mutationFn: async (vars: { id: number; body: OpponentPatchIn }) =>
         unwrap(await api.PATCH('/api/opponents/{opponent_id}', { params: { path: { opponent_id: vars.id } }, body: vars.body })),
       onSuccess: refreshOpponents,
@@ -365,6 +386,7 @@ export function useSetMutations(sessionId: number) {
       onSuccess: landed,
     }),
     deleteSet: useMutation({
+      meta: { toast: 'Set deleted' },
       mutationFn: async (vars: { setId: number; reason: string }) => {
         unwrap(await api.DELETE('/api/scrims/{session_id}/sets/{set_id}', { params: { path: { session_id: sessionId, set_id: vars.setId } }, body: { reason: vars.reason } }))
         return vars.setId
@@ -372,11 +394,13 @@ export function useSetMutations(sessionId: number) {
       onSuccess: removed,
     }),
     restoreSet: useMutation({
+      meta: { toast: 'Set restored' },
       mutationFn: async (vars: { setId: number }) =>
         unwrap(await api.POST('/api/scrims/{session_id}/sets/{set_id}/restore', { params: { path: { session_id: sessionId, set_id: vars.setId } } })),
       onSuccess: landed,
     }),
     restoreRound: useMutation({
+      meta: { toast: 'Round restored' },
       mutationFn: async (vars: { setId: number; roundNo: number }) =>
         unwrap(
           await api.POST('/api/scrims/{session_id}/sets/{set_id}/rounds/{round_no}/restore', {
@@ -400,6 +424,7 @@ export function useSetMutations(sessionId: number) {
       onSuccess: landed,
     }),
     deleteRound: useMutation({
+      meta: { toast: 'Round deleted' },
       mutationFn: async (vars: { setId: number; roundNo: number }) =>
         unwrap(await api.DELETE('/api/scrims/{session_id}/sets/{set_id}/rounds/{round_no}', { params: { path: { session_id: sessionId, set_id: vars.setId, round_no: vars.roundNo } } })),
       onSuccess: landed,
@@ -463,10 +488,12 @@ export function useShareMutations(sessionId: number) {
   }
   return {
     createShare: useMutation({
+      meta: { toast: 'Share link created' },
       mutationFn: async (body: { days: number }) => unwrap(await api.POST('/api/scrims/{session_id}/share', { params: { path: { session_id: sessionId } }, body })),
       onSuccess: refresh,
     }),
     revokeShare: useMutation({
+      meta: { toast: 'Share link revoked' },
       mutationFn: async (vars: { linkId: number }) =>
         unwrap(await api.DELETE('/api/scrims/{session_id}/share/{link_id}', { params: { path: { session_id: sessionId, link_id: vars.linkId } } })),
       onSuccess: refresh,

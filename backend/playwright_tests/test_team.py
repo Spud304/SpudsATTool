@@ -14,6 +14,7 @@ def test_invite_link_admits_a_pilot_and_admin_manages_them(login_as, browser: Br
     admin.page.get_by_test_id("team.invites.role").select_option("pilot")
     admin.page.get_by_test_id("team.invites.note").fill(note)
     admin.page.get_by_test_id("team.invites.create").click()
+    expect(admin.page.get_by_test_id("toast").first).to_have_text("Invite created")
     expect(
         admin.page.get_by_test_id(re.compile(r"team\.invites\.row\.")).filter(has_text=note)
     ).to_be_visible()

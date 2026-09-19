@@ -32,6 +32,7 @@ def test_scratchpad_saves_pastes_clears_and_moves_to_a_comp(login_as):
     page.get_by_test_id("scratchpad.slot.2.hull").fill("Deacon")
     page.get_by_test_id("scratchpad.slot.2.hull").press("Enter")
     expect(page.get_by_test_id("scratchpad.eval.total")).to_contain_text("/ 200")
+    expect(page.get_by_test_id("scratchpad.saved")).to_contain_text("Saved")
 
     # Leaving and coming back keeps them (saved on the server, so a reload is the hard case).
     page.wait_for_timeout(700)

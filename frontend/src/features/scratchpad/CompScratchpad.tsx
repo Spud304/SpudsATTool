@@ -222,6 +222,9 @@ function Editor({ ruleset, saved }: { ruleset: RulesetOut; saved: ScratchpadOut 
           testId="scratchpad.comp"
           actions={
             <span className="flex items-center gap-1">
+              <span className="mr-2 text-[11px] text-muted" data-testid="scratchpad.saved">
+                {save.isPending ? 'Saving\u2026' : save.data?.updated_at ? `Saved ${new Date(save.data.updated_at).toLocaleTimeString(undefined, { timeStyle: 'short' })}` : ''}
+              </span>
               <Button onClick={paste} data-testid="scratchpad.paste" title="one hull per line or comma separated">
                 Paste hulls
               </Button>

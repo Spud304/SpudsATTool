@@ -37,6 +37,7 @@ def test_pilot_suggests_theorycrafter_activates_audit_records(login_as):
     theo.page.get_by_test_id("fit.status.reason").fill("pw looks good")
     theo.page.get_by_test_id("fit.status.apply").click()
     expect(theo.page.get_by_test_id("fit.status.badge")).to_have_text("active")
+    expect(theo.page.get_by_test_id("toast").first).to_have_text("Fit saved")
 
     pilot.page.reload()
     expect(pilot.page.get_by_test_id("fit.status.badge")).to_have_text("active")
