@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from '@tanstack/react-router'
 import { useFit, useFitLegality, useFitMutations, useMe } from '@/lib/api/hooks'
 import type { FitOut } from '@/lib/api/client'
-import { Badge, Button, Checkbox, Empty, ErrorText, Field, Input, Mono, Panel, Select, Table, Textarea } from '@/components/ui'
+import { Badge, Button, Checkbox, Empty, ErrorText, Field, Input, Mono, PageHeader, Panel, Select, Table, Textarea } from '@/components/ui'
 import { FIT_STATUSES, num, severityTone, statusTone, when } from './format'
 import { usePageTitle } from '@/hooks/usePageTitle'
 
@@ -16,23 +16,29 @@ export function FitDetailPage() {
   if (!fit.data) return <Empty>Not found.</Empty>
   const f = fit.data
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <Link to="/fits" className="text-muted hover:underline">
-          Fits
-        </Link>
-        <span className="text-muted">/</span>
-        <span className="font-semibold">{f.ship_name}</span>
-        <span>{f.name}</span>
-        <Badge tone={statusTone(f.status)} testId="fit.status.badge">
-          {f.status}
-        </Badge>
-        {f.has_links ? <Badge tone="accent">links</Badge> : null}
-        <span className="text-[11px] text-muted">
-          {f.created_by_name ? `by ${f.created_by_name}, ` : ''}created {when(f.created_at)}
-          {f.reviewed_by_name ? `, reviewed by ${f.reviewed_by_name} ${when(f.reviewed_at)}` : ''}
-        </span>
-      </div>
+    <div>
+      <PageHeader
+        title={
+          <span className="flex flex-wrap items-center gap-2">
+            <Link to="/fits" className="font-normal text-muted hover:underline">
+              Fits
+            </Link>
+            <span className="text-muted">/</span>
+            <span>{f.ship_name}</span>
+            <span className="font-normal">{f.name}</span>
+            <Badge tone={statusTone(f.status)} testId="fit.status.badge">
+              {f.status}
+            </Badge>
+            {f.has_links ? <Badge tone="accent">links</Badge> : null}
+          </span>
+        }
+        context={
+          <span className="text-[11px]">
+            {f.created_by_name ? `by ${f.created_by_name}, ` : ''}created {when(f.created_at)}
+            {f.reviewed_by_name ? `, reviewed by ${f.reviewed_by_name} ${when(f.reviewed_at)}` : ''}
+          </span>
+        }
+      />
       <div className="grid gap-4 xl:grid-cols-[3fr_2fr]">
         <Editor key={f.updated_at} fit={f} />
         <div className="space-y-4">

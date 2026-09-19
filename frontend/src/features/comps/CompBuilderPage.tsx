@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { api, unwrap, type CompOut, type CompSlotIn, type EvaluateOut, type FitSummaryOut, type SlotIn } from '@/lib/api/client'
 import { useComp, useCompMutations, useCompVocab, useFits, useMe, useRulesets, useRulesetShips } from '@/lib/api/hooks'
-import { Badge, Button, Checkbox, Empty, ErrorText, Field, Input, Mono, Panel, Select, Table, Textarea } from '@/components/ui'
+import { Badge, Button, Checkbox, Empty, ErrorText, Field, Input, Mono, PageHeader, Panel, Select, Table, Textarea } from '@/components/ui'
 import { num, when } from '@/features/fits/format'
 import { ViolationList, rowFlags } from './ViolationList'
 import { HullInput } from './HullInput'
@@ -154,39 +154,46 @@ function Builder({ comp }: { comp: CompOut }) {
   const linkOptions = vocab.data?.link_scripts ?? []
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <Link to="/comps" className="text-muted hover:underline">
-          Comps
-        </Link>
-        <span className="text-muted">/</span>
-        {comp.can_edit ? (
-          <Input data-testid="comp.name" className="w-64 font-semibold" value={name} onChange={(e) => setName(e.target.value)} />
-        ) : (
-          <span className="font-semibold" data-testid="comp.name">
-            {comp.name}
+    <div>
+      <PageHeader
+        title={
+          <span className="flex flex-wrap items-center gap-2">
+            <Link to="/comps" className="font-normal text-muted hover:underline">
+              Comps
+            </Link>
+            <span className="text-muted">/</span>
+            {comp.can_edit ? (
+              <Input data-testid="comp.name" className="w-64 font-semibold" value={name} onChange={(e) => setName(e.target.value)} />
+            ) : (
+              <span data-testid="comp.name">{comp.name}</span>
+            )}
+            <Badge tone={compStatusTone(comp.status)} testId="comp.status.badge">
+              {comp.status}
+            </Badge>
           </span>
-        )}
-        <Badge tone={compStatusTone(comp.status)} testId="comp.status.badge">
-          {comp.status}
-        </Badge>
-        <Mono className="text-muted" testId="comp.ruleset">
-          {comp.ruleset}
-        </Mono>
-        <span className="text-[11px] text-muted">
-          {comp.created_by_name ? `by ${comp.created_by_name}, ` : ''}updated {when(comp.updated_at)}
-          {comp.reviewed_by_name ? `, reviewed by ${comp.reviewed_by_name}` : ''}
-        </span>
-        <span className="flex-1" />
-        <Button data-testid="comp.clone" onClick={clone} disabled={cloneComp.isPending}>
-          Clone
-        </Button>
-        {comp.can_edit ? (
-          <Button data-testid="comp.save" variant="primary" disabled={!dirty || patchComp.isPending} onClick={save}>
-            Save
-          </Button>
-        ) : null}
-      </div>
+        }
+        context={
+          <>
+            <Mono testId="comp.ruleset">{comp.ruleset}</Mono>
+            <span className="text-[11px]">
+              {comp.created_by_name ? `by ${comp.created_by_name}, ` : ''}updated {when(comp.updated_at)}
+              {comp.reviewed_by_name ? `, reviewed by ${comp.reviewed_by_name}` : ''}
+            </span>
+          </>
+        }
+        actions={
+          <>
+            <Button data-testid="comp.clone" onClick={clone} disabled={cloneComp.isPending}>
+              Clone
+            </Button>
+            {comp.can_edit ? (
+              <Button data-testid="comp.save" variant="primary" disabled={!dirty || patchComp.isPending} onClick={save}>
+                Save
+              </Button>
+            ) : null}
+          </>
+        }
+      />
       <ErrorText error={patchComp.error ?? cloneComp.error} />
       <div className="grid gap-4 xl:grid-cols-[1fr_380px]">
         <Panel title="Lineup">

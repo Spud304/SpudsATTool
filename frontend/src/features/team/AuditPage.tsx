@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAudit } from '@/lib/api/hooks'
-import { Button, Empty, ErrorText, Input, Mono, Panel, Table } from '@/components/ui'
+import { Button, Empty, ErrorText, Input, Mono, PageHeader, Panel, Table } from '@/components/ui'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { useSlashFocus } from '@/hooks/useSlashFocus'
 
@@ -15,9 +15,8 @@ export function AuditPage() {
   const items = audit.data?.items ?? []
   const count = audit.data?.count ?? 0
   return (
-    <Panel
-      title={`Audit log${count ? ` (${count})` : ''}`}
-      actions={
+    <>
+      <PageHeader title="Audit log" count={count || undefined} actions={
         <div className="flex items-center gap-2">
           <Input
             data-testid="audit.filter"
@@ -36,8 +35,8 @@ export function AuditPage() {
             Next
           </Button>
         </div>
-      }
-    >
+      } />
+    <Panel>
       <ErrorText error={audit.error} />
       {items.length ? (
         <Table hover>
@@ -78,5 +77,6 @@ export function AuditPage() {
         <Empty>Nothing recorded yet.</Empty>
       )}
     </Panel>
+    </>
   )
 }

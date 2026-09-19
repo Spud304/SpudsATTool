@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useComps, useFits, useHealth, useMe, useScrims } from '@/lib/api/hooks'
-import { Badge, Empty, LinkButton, Mono, Panel } from '@/components/ui'
+import { Badge, Empty, LinkButton, Mono, PageHeader, Panel } from '@/components/ui'
 import { RsvpButtons } from '@/features/scrims/RsvpButtons'
 import { whenAt } from '@/features/scrims/format'
 import { usePageTitle } from '@/hooks/usePageTitle'
@@ -42,6 +42,8 @@ export function DashboardPage() {
   }
 
   return (
+    <>
+      <PageHeader title="Home" context={<span>{me.data.team?.name}</span>} />
     <div className="grid gap-4 lg:grid-cols-3">
       <Panel title="You">
         <p>
@@ -90,6 +92,7 @@ export function DashboardPage() {
         </Panel>
       ) : null}
     </div>
+    </>
   )
 }
 

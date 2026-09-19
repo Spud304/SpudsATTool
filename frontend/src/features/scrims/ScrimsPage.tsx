@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useMe, useScrim, useScrimMutations, useScrims } from '@/lib/api/hooks'
 import type { SessionSummaryOut } from '@/lib/api/client'
-import { Badge, Button, Empty, ErrorText, Mono, Panel, Table } from '@/components/ui'
+import { Badge, Button, Empty, ErrorText, Mono, PageHeader, Panel, Table } from '@/components/ui'
 import { RsvpButtons } from './RsvpButtons'
 import { SessionForm } from './SessionForm'
 import { RSVP_LABELS, record, rsvpTone, whenAt } from './format'
@@ -16,6 +16,8 @@ export function ScrimsPage() {
   const past = useScrims('past')
 
   return (
+    <>
+      <PageHeader title="Scrims" count={upcoming.data ? `${upcoming.data.length} upcoming` : undefined} />
     <div className="grid gap-4 xl:grid-cols-[3fr_1fr]">
       <div className="space-y-4">
         <Panel title={`Upcoming${upcoming.data ? ` (${upcoming.data.length})` : ''}`} testId="scrims.upcoming">
@@ -81,6 +83,7 @@ export function ScrimsPage() {
       </div>
       {canManage ? <NewScrimPanel /> : null}
     </div>
+    </>
   )
 }
 

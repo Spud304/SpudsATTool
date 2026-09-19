@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAdmissionRules, useInvites, useMe, useMembers, useTeamMutations } from '@/lib/api/hooks'
 import type { Role } from '@/lib/api/client'
-import { Badge, Button, Checkbox, Empty, ErrorText, Field, Input, Mono, Panel, Select, Table } from '@/components/ui'
+import { Badge, Button, Checkbox, Empty, ErrorText, Field, Input, Mono, PageHeader, Panel, Select, Table } from '@/components/ui'
 import { usePageTitle } from '@/hooks/usePageTitle'
 
 const ROLES: Role[] = ['admin', 'captain', 'theorycrafter', 'pilot', 'guest', 'viewer']
@@ -12,6 +12,8 @@ export function TeamPage() {
   const canManage = Boolean(me.data?.capabilities?.manage_members)
   const isAdmin = me.data?.membership?.role === 'admin'
   return (
+    <>
+      <PageHeader title="Team" context={<span>{canManage ? 'members, invites and admission rules' : 'members'}</span>} />
     <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
       <MembersPanel canManage={canManage} isAdmin={isAdmin} myUserId={me.data?.user_id ?? null} />
       {canManage ? (
@@ -21,6 +23,7 @@ export function TeamPage() {
         </div>
       ) : null}
     </div>
+    </>
   )
 }
 

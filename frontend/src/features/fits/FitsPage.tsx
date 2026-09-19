@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useFits } from '@/lib/api/hooks'
 import type { FitSummaryOut } from '@/lib/api/client'
-import { Badge, Button, Empty, ErrorText, Input, Mono, Panel, Select, Table } from '@/components/ui'
+import { Badge, Button, Empty, ErrorText, Input, Mono, PageHeader, Panel, Select, Table } from '@/components/ui'
 import { NewFitPanel } from './NewFitPanel'
 import { num, statusTone, when } from './format'
 import { usePageTitle } from '@/hooks/usePageTitle'
@@ -26,10 +26,8 @@ export function FitsPage() {
   const groups = groupByHull(fits.data ?? [])
   const [closed, setClosed] = useState<Record<string, boolean>>({}) // hull groups fold on a header click
   return (
-    <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
-      <Panel
-        title={`Fits${fits.data ? ` (${fits.data.length})` : ''}`}
-        actions={
+    <>
+      <PageHeader title="Fits" count={fits.data ? fits.data.length : undefined} actions={
           <div className="flex items-center gap-2">
             <Input data-testid="fits.search" placeholder="search hull or fit" className="w-56" value={q} onChange={(e) => setQ(e.target.value)} />
             <Select data-testid="fits.status" value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -46,8 +44,9 @@ export function FitsPage() {
               Collapse all
             </Button>
           </div>
-        }
-      >
+      } />
+    <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
+      <Panel>
         <ErrorText error={fits.error} />
         {groups.length ? (
           <Table hover>
@@ -132,6 +131,7 @@ export function FitsPage() {
       </Panel>
       <NewFitPanel />
     </div>
+    </>
   )
 }
 

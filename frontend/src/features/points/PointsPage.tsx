@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useMe, useRulesets } from '@/lib/api/hooks'
-import { Empty, ErrorText, Mono, Select } from '@/components/ui'
+import { Empty, ErrorText, Mono, PageHeader, Select } from '@/components/ui'
 import { PointsView } from './PointsView'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { useSlashFocus } from '@/hooks/useSlashFocus'
@@ -25,21 +25,25 @@ export function PointsPage() {
   if (!ruleset) return <Empty>No rulesets imported.</Empty>
 
   return (
-    <div className="mx-auto max-w-4xl space-y-3">
-      <div className="flex items-center gap-3">
-        <span className="text-muted">Ruleset</span>
-        <Select value={code} onChange={(e) => setCode(e.target.value)} data-testid="points.ruleset">
-          {rulesets.data!.map((r) => (
-            <option key={r.code} value={r.code}>
-              {r.code}
-              {r.has_point_table ? '' : ' (no point table)'}
-            </option>
-          ))}
-        </Select>
-        <Mono className="text-muted">
-          cap {ruleset.point_cap} {'·'} {ruleset.fielded_pilots} pilots
-        </Mono>
-      </div>
+    <div className="mx-auto max-w-4xl">
+      <PageHeader
+        title="Points"
+        context={
+          <>
+            <Select value={code} onChange={(e) => setCode(e.target.value)} data-testid="points.ruleset">
+              {rulesets.data!.map((r) => (
+                <option key={r.code} value={r.code}>
+                  {r.code}
+                  {r.has_point_table ? '' : ' (no point table)'}
+                </option>
+              ))}
+            </Select>
+            <Mono>
+              cap {ruleset.point_cap} {'·'} {ruleset.fielded_pilots} pilots
+            </Mono>
+          </>
+        }
+      />
       {ruleset.has_point_table ? <PointsView key={code} code={code} /> : <p className="text-warn">This ruleset has no point table.</p>}
     </div>
   )

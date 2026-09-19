@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useCompMutations, useComps, useCompVocab, useMe } from '@/lib/api/hooks'
-import { Badge, Button, Empty, ErrorText, Field, Input, Mono, Panel, Select, Table } from '@/components/ui'
+import { Badge, Button, Empty, ErrorText, Field, Input, Mono, PageHeader, Panel, Select, Table } from '@/components/ui'
 import { num, when } from '@/features/fits/format'
 import { COMP_STATUSES, capTone, compStatusTone } from './format'
 import { usePageTitle } from '@/hooks/usePageTitle'
@@ -39,9 +39,11 @@ export function CompsPage() {
   if (me.data && !active) return <Empty>No ruleset imported yet.</Empty>
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[3fr_1fr]">
-      <Panel
-        title={`Comps · ${active}${comps.data ? ` (${comps.data.length})` : ''}`}
+    <>
+      <PageHeader
+        title="Comps"
+        count={comps.data ? comps.data.length : undefined}
+        context={<Mono>{active}</Mono>}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Input data-testid="comps.search" placeholder="search comp or hull" className="w-48" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -64,7 +66,9 @@ export function CompsPage() {
             </Select>
           </div>
         }
-      >
+      />
+    <div className="grid gap-4 xl:grid-cols-[3fr_1fr]">
+      <Panel>
         <ErrorText error={comps.error} />
         {comps.data?.length ? (
           <Table hover>
@@ -151,6 +155,7 @@ export function CompsPage() {
       </Panel>
       <NewCompPanel />
     </div>
+    </>
   )
 }
 

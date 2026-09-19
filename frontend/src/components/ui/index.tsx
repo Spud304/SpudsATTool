@@ -152,6 +152,28 @@ export function Table({ children, className, hover = false, ...props }: TableHTM
   )
 }
 
+/** One header row per routed page: what the page is, how much is in it, the context it works in, and its actions on the right. */
+export function PageHeader({ title, count, context, actions, testId = 'page.header' }: { title: ReactNode; count?: ReactNode; context?: ReactNode; actions?: ReactNode; testId?: string }) {
+  return (
+    <div className="mb-3 flex min-h-9 flex-wrap items-center gap-x-3 gap-y-1 border-b border-line pb-2" data-testid={testId}>
+      <h1 className="text-[14px] font-semibold tracking-tight" data-testid="page.title">
+        {title}
+      </h1>
+      {count != null ? (
+        <Mono className="text-muted" testId="page.count">
+          {count}
+        </Mono>
+      ) : null}
+      {context ? <div className="flex flex-wrap items-center gap-2 text-muted">{context}</div> : null}
+      {actions ? (
+        <div className="ml-auto flex flex-wrap items-center gap-2" data-testid="page.actions">
+          {actions}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 export function Field({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
     <label className="flex flex-col gap-0.5 text-[11px] text-muted">
