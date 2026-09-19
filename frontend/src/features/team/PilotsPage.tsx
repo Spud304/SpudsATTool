@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { useMe, useMembers, useOpponents, usePilots, useRosterMutations } from '@/lib/api/hooks'
 import type { OpponentOut, PilotOut } from '@/lib/api/client'
 import { Badge, Button, Checkbox, Empty, ErrorText, Field, Input, Panel, Select, Table } from '@/components/ui'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 /** Roster and opponent registry. Members with role pilot or above appear here on their own; mercs are added by hand. */
 export function PilotsPage() {
+  usePageTitle('Pilots')
   const me = useMe()
   const canManage = Boolean(me.data?.capabilities?.manage_scrims)
   return (

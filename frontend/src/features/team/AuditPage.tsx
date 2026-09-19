@@ -1,10 +1,14 @@
 import { useState } from 'react'
 import { useAudit } from '@/lib/api/hooks'
 import { Button, Empty, ErrorText, Input, Mono, Panel, Table } from '@/components/ui'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { useSlashFocus } from '@/hooks/useSlashFocus'
 
 const PAGE = 50
 
 export function AuditPage() {
+  usePageTitle('Audit')
+  useSlashFocus('audit.filter')
   const [action, setAction] = useState('')
   const [offset, setOffset] = useState(0)
   const audit = useAudit({ action: action || undefined, limit: PAGE, offset })

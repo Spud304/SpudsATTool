@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { useMe, useRulesets, useTeamMutations } from '@/lib/api/hooks'
 import { Badge, LinkButton, Mono, Select } from '@/components/ui'
+import { applyTheme, readTheme, type Theme } from '@/lib/theme'
 
 type NavItem = { to: string; label: string; id: string; show: (me: ReturnType<typeof useMe>['data']) => boolean }
 
@@ -21,6 +22,12 @@ const NAV: NavItem[] = [
 export function AppShell({ children }: { children: ReactNode }) {
   const me = useMe()
   const { pathname } = useLocation()
+  const [theme, setTheme] = useState<Theme>(readTheme)
+  const toggleTheme = () => {
+    const next: Theme = theme === 'light' ? 'dark' : 'light'
+    applyTheme(next)
+    setTheme(next)
+  }
   return (
     <div className="flex h-full flex-col">
       <header className="flex h-10 items-center gap-4 border-b border-line bg-panel px-3">
@@ -40,6 +47,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-3 text-muted">
+          <button type="button" onClick={toggleTheme} className="hover:text-fg" data-testid="shell.theme" data-theme-now={theme} title="switch between light and dark">
+            {theme === 'light' ? 'Dark' : 'Light'}
+          </button>
           {me.data?.membership ? <RulesetSwitcher active={me.data.team?.active_ruleset ?? null} canSwitch={Boolean(me.data.capabilities?.manage_team)} /> : null}
           {me.isLoading ? null : me.data?.authenticated ? (
             <>

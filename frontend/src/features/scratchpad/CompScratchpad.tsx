@@ -8,6 +8,7 @@ import { HullInput } from '@/features/comps/HullInput'
 import { capTone, sizeCounts } from '@/features/comps/format'
 import { ViolationList, rowFlags } from '@/features/comps/ViolationList'
 import { PointsView } from '@/features/points/PointsView'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 type SlotState = { type_id: number | null; is_flagship: boolean; has_links: boolean }
 
@@ -16,6 +17,7 @@ const SAVE_DELAY_MS = 400
 
 /** Try ten hulls against a ruleset without saving a comp. Saved per member on the server, so leaving the page keeps it. */
 export function CompScratchpad() {
+  usePageTitle('Comp scratchpad')
   const rulesets = useRulesets()
   const saved = useScratchpad()
   const [code, setCode] = useState('')

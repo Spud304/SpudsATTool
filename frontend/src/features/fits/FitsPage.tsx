@@ -5,6 +5,8 @@ import type { FitSummaryOut } from '@/lib/api/client'
 import { Badge, Button, Empty, ErrorText, Input, Mono, Panel, Select, Table } from '@/components/ui'
 import { NewFitPanel } from './NewFitPanel'
 import { num, statusTone, when } from './format'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { useSlashFocus } from '@/hooks/useSlashFocus'
 
 const STATUS_FILTERS: { value: string; label: string }[] = [
   { value: 'active,suggested', label: 'Active + suggested' },
@@ -16,6 +18,8 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
 ]
 
 export function FitsPage() {
+  usePageTitle('Fits')
+  useSlashFocus('fits.search')
   const [status, setStatus] = useState('active,suggested')
   const [q, setQ] = useState('')
   const fits = useFits({ status: status || undefined, q: q.trim() || undefined })

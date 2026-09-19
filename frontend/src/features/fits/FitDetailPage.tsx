@@ -4,8 +4,10 @@ import { useFit, useFitLegality, useFitMutations, useMe } from '@/lib/api/hooks'
 import type { FitOut } from '@/lib/api/client'
 import { Badge, Button, Checkbox, Empty, ErrorText, Field, Input, Mono, Panel, Select, Table, Textarea } from '@/components/ui'
 import { FIT_STATUSES, num, severityTone, statusTone, when } from './format'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 export function FitDetailPage() {
+  usePageTitle('Fit')
   const { fitId } = useParams({ strict: false }) as { fitId?: string }
   const id = Number(fitId)
   const fit = useFit(id)

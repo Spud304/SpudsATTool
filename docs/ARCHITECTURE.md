@@ -428,7 +428,6 @@ Sizes relative; assume a solo dev at ~10 h/week. Phase 2 is the critical path; s
 ### 13.1 Small items (QoL backlog)
 
 - Members must not be able to change their own role or status. Today `PATCH /api/team/members/{user_id}` only protects the last active admin; a captain or admin can demote or suspend themselves. Reject `user_id == request.user` with 403 and hide the controls on the Team page for the viewer's own row.
-- Theme toggle in the header (light is the default; dark tokens exist).
 - MotD field grows with its text instead of a fixed height.
 - Comp editor: the warp-in box should be a plain number field without the spinner arrows, like the scrim page
 - Scratchpad items (save on leave, Clear all, Move to comp editor, clipboard paste, points panel, parity pass): DONE 2026-09-18.

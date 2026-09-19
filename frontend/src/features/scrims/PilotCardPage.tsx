@@ -6,9 +6,11 @@ import { Badge, Button, Empty, ErrorText, Mono, Panel, Select } from '@/componen
 import { useScrimStream } from './useScrimStream'
 import { linkColor, readPosition, warpColor } from './shared'
 import { useCompVocab } from '@/lib/api/hooks'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 /** One slot, big: your ship, fit, warp-in and notes for the current round, with the EFT block ready to copy. */
 export function PilotCardPage() {
+  usePageTitle('My card')
   const { scrimId } = useParams({ from: '/scrims/$scrimId/me' })
   const id = Number(scrimId)
   const scrim = useScrim(id)

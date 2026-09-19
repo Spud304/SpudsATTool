@@ -8,8 +8,10 @@ import { num, when } from '@/features/fits/format'
 import { ViolationList, rowFlags } from './ViolationList'
 import { HullInput } from './HullInput'
 import { COMP_STATUSES, capTone, compStatusTone, sizeCounts } from './format'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 export function CompBuilderPage() {
+  usePageTitle('Comp')
   const { compId } = useParams({ strict: false }) as { compId?: string }
   const id = Number(compId)
   const comp = useComp(id)

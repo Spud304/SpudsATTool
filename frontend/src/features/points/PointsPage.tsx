@@ -2,9 +2,13 @@ import { useEffect, useState } from 'react'
 import { useMe, useRulesets } from '@/lib/api/hooks'
 import { Empty, ErrorText, Mono, Select } from '@/components/ui'
 import { PointsView } from './PointsView'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { useSlashFocus } from '@/hooks/useSlashFocus'
 
 /** Every hull in a ruleset with its class, size and points; opens on the team's active season. */
 export function PointsPage() {
+  usePageTitle('Points')
+  useSlashFocus('points.filter.text')
   const me = useMe()
   const rulesets = useRulesets()
   const [code, setCode] = useState('')

@@ -6,8 +6,10 @@ import { Badge, Button, Empty, ErrorText, Mono, Panel, Table } from '@/component
 import { RsvpButtons } from './RsvpButtons'
 import { SessionForm } from './SessionForm'
 import { RSVP_LABELS, record, rsvpTone, whenAt } from './format'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 export function ScrimsPage() {
+  usePageTitle('Scrims')
   const me = useMe()
   const canManage = Boolean(me.data?.capabilities?.manage_scrims)
   const upcoming = useScrims('upcoming')

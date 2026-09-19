@@ -5,6 +5,9 @@ import { RouterProvider } from '@tanstack/react-router'
 import './index.css'
 import { router } from './router'
 import { Toasts, notify } from './components/toast'
+import { applyTheme, readTheme } from './lib/theme'
+
+applyTheme(readTheme())
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },

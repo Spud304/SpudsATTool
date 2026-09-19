@@ -4,6 +4,8 @@ import { useCompMutations, useComps, useCompVocab, useMe } from '@/lib/api/hooks
 import { Badge, Button, Empty, ErrorText, Field, Input, Mono, Panel, Select, Table } from '@/components/ui'
 import { num, when } from '@/features/fits/format'
 import { COMP_STATUSES, capTone, compStatusTone } from './format'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import { useSlashFocus } from '@/hooks/useSlashFocus'
 
 const STATUS_FILTERS: { value: string; label: string }[] = [
   { value: 'active,construction', label: 'Active + construction' },
@@ -16,6 +18,8 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
 ]
 
 export function CompsPage() {
+  usePageTitle('Comps')
+  useSlashFocus('comps.search')
   const me = useMe()
   const active = me.data?.team?.active_ruleset ?? ''
   const vocab = useCompVocab()

@@ -31,6 +31,22 @@ def test_role_sees_the_right_navigation(login_as, role):
             expect(link, f"{role} should not see nav.{item}").to_have_count(0)
 
 
+def test_theme_toggle_and_tab_title(login_as):
+    page = login_as("pilot").page
+    page.goto("/comps")
+    expect(page).to_have_title(re.compile(r"^Comps · "))
+    expect(page.locator("html")).to_have_attribute("data-theme", "light")
+    page.get_by_test_id("shell.theme").click()
+    expect(page.locator("html")).to_have_attribute("data-theme", "dark")
+    page.reload()
+    expect(page.locator("html")).to_have_attribute("data-theme", "dark")
+    page.get_by_test_id("shell.theme").click()
+    expect(page.locator("html")).to_have_attribute("data-theme", "light")
+    # "/" jumps to the search box when nothing else has focus.
+    page.keyboard.press("/")
+    expect(page.get_by_test_id("comps.search")).to_be_focused()
+
+
 def test_viewer_is_refused_on_the_fit_library(login_as):
     page = login_as("viewer").page
     page.goto("/fits")

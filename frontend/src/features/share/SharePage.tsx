@@ -5,11 +5,13 @@ import { Board } from '@/features/scrims/ScrimPage'
 import type { Perms } from '@/features/scrims/shared'
 import { useScrimStream } from '@/features/scrims/useScrimStream'
 import { keys } from '@/lib/api/hooks'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 const NOBODY: Perms = { edit: false, manage: false, score: false, userId: null }
 
 /** The board for whoever holds a share link: read-only, live, fit text hidden. No login involved. */
 export function SharePage() {
+  usePageTitle('Shared scrim')
   const { token } = useParams({ from: '/share/$token' })
   const scrim = useSharedScrim(token)
   const stream = useScrimStream(scrim.data?.id ?? 0, Boolean(scrim.data), {

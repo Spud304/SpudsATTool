@@ -3,8 +3,10 @@ import { useComps, useFits, useHealth, useMe, useScrims } from '@/lib/api/hooks'
 import { Badge, Empty, LinkButton, Mono, Panel } from '@/components/ui'
 import { RsvpButtons } from '@/features/scrims/RsvpButtons'
 import { whenAt } from '@/features/scrims/format'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 export function DashboardPage() {
+  usePageTitle('Home')
   const me = useMe()
   const health = useHealth()
 

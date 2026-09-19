@@ -30,9 +30,11 @@ import { TheirLineup } from './TheirLineup'
 import { RSVP_LABELS, whenAt } from './format'
 import { HULL_LIST_ID, currentRound, readPosition, remoteFocus, shipMaps, writePosition, type Live, type Perms } from './shared'
 import { useScrimStream, type StreamStatus } from './useScrimStream'
+import { usePageTitle } from '@/hooks/usePageTitle'
 
 /** The live scrim page: rail (header, attendance, sets) | results | bans over ours over theirs | fits. */
 export function ScrimPage() {
+  usePageTitle('Scrim')
   const { scrimId } = useParams({ from: '/scrims/$scrimId' })
   const id = Number(scrimId)
   const scrim = useScrim(id)
