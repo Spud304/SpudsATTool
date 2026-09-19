@@ -6,7 +6,7 @@ import { useCompMutations, useRulesets, useRulesetShips, useScratchpad, useScrat
 import { Badge, Button, Checkbox, Empty, ErrorText, Input, Mono, Panel, Select, Table, Textarea } from '@/components/ui'
 import { HullInput } from '@/features/comps/HullInput'
 import { capTone, sizeCounts } from '@/features/comps/format'
-import { severityTone } from '@/features/fits/format'
+import { ViolationList, rowFlags } from '@/features/comps/ViolationList'
 import { PointsView } from '@/features/points/PointsView'
 
 type SlotState = { type_id: number | null; is_flagship: boolean; has_links: boolean }
@@ -200,7 +200,7 @@ function Editor({ ruleset, saved }: { ruleset: RulesetOut; saved: ScratchpadOut 
   const moveToComp = async () => {
     setMoving(true)
     try {
-      const comp = await createComp.mutateAsync({ name: `Scratchpad ${new Date().toLocaleDateString()}`, ruleset: code, status: 'construction', notes: '', ban_theory: '' })
+      const comp = await createComp.mutateAsync({ name: `Scratchpad ${new Date().toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}`, ruleset: code, status: 'construction', notes: '', ban_theory: '' })
       await patchComp.mutateAsync({
         id: comp.id,
         body: { reason: 'from the scratchpad', slots: slots.map((s, i) => ({ slot_no: i + 1, type_id: s.type_id, is_flagship: s.is_flagship, is_unique: false, ship_note: '', link_scripts: [] })) },
@@ -267,7 +267,7 @@ function Editor({ ruleset, saved }: { ruleset: RulesetOut; saved: ScratchpadOut 
                 const ship = slot.type_id != null ? byId.get(slot.type_id) : undefined
                 const ev = evalBySlot.get(i + 1)
                 return (
-                  <tr key={i} className={clsx(ev?.flags.length && 'bg-bad/10')}>
+                  <tr key={i} className={clsx(rowFlags(ev?.flags).length && 'bg-bad/10')}>
                     <td>
                       <Mono className="text-muted">{i + 1}</Mono>
                     </td>
@@ -304,7 +304,7 @@ function Editor({ ruleset, saved }: { ruleset: RulesetOut; saved: ScratchpadOut 
                       ) : null}
                     </td>
                     <td>
-                      <Mono className="text-bad">{ev?.flags.join(' ')}</Mono>
+                      <Mono className="text-bad">{rowFlags(ev?.flags).join(' ')}</Mono>
                     </td>
                   </tr>
                 )
@@ -356,15 +356,7 @@ function Editor({ ruleset, saved }: { ruleset: RulesetOut; saved: ScratchpadOut 
                   </Badge>
                 ))}
               </div>
-              <ul className="space-y-1 text-[12px]">
-                {result.violations.map((v, i) => (
-                  <li key={i}>
-                    <Badge tone={severityTone(v.severity)}>{v.code}</Badge> {v.message}
-                    {v.slot_nos.length ? <Mono className="text-muted"> [{v.slot_nos.join(',')}]</Mono> : null}
-                  </li>
-                ))}
-                {result.violations.length === 0 ? <li className="text-muted">no violations</li> : null}
-              </ul>
+              <ViolationList violations={result.violations} slotCount={fielded} testId="scratchpad.eval.violations" />
             </div>
           ) : (
             <Empty>Fill a slot to evaluate.</Empty>

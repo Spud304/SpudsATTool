@@ -105,7 +105,25 @@ export function FitsPage() {
         ) : fits.isLoading ? (
           <Empty>Loading…</Empty>
         ) : (
-          <Empty testId="fits.empty">No fits match. Paste one on the right.</Empty>
+          <Empty
+            testId="fits.empty"
+            hint={status !== 'active,suggested' || q ? undefined : 'Paste an EFT block on the right to add the first one.'}
+            action={
+              status !== 'active,suggested' || q ? (
+                <Button
+                  data-testid="fits.clear"
+                  onClick={() => {
+                    setStatus('active,suggested')
+                    setQ('')
+                  }}
+                >
+                  Clear filters
+                </Button>
+              ) : undefined
+            }
+          >
+            No fits match these filters.
+          </Empty>
         )}
       </Panel>
       <NewFitPanel />

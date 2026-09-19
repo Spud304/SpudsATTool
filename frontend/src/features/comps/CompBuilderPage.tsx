@@ -4,7 +4,8 @@ import clsx from 'clsx'
 import { api, unwrap, type CompOut, type CompSlotIn, type EvaluateOut, type FitSummaryOut, type SlotIn } from '@/lib/api/client'
 import { useComp, useCompMutations, useCompVocab, useFits, useMe, useRulesets, useRulesetShips } from '@/lib/api/hooks'
 import { Badge, Button, Checkbox, Empty, ErrorText, Field, Input, Mono, Panel, Select, Table, Textarea } from '@/components/ui'
-import { num, severityTone, when } from '@/features/fits/format'
+import { num, when } from '@/features/fits/format'
+import { ViolationList, rowFlags } from './ViolationList'
 import { HullInput } from './HullInput'
 import { COMP_STATUSES, capTone, compStatusTone, sizeCounts } from './format'
 
@@ -212,7 +213,7 @@ function Builder({ comp }: { comp: CompOut }) {
                 const fit = slot.default_fit_id != null ? fitsById.get(slot.default_fit_id) : undefined
                 const showScripts = slot.show_scripts || (fit?.has_links ?? false)
                 return (
-                  <tr key={i} className={clsx(ev?.flags.length && 'bg-bad/10')} data-testid={`comp.slot.${i + 1}`}>
+                  <tr key={i} className={clsx(rowFlags(ev?.flags).length && 'bg-bad/10')} data-testid={`comp.slot.${i + 1}`}>
                     <td>
                       <Mono className="text-muted">{i + 1}</Mono>
                     </td>
@@ -298,7 +299,7 @@ function Builder({ comp }: { comp: CompOut }) {
                       ) : null}
                     </td>
                     <td>
-                      <Mono className="text-bad">{ev?.flags.join(' ')}</Mono>
+                      <Mono className="text-bad">{rowFlags(ev?.flags).join(' ')}</Mono>
                     </td>
                   </tr>
                 )
@@ -332,15 +333,7 @@ function Builder({ comp }: { comp: CompOut }) {
                     </Badge>
                   ))}
                 </div>
-                <ul className="space-y-1 text-[12px]">
-                  {evaluation.violations.map((v, i) => (
-                    <li key={i}>
-                      <Badge tone={severityTone(v.severity)}>{v.code}</Badge> {v.message}
-                      {v.slot_nos.length ? <Mono className="text-muted"> [{v.slot_nos.join(',')}]</Mono> : null}
-                    </li>
-                  ))}
-                  {evaluation.violations.length === 0 ? <li className="text-muted">no violations</li> : null}
-                </ul>
+                <ViolationList violations={evaluation.violations} slotCount={slots.length} testId="comp.budget.violations" />
               </div>
             ) : (
               <Empty>{ruleset && !ruleset.has_point_table ? 'This ruleset has no point table.' : 'Evaluating…'}</Empty>

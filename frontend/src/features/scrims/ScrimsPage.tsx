@@ -27,7 +27,9 @@ export function ScrimsPage() {
           ) : upcoming.isLoading ? (
             <Empty>Loading…</Empty>
           ) : (
-            <Empty testId="scrims.upcoming.empty">Nothing scheduled.</Empty>
+            <Empty testId="scrims.upcoming.empty" hint={canManage ? 'Use the New scrim panel to schedule the next night.' : 'Captains add scrims here; you will see RSVP buttons once one is up.'}>
+              Nothing scheduled.
+            </Empty>
           )}
         </Panel>
         <Panel title={`Past${past.data ? ` (${past.data.length})` : ''}`} testId="scrims.past">
@@ -71,7 +73,7 @@ export function ScrimsPage() {
               </tbody>
             </Table>
           ) : (
-            <Empty>No past scrims.</Empty>
+            <Empty hint="Results, records and turnout appear here after the first night.">No past scrims yet.</Empty>
           )}
         </Panel>
       </div>

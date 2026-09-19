@@ -121,7 +121,26 @@ export function CompsPage() {
         ) : comps.isLoading ? (
           <Empty>Loading…</Empty>
         ) : (
-          <Empty testId="comps.empty">No comps match.</Empty>
+          <Empty
+            testId="comps.empty"
+            hint={status !== 'active,construction' || archetype || q ? undefined : 'Create one with the panel on the right, or build in the scratchpad first.'}
+            action={
+              status !== 'active,construction' || archetype || q ? (
+                <Button
+                  data-testid="comps.clear"
+                  onClick={() => {
+                    setStatus('active,construction')
+                    setArchetype('')
+                    setQ('')
+                  }}
+                >
+                  Clear filters
+                </Button>
+              ) : undefined
+            }
+          >
+            No comps match these filters.
+          </Empty>
         )}
       </Panel>
       <NewCompPanel />

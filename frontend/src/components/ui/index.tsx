@@ -157,11 +157,14 @@ export function Field({ label, children }: { label: ReactNode; children: ReactNo
   )
 }
 
-export function Empty({ children, testId }: { children: ReactNode; testId?: string }) {
+/** An empty list or panel: what is missing, one line on why or what to do, and the action that fills it when the viewer may. */
+export function Empty({ children, hint, action, testId }: { children: ReactNode; hint?: ReactNode; action?: ReactNode; testId?: string }) {
   return (
-    <p className="py-6 text-center text-muted" data-testid={testId}>
-      {children}
-    </p>
+    <div className="flex flex-col items-center gap-2 py-6 text-center text-muted" data-testid={testId}>
+      <p>{children}</p>
+      {hint ? <p className="text-[12px]">{hint}</p> : null}
+      {action ? <div>{action}</div> : null}
+    </div>
   )
 }
 

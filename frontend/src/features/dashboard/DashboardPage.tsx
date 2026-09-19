@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useComps, useFits, useHealth, useMe, useScrims } from '@/lib/api/hooks'
-import { Badge, LinkButton, Mono, Panel } from '@/components/ui'
+import { Badge, Empty, LinkButton, Mono, Panel } from '@/components/ui'
 import { RsvpButtons } from '@/features/scrims/RsvpButtons'
 import { whenAt } from '@/features/scrims/format'
 
@@ -132,6 +132,8 @@ function ReviewQueuePanel() {
 /** The next few nights, with the viewer's own RSVP right on the card. */
 function UpcomingScrimsPanel() {
   const scrims = useScrims('upcoming')
+  const me = useMe()
+  const canManage = Boolean(me.data?.capabilities?.manage_scrims)
   return (
     <Panel
       title="Upcoming scrims"
@@ -158,9 +160,21 @@ function UpcomingScrimsPanel() {
           ))}
         </ul>
       ) : scrims.isLoading ? (
-        <p className="text-muted">Loading…</p>
+        <Empty>Loading…</Empty>
       ) : (
-        <p className="text-muted">Nothing scheduled.</p>
+        <Empty
+          testId="dash.scrims.empty"
+          hint={canManage ? undefined : 'Captains add scrims on the Scrims page.'}
+          action={
+            canManage ? (
+              <Link to="/scrims" className="text-accent" data-testid="dash.scrims.new">
+                Schedule a scrim
+              </Link>
+            ) : undefined
+          }
+        >
+          Nothing scheduled.
+        </Empty>
       )}
     </Panel>
   )

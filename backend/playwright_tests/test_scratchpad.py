@@ -18,6 +18,11 @@ def test_scratchpad_saves_pastes_clears_and_moves_to_a_comp(login_as):
         page.once("dialog", lambda d: d.accept())
         page.get_by_test_id("scratchpad.clear").click()
     expect(page.get_by_test_id("scratchpad.slot.1.hull")).to_have_value("")
+    # Empty slots are quiet: one summary line, no per-row flag.
+    expect(page.get_by_test_id("scratchpad.eval.violations.empty")).to_have_text(
+        "10 of 10 slots empty"
+    )
+    expect(page.get_by_test_id("scratchpad.comp")).not_to_contain_text("EMPTY_SLOT")
 
     # Two hulls typed by hand; Enter moves to the next row.
     first = page.get_by_test_id("scratchpad.slot.1.hull")
@@ -39,7 +44,9 @@ def test_scratchpad_saves_pastes_clears_and_moves_to_a_comp(login_as):
     page.get_by_test_id("scratchpad.paste").click()
     box = page.get_by_test_id("scratchpad.paste.text")
     if box.count() == 0:  # the browser allowed the clipboard read; force the manual form
-        page.evaluate("navigator.clipboard.readText = () => Promise.reject(new Error('denied'))")
+        page.evaluate(
+            "() => { navigator.clipboard.readText = () => Promise.reject(new Error('denied')) }"
+        )
         page.get_by_test_id("scratchpad.paste").click()
     box.fill("Astarte, Deacon\nKeres\nNot A Ship")
     page.get_by_test_id("scratchpad.paste.apply").click()
