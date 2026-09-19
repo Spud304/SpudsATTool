@@ -100,14 +100,16 @@ def test_team_settings_admin_only(client, team, login_as):
     login_as(character_id=3, name="TC", role="theorycrafter")
     assert (
         client.patch(
-            "/api/team", {"pilots_can_score": False}, content_type="application/json"
+            "/api/team", {"affiliation_grace_hours": 48}, content_type="application/json"
         ).status_code
         == 403
     )
     client.logout()
     login_as(character_id=ADMIN_ID, role="admin")
-    resp = client.patch("/api/team", {"pilots_can_score": False}, content_type="application/json")
-    assert resp.status_code == 200 and resp.json()["pilots_can_score"] is False
+    resp = client.patch(
+        "/api/team", {"affiliation_grace_hours": 48}, content_type="application/json"
+    )
+    assert resp.status_code == 200 and resp.json()["affiliation_grace_hours"] == 48
     assert AuditLog.objects.filter(action="team.updated").exists()
 
 

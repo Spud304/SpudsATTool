@@ -2,6 +2,7 @@ from dataclasses import replace
 
 import pytest
 
+from apps.accounts import roles
 from apps.accounts.models import Membership, MembershipSource, MembershipStatus, Role, User
 from apps.audit.models import AuditLog
 from apps.core.importing import ImportReport
@@ -21,7 +22,10 @@ pytestmark = pytest.mark.django_db
 def make_user(character_id: int, role: str) -> User:
     user = User.objects.create(username=f"char:{character_id}", display_name=f"U{character_id}")
     Membership.objects.create(
-        user=user, role=role, status=MembershipStatus.ACTIVE, source=MembershipSource.EXPLICIT
+        user=user,
+        role=roles.by_slug(role),
+        status=MembershipStatus.ACTIVE,
+        source=MembershipSource.EXPLICIT,
     )
     return user
 

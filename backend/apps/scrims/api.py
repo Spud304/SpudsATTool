@@ -302,7 +302,11 @@ def session_document(session: Session, user: User | None, shared: bool = False) 
         "event_seq": session.event_seq,
         "sets": sets,
         "can_manage": user is not None and not shared and permissions.can_manage_scrims(user),
-        "can_rsvp": pilot is not None and not shared and not sessions.is_past(session),
+        "can_rsvp": pilot is not None
+        and not shared
+        and user is not None
+        and permissions.can_rsvp(user)
+        and not sessions.is_past(session),
     }
 
 
@@ -339,6 +343,9 @@ def list_sessions(request: HttpRequest, when: str = "upcoming"):
         qs = qs.order_by("-date")
     elif when != "all":
         raise HttpError(422, "when must be upcoming, past or all")
+    if not permissions.has_perm(user, "view_scrims"):
+        # view_assigned_scrims only: the nights a pilot linked to this member is fielded in
+        qs = qs.filter(sets__rounds__assignments__pilot__user=user).distinct()
     has_pilot = sessions.pilot_of(user) is not None
     return [_summary(s, user, has_pilot) for s in qs]
 
@@ -405,7 +412,7 @@ def archive_session(request: HttpRequest, session_id: int, payload: ArchiveIn):
 
 @router.put("/{session_id}/rsvp", response=SessionOut)
 def put_rsvp(request: HttpRequest, session_id: int, payload: RsvpIn):
-    permissions.require_scrim_access(request.user)
+    permissions.require_rsvp(request.user)
     user = cast(User, request.user)
     session = _session(session_id)
     _wrap(lambda: sessions.set_rsvp(user, session, payload.rsvp, payload.reason))
@@ -428,7 +435,7 @@ def patch_attendance(request: HttpRequest, session_id: int, pilot_id: int, paylo
 @pilots_router.get("/history", response=list[PilotHistoryOut])
 def pilot_history(request: HttpRequest, type_id: int, exclude_session: int | None = None):
     """Who has flown this hull in past scrims, most flights first; feeds the pilot dropdown."""
-    permissions.require_scrim_access(request.user)
+    permissions.require_perm(request.user, "view_scrims", "scrims are visible to team members")
     return suggestions.pilot_history(type_id, exclude_session)
 
 

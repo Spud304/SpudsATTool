@@ -13,7 +13,7 @@ from apps.audit.services import record
 from apps.core.models import Team
 from apps.rules import selection
 
-from . import permissions
+from . import permissions, roles
 from .models import (
     AdmissionRule,
     AdmissionRuleKind,
@@ -22,7 +22,7 @@ from .models import (
     Membership,
     MembershipSource,
     MembershipStatus,
-    Role,
+    TeamRole,
     User,
 )
 
@@ -39,6 +39,7 @@ class CharacterOut(Schema):
 
 class MembershipOut(Schema):
     role: str
+    role_name: str
     status: str
     source: str
     is_leadership: bool
@@ -46,21 +47,27 @@ class MembershipOut(Schema):
 
 class TeamBrief(Schema):
     name: str
-    pilots_can_score: bool
-    pilots_can_browse_library: bool
     active_ruleset: str | None = None
 
 
 class Capabilities(Schema):
-    manage_members: bool
-    manage_team: bool
-    manage_library: bool
+    """One boolean per permission code in permissions.PERMISSIONS, plus is_admin."""
+
+    is_admin: bool
+    view_scrims: bool
+    view_assigned_scrims: bool
+    rsvp: bool
+    fly: bool
+    score: bool
+    edit_sets: bool
     manage_scrims: bool
+    browse_library: bool
+    suggest_library: bool
+    manage_library: bool
+    manage_members: bool
     view_audit: bool
     view_pilot_notes: bool
-    score: bool
-    browse_library: bool
-    browse_scrims: bool
+    manage_team: bool
 
 
 class MeOut(Schema):
@@ -80,6 +87,7 @@ class MemberOut(Schema):
     user_id: int
     display_name: str
     role: str
+    role_name: str
     status: str
     source: str
     is_leadership: bool
@@ -89,7 +97,7 @@ class MemberOut(Schema):
 
 
 class MemberPatch(Schema):
-    role: Role | None = None
+    role: str | None = None
     is_leadership: bool | None = None
     status: MembershipStatus | None = None
     note: str | None = None
@@ -105,6 +113,7 @@ class InviteOut(Schema):
     token: str
     url: str
     role: str
+    role_name: str
     uses_left: int
     expires_at: datetime
     note: str
@@ -112,7 +121,7 @@ class InviteOut(Schema):
 
 
 class InviteIn(Schema):
-    role: Role = Role.PILOT
+    role: str = "pilot"
     uses: int = 1
     expires_in_hours: int = 72
     note: str = ""
@@ -124,6 +133,7 @@ class AdmissionRuleOut(Schema):
     entity_id: int
     entity_name: str
     default_role: str
+    default_role_name: str
     enabled: bool
     created_at: datetime
 
@@ -132,13 +142,13 @@ class AdmissionRuleIn(Schema):
     kind: AdmissionRuleKind
     entity_id: int
     entity_name: str = ""
-    default_role: Role = Role.PILOT
+    default_role: str = "pilot"
     enabled: bool = True
 
 
 class AdmissionRulePatch(Schema):
     entity_name: str | None = None
-    default_role: Role | None = None
+    default_role: str | None = None
     enabled: bool | None = None
 
 
@@ -164,7 +174,8 @@ def _member_out(membership: Membership) -> dict:
     return {
         "user_id": user.pk,
         "display_name": user.display_name,
-        "role": membership.role,
+        "role": membership.role.slug,
+        "role_name": membership.role.name,
         "status": membership.status,
         "source": membership.source,
         "is_leadership": membership.is_leadership,
@@ -174,19 +185,33 @@ def _member_out(membership: Membership) -> dict:
     }
 
 
-def _capabilities(user, team: Team) -> dict:
-    pilot = permissions.has_role(user, Role.PILOT)
-    theorycrafter = permissions.has_role(user, Role.THEORYCRAFTER)
+def _capabilities(user) -> dict:
+    granted = permissions.permissions_for(user)
+    out = {code: code in granted for code in permissions.PERMISSIONS}
+    out["is_admin"] = permissions.is_admin(user)
+    return out
+
+
+def _membership_out(membership: Membership) -> dict:
     return {
-        "manage_members": permissions.can_manage_members(user),
-        "manage_team": permissions.has_role(user, Role.ADMIN),
-        "manage_library": theorycrafter,
-        "manage_scrims": permissions.has_role(user, Role.CAPTAIN),
-        "view_audit": permissions.is_leadership(user),
-        "view_pilot_notes": permissions.is_leadership(user),
-        "score": theorycrafter or (team.pilots_can_score and pilot),
-        "browse_library": permissions.can_browse_library(user),
-        "browse_scrims": permissions.can_browse_scrims(user),
+        "role": membership.role.slug,
+        "role_name": membership.role.name,
+        "status": membership.status,
+        "source": membership.source,
+        "is_leadership": membership.is_leadership,
+    }
+
+
+def _rule_out(rule: AdmissionRule) -> dict:
+    return {
+        "id": rule.pk,
+        "kind": rule.kind,
+        "entity_id": rule.entity_id,
+        "entity_name": rule.entity_name,
+        "default_role": rule.default_role.slug,
+        "default_role_name": rule.default_role.name,
+        "enabled": rule.enabled,
+        "created_at": rule.created_at,
     }
 
 
@@ -195,7 +220,8 @@ def _invite_out(request: HttpRequest, invite: Invite) -> dict:
         "id": invite.pk,
         "token": invite.token,
         "url": request.build_absolute_uri(f"/auth/join/{invite.token}"),
-        "role": invite.role,
+        "role": invite.role.slug,
+        "role_name": invite.role.name,
         "uses_left": invite.uses_left,
         "expires_at": invite.expires_at,
         "note": invite.note,
@@ -207,7 +233,7 @@ def _require_manager(user) -> None:
     if not user.is_authenticated:
         raise HttpError(401, "login required")
     if not permissions.can_manage_members(user):
-        raise HttpError(403, "requires captain or admin")
+        raise HttpError(403, "requires the manage members permission")
 
 
 @router.get("/me", auth=None, response=MeOut)
@@ -227,14 +253,12 @@ def me(request: HttpRequest):
         "user_id": user.pk,
         "display_name": user.display_name,
         "characters": _characters(user),
-        "membership": MembershipOut.from_orm(membership) if membership else None,
+        "membership": _membership_out(membership) if membership else None,
         "team": {
             "name": team.name,
-            "pilots_can_score": team.pilots_can_score,
-            "pilots_can_browse_library": team.pilots_can_browse_library,
             "active_ruleset": active.code if (active := selection.active_ruleset(team)) else None,
         },
-        "capabilities": _capabilities(user, team) if membership else None,
+        "capabilities": _capabilities(user) if membership else None,
         **base,
     }
 
@@ -251,20 +275,21 @@ def set_main_character(request: HttpRequest, payload: MainCharacterIn):
 
 @router.get("/team/members", response=list[MemberOut])
 def list_members(request: HttpRequest):
-    permissions.require_role(request.user, Role.PILOT)
-    qs = Membership.objects.select_related("user").prefetch_related("user__characters")
+    permissions.require_member(request.user)
+    qs = Membership.objects.select_related("user", "role").prefetch_related("user__characters")
     return [_member_out(m) for m in qs.order_by("user__display_name")]
 
 
 def _guard_last_admin(membership: Membership, changes: dict) -> None:
-    losing_admin = membership.role == Role.ADMIN and (
-        changes.get("role") not in (None, Role.ADMIN)
+    new_role = changes.get("role")
+    losing_admin = membership.role.is_system and (
+        (new_role is not None and not new_role.is_system)
         or changes.get("status") not in (None, MembershipStatus.ACTIVE)
     )
     if losing_admin:
-        others = Membership.objects.filter(role=Role.ADMIN, status=MembershipStatus.ACTIVE).exclude(
-            pk=membership.pk
-        )
+        others = Membership.objects.filter(
+            role__is_system=True, status=MembershipStatus.ACTIVE
+        ).exclude(pk=membership.pk)
         if not others.exists():
             raise HttpError(409, "cannot demote or remove the last active admin")
 
@@ -272,12 +297,16 @@ def _guard_last_admin(membership: Membership, changes: dict) -> None:
 @router.patch("/team/members/{user_id}", response=MemberOut)
 def patch_member(request: HttpRequest, user_id: int, payload: MemberPatch):
     _require_manager(request.user)
-    membership = get_object_or_404(Membership.objects.select_related("user"), user_id=user_id)
-    if membership.role == Role.ADMIN and not permissions.has_role(request.user, Role.ADMIN):
+    membership = get_object_or_404(
+        Membership.objects.select_related("user", "role"), user_id=user_id
+    )
+    if membership.role.is_system and not permissions.is_admin(request.user):
         raise HttpError(403, "only an admin may change another admin")
     changes = payload.dict(exclude_unset=True, exclude={"reason"})
-    if "role" in changes and not permissions.can_assign_role(request.user, changes["role"]):
-        raise HttpError(403, "only an admin may grant the admin role")
+    if "role" in changes:
+        changes["role"] = roles.by_slug(changes["role"])
+        if not permissions.can_assign_role(request.user, changes["role"]):
+            raise HttpError(403, "only an admin may grant the admin role")
     before = _member_out(membership)
     with transaction.atomic():
         _guard_last_admin(membership, changes)
@@ -291,7 +320,7 @@ def patch_member(request: HttpRequest, user_id: int, payload: MemberPatch):
             if active:
                 membership.source = MembershipSource.EXPLICIT
         membership.save()
-        if permissions.has_role(membership.user, Role.PILOT):
+        if membership.status == MembershipStatus.ACTIVE and membership.role.grants("fly"):
             from apps.scrims.roster import ensure_pilot_for
 
             ensure_pilot_for(membership.user)
@@ -310,8 +339,10 @@ def patch_member(request: HttpRequest, user_id: int, payload: MemberPatch):
 @router.delete("/team/members/{user_id}", response={204: None})
 def remove_member(request: HttpRequest, user_id: int, payload: RemoveIn):
     _require_manager(request.user)
-    membership = get_object_or_404(Membership.objects.select_related("user"), user_id=user_id)
-    if membership.role == Role.ADMIN and not permissions.has_role(request.user, Role.ADMIN):
+    membership = get_object_or_404(
+        Membership.objects.select_related("user", "role"), user_id=user_id
+    )
+    if membership.role.is_system and not permissions.is_admin(request.user):
         raise HttpError(403, "only an admin may remove an admin")
     with transaction.atomic():
         _guard_last_admin(membership, {"status": MembershipStatus.REMOVED})
@@ -332,23 +363,30 @@ def remove_member(request: HttpRequest, user_id: int, payload: RemoveIn):
 @router.get("/team/invites", response=list[InviteOut])
 def list_invites(request: HttpRequest):
     _require_manager(request.user)
-    invites = Invite.objects.filter(expires_at__gt=timezone.now(), uses_left__gt=0).order_by("-id")
+    invites = (
+        Invite.objects.filter(expires_at__gt=timezone.now(), uses_left__gt=0)
+        .select_related("role")
+        .order_by("-id")
+    )
     return [_invite_out(request, i) for i in invites]
 
 
 @router.post("/team/invites", response={201: InviteOut})
 def create_invite(request: HttpRequest, payload: InviteIn):
     _require_manager(request.user)
-    if not permissions.can_assign_role(request.user, payload.role):
+    role = roles.by_slug(payload.role)
+    if not permissions.can_assign_role(request.user, role):
         raise HttpError(403, "cannot create an invite for that role")
     invite = Invite.objects.create(
-        role=payload.role,
+        role=role,
         uses_left=max(1, payload.uses),
         expires_at=timezone.now() + timedelta(hours=max(1, payload.expires_in_hours)),
         note=payload.note,
         created_by=request.user,
     )
-    record(actor=request.user, action="invite.created", target=invite, after={"role": invite.role})
+    record(
+        actor=request.user, action="invite.created", target=invite, after={"role": invite.role.slug}
+    )
     return 201, _invite_out(request, invite)
 
 
@@ -364,19 +402,27 @@ def revoke_invite(request: HttpRequest, invite_id: int):
 @router.get("/team/admission-rules", response=list[AdmissionRuleOut])
 def list_rules(request: HttpRequest):
     _require_manager(request.user)
-    return AdmissionRule.objects.order_by("kind", "entity_name")
+    return [
+        _rule_out(r)
+        for r in AdmissionRule.objects.select_related("default_role").order_by(
+            "kind", "entity_name"
+        )
+    ]
 
 
 @router.post("/team/admission-rules", response={201: AdmissionRuleOut})
 def create_rule(request: HttpRequest, payload: AdmissionRuleIn):
     _require_manager(request.user)
-    if not permissions.can_assign_role(request.user, payload.default_role):
+    role = roles.by_slug(payload.default_role)
+    if not permissions.can_assign_role(request.user, role):
         raise HttpError(403, "cannot create a rule granting that role")
     if AdmissionRule.objects.filter(kind=payload.kind, entity_id=payload.entity_id).exists():
         raise HttpError(409, "a rule for that entity already exists")
-    rule = AdmissionRule.objects.create(**payload.dict(), created_by=request.user)
+    data = payload.dict()
+    data["default_role"] = role
+    rule = AdmissionRule.objects.create(**data, created_by=request.user)
     record(actor=request.user, action="admission_rule.created", target=rule, after=payload.dict())
-    return 201, rule
+    return 201, _rule_out(rule)
 
 
 @router.patch("/team/admission-rules/{rule_id}", response=AdmissionRuleOut)
@@ -384,11 +430,12 @@ def patch_rule(request: HttpRequest, rule_id: int, payload: AdmissionRulePatch):
     _require_manager(request.user)
     rule = get_object_or_404(AdmissionRule, pk=rule_id)
     changes = payload.dict(exclude_unset=True)
-    if "default_role" in changes and not permissions.can_assign_role(
-        request.user, changes["default_role"]
-    ):
-        raise HttpError(403, "cannot grant that role")
     before = {k: getattr(rule, k) for k in changes}
+    if "default_role" in changes:
+        before["default_role"] = rule.default_role.slug
+        changes["default_role"] = roles.by_slug(changes["default_role"])
+        if not permissions.can_assign_role(request.user, changes["default_role"]):
+            raise HttpError(403, "cannot grant that role")
     for field, value in changes.items():
         setattr(rule, field, value)
     rule.save()
@@ -397,9 +444,9 @@ def patch_rule(request: HttpRequest, rule_id: int, payload: AdmissionRulePatch):
         action="admission_rule.updated",
         target=rule,
         before=before,
-        after=changes,
+        after={k: (v.slug if isinstance(v, TeamRole) else v) for k, v in changes.items()},
     )
-    return rule
+    return _rule_out(rule)
 
 
 @router.delete("/team/admission-rules/{rule_id}", response={204: None})

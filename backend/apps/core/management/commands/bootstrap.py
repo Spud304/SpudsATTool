@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from apps.accounts.models import Membership, MembershipStatus, Role
+from apps.accounts.models import Membership, MembershipStatus
 from apps.core.models import Team
 
 
@@ -19,5 +19,7 @@ class Command(BaseCommand):
             )
         else:
             self.stdout.write(f"admin characters: {settings.ADMIN_CHARACTER_IDS}")
-        admins = Membership.objects.filter(role=Role.ADMIN, status=MembershipStatus.ACTIVE).count()
+        admins = Membership.objects.filter(
+            role__is_system=True, status=MembershipStatus.ACTIVE
+        ).count()
         self.stdout.write(f"active admins who have logged in: {admins}")

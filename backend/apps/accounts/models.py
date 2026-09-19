@@ -10,6 +10,8 @@ if TYPE_CHECKING:
 
 
 class Role(models.TextChoices):
+    """Slugs of the roles the app ships with. Roles themselves are `TeamRole` rows; these are lookups."""
+
     ADMIN = "admin", "Admin"
     CAPTAIN = "captain", "Captain"
     THEORYCRAFTER = "theorycrafter", "Theorycrafter"
@@ -18,16 +20,42 @@ class Role(models.TextChoices):
     VIEWER = "viewer", "Viewer"
 
 
-# Higher rank implies every capability of the lower ranks. Guest is a restricted read role
-# handled explicitly in permissions.py.
-ROLE_RANK = {
-    Role.VIEWER: 0,
-    Role.GUEST: 0,
-    Role.PILOT: 1,
-    Role.THEORYCRAFTER: 2,
-    Role.CAPTAIN: 3,
-    Role.ADMIN: 4,
-}
+class TeamRole(models.Model):
+    """A role the team defines: a name and the permission codes it grants (see permissions.PERMISSIONS).
+    The admin role is `is_system`: it always holds every permission and cannot be deleted."""
+
+    slug = models.SlugField(max_length=40, unique=True)
+    name = models.CharField(max_length=60, unique=True)
+    description = models.CharField(max_length=200, blank=True)
+    permissions = models.JSONField(default=list)
+    is_system = models.BooleanField(default=False)
+    sort_order = models.SmallIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    if TYPE_CHECKING:
+        memberships: "RelatedManager[Membership]"
+
+    class Meta:
+        db_table = "accounts_role"
+        ordering = ["sort_order", "name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+    def grants(self, code: str) -> bool:
+        return self.is_system or code in self.permissions
+
+
+def default_role_pk() -> int | None:
+    """New members, invites and rules default to the pilot role, as the old enum default did."""
+    pk = TeamRole.objects.filter(slug=Role.PILOT).values_list("pk", flat=True).first()
+    if pk is None and not TeamRole.objects.exists():
+        from .roles import seed_defaults  # a flushed table: put the defaults back
+
+        seed_defaults()
+        pk = TeamRole.objects.filter(slug=Role.PILOT).values_list("pk", flat=True).first()
+    return pk
 
 
 class UserManager(BaseUserManager):
@@ -122,7 +150,9 @@ class MembershipSource(models.TextChoices):
 
 class Membership(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="membership")
-    role = models.CharField(max_length=20, choices=Role.choices, default=Role.PILOT)
+    role = models.ForeignKey(
+        TeamRole, on_delete=models.PROTECT, related_name="memberships", default=default_role_pk
+    )
     status = models.CharField(
         max_length=20, choices=MembershipStatus.choices, default=MembershipStatus.ACTIVE
     )
@@ -156,7 +186,9 @@ class AdmissionRule(models.Model):
     kind = models.CharField(max_length=20, choices=AdmissionRuleKind.choices)
     entity_id = models.BigIntegerField()
     entity_name = models.CharField(max_length=100, blank=True)
-    default_role = models.CharField(max_length=20, choices=Role.choices, default=Role.PILOT)
+    default_role = models.ForeignKey(
+        TeamRole, on_delete=models.PROTECT, related_name="admission_rules", default=default_role_pk
+    )
     enabled = models.BooleanField(default=True)
     created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -184,7 +216,9 @@ def _new_invite_token() -> str:
 
 class Invite(models.Model):
     token = models.CharField(max_length=64, unique=True, default=_new_invite_token)
-    role = models.CharField(max_length=20, choices=Role.choices, default=Role.PILOT)
+    role = models.ForeignKey(
+        TeamRole, on_delete=models.PROTECT, related_name="invites", default=default_role_pk
+    )
     uses_left = models.PositiveIntegerField(default=1)
     expires_at = models.DateTimeField()
     note = models.CharField(max_length=200, blank=True)

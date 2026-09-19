@@ -6,7 +6,7 @@ from django.http import HttpRequest
 from ninja import Router, Schema
 
 from apps.accounts import permissions
-from apps.accounts.models import Role, User
+from apps.accounts.models import User
 from apps.rules import selection
 from apps.rules.models import Ruleset
 
@@ -53,14 +53,14 @@ def _out(row: Scratchpad | None) -> dict:
 
 @router.get("", response=ScratchpadOut)
 def get_scratchpad(request: HttpRequest):
-    permissions.require_role(request.user, Role.PILOT)
+    permissions.require_browse_library(request.user)
     row = Scratchpad.objects.filter(user=request.user).select_related("ruleset__tournament").first()
     return _out(row)
 
 
 @router.put("", response=ScratchpadOut)
 def put_scratchpad(request: HttpRequest, payload: ScratchpadIn):
-    permissions.require_role(request.user, Role.PILOT)
+    permissions.require_browse_library(request.user)
     user = cast(User, request.user)
     ruleset = (
         Ruleset.objects.filter(tournament__code=payload.ruleset).first()

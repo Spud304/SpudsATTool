@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from apps.core.models import Team
-from apps.scrims import roster, sets
+from apps.accounts import roles
+from apps.scrims import sets
 from apps.scrims.models import Pilot
 from tests.rules.engine import atxxii as at
 
@@ -130,7 +130,9 @@ def test_pilot_may_touch_only_their_slot_and_deaths(
     assert call(client, "post", f"{base}/sets/{set_id}/rounds").status_code == 403
     assert call(client, "patch", f"{base}/sets/{set_id}", {"label": "x"}).status_code == 403
 
-    Team.objects.update(pilots_can_score=False)
+    pilot_role = roles.by_slug("pilot")
+    pilot_role.permissions = [p for p in pilot_role.permissions if p != "score"]
+    pilot_role.save()
     assert call(client, "patch", f"{url}/4", {"died": False}).status_code == 403
     assert (
         call(client, "patch", f"{base}/sets/{set_id}/rounds/1", {"outcome": "loss"}).status_code
@@ -147,7 +149,7 @@ def test_guest_sees_only_scrims_they_fly_in(client, api_scrim, login_as, captain
     assert call(client, "post", f"{base}/presence", {"focus": None}).status_code == 403
 
     me = client.get("/api/me").json()
-    merc = roster.create_pilot(captain, name="Merc Guest", is_merc=True, user_id=me["user_id"])
+    merc = Pilot.objects.get(user_id=me["user_id"])  # guests can fly, so admission made the row
     sets.patch_assignment(theo, api_scrim.pk, doc["id"], 1, "US", 7, pilot_id=merc.pk)
     resp = client.get(base)
     assert (

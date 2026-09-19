@@ -11,8 +11,6 @@ class Team(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField(max_length=100, unique=True)
     alliance_id = models.BigIntegerField(null=True, blank=True)
-    pilots_can_score = models.BooleanField(default=True)
-    pilots_can_browse_library = models.BooleanField(default=True)
     affiliation_grace_hours = models.PositiveIntegerField(default=24)
     # The season the team is working in; comps, fit legality and the comps list default to it.
     active_ruleset = models.ForeignKey(

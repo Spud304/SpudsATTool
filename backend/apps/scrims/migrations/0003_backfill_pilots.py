@@ -7,9 +7,15 @@ def backfill(apps, schema_editor):
     """Members admitted before the roster existed get their pilot row here; later ones get it on admission."""
     Membership = apps.get_model("accounts", "Membership")
     Pilot = apps.get_model("scrims", "Pilot")
-    for membership in Membership.objects.filter(
-        status="active", role__in=FLYING_ROLES
-    ).select_related("user"):
+    # On a fresh database this runs after accounts 0002 turned `role` into a foreign key.
+    role_filter = (
+        {"role__slug__in": FLYING_ROLES}
+        if Membership._meta.get_field("role").is_relation
+        else {"role__in": FLYING_ROLES}
+    )
+    for membership in Membership.objects.filter(status="active", **role_filter).select_related(
+        "user"
+    ):
         user = membership.user
         if Pilot.objects.filter(user=user).exists():
             continue

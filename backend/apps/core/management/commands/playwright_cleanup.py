@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.db.models import Q
 
-from apps.accounts.models import AdmissionRule, EveCharacter, Invite, Membership, User
+from apps.accounts.models import AdmissionRule, EveCharacter, Invite, Membership, TeamRole, User
 from apps.audit.models import AuditLog
 from apps.library.models import Archetype, Comp, Fit
 from apps.scrims.models import Opponent, Pilot, Session
@@ -50,4 +50,13 @@ class Command(BaseCommand):
                 Q(character_id__range=(lo, hi)) | Q(user_id__in=user_ids)
             ).delete()[0]
             counts["users"] = User.objects.filter(pk__in=user_ids).delete()[0]
+            pilot_role = TeamRole.objects.filter(slug="pilot").first()
+            pw_roles = TeamRole.objects.filter(name__startswith=PREFIX, is_system=False)
+            if pilot_role is not None:
+                Membership.objects.filter(role__in=pw_roles).update(role=pilot_role)
+                Invite.objects.filter(role__in=pw_roles).update(role=pilot_role)
+                AdmissionRule.objects.filter(default_role__in=pw_roles).update(
+                    default_role=pilot_role
+                )
+            counts["roles"] = pw_roles.delete()[0]
         self.stdout.write("playwright cleanup: " + ", ".join(f"{k}={v}" for k, v in counts.items()))

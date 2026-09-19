@@ -2,8 +2,8 @@ import json
 
 import pytest
 
+from apps.accounts import roles
 from apps.audit.models import AuditLog
-from apps.core.models import Team
 from apps.library.models import Fit
 from tests.conftest import ABSO_FIT, ABSO_PYFA
 
@@ -30,9 +30,9 @@ def test_anonymous_and_viewer(client, library_sde, login_as):
 def test_pilot_browsing_can_be_switched_off(client, library_sde, login_as):
     login_as(role="pilot")
     assert client.get("/api/fits").status_code == 200
-    team = Team.get_solo()
-    team.pilots_can_browse_library = False
-    team.save()
+    pilot_role = roles.by_slug("pilot")
+    pilot_role.permissions = [p for p in pilot_role.permissions if p != "browse_library"]
+    pilot_role.save()
     assert client.get("/api/fits").status_code == 403
     assert client.get("/api/me").json()["capabilities"]["browse_library"] is False
 

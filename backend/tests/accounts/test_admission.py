@@ -4,7 +4,7 @@ import pytest
 from django.core.management import call_command
 from django.utils import timezone
 
-from apps.accounts import services
+from apps.accounts import roles, services
 from apps.accounts.models import (
     AdmissionRule,
     AdmissionRuleKind,
@@ -25,7 +25,7 @@ def test_env_admin_is_granted_on_login(team, admins, make_character):
     result = services.admit(make_character(ADMIN_ID, "Spud"))
     assert result.outcome == "env_admin" and result.admitted
     user, membership = admitted(result)
-    assert membership.role == Role.ADMIN and membership.is_leadership
+    assert membership.role.slug == Role.ADMIN and membership.is_leadership
     assert user.is_superuser
     assert AuditLog.objects.filter(action="membership.admin_granted").exists()
     # second login: existing
@@ -45,15 +45,17 @@ def test_empty_admin_list_denies_everyone_with_hint(team, make_character):
 
 def test_invite_admits_once(team, admins, make_character):
     invite = Invite.objects.create(
-        role=Role.THEORYCRAFTER, uses_left=1, expires_at=timezone.now() + timedelta(hours=1)
+        role=roles.by_slug(Role.THEORYCRAFTER),
+        uses_left=1,
+        expires_at=timezone.now() + timedelta(hours=1),
     )
     result = services.admit(make_character(2, "Second"), invite_token=invite.token)
-    assert result.outcome == "invite" and admitted(result)[1].role == Role.THEORYCRAFTER
+    assert result.outcome == "invite" and admitted(result)[1].role.slug == Role.THEORYCRAFTER
     invite.refresh_from_db()
     assert invite.uses_left == 0
     assert services.admit(make_character(3, "Third"), invite_token=invite.token).outcome == "denied"
     expired = Invite.objects.create(
-        role=Role.PILOT, expires_at=timezone.now() - timedelta(minutes=1)
+        role=roles.by_slug(Role.PILOT), expires_at=timezone.now() - timedelta(minutes=1)
     )
     assert (
         services.admit(make_character(4, "Fourth"), invite_token=expired.token).outcome == "denied"
@@ -62,7 +64,7 @@ def test_invite_admits_once(team, admins, make_character):
 
 def test_alliance_rule(team, admins, make_character):
     AdmissionRule.objects.create(
-        kind=AdmissionRuleKind.ALLIANCE, entity_id=99000001, default_role=Role.PILOT
+        kind=AdmissionRuleKind.ALLIANCE, entity_id=99000001, default_role=roles.by_slug(Role.PILOT)
     )
     result = services.admit(make_character(2, "Second", alliance_id=99000001))
     assert result.outcome == "rule" and admitted(result)[1].source == "rule"
@@ -92,7 +94,9 @@ def test_link_character(team, admins, make_character):
     alt = make_character(2, "Alt")
     services.link_character(user, alt)
     assert user.characters.count() == 2
-    invite = Invite.objects.create(role=Role.PILOT, expires_at=timezone.now() + timedelta(hours=1))
+    invite = Invite.objects.create(
+        role=roles.by_slug(Role.PILOT), expires_at=timezone.now() + timedelta(hours=1)
+    )
     other, _ = admitted(services.admit(make_character(3, "Other"), invite_token=invite.token))
     with pytest.raises(ValueError):
         services.link_character(other, alt)
@@ -101,10 +105,10 @@ def test_link_character(team, admins, make_character):
 def test_grant_admin_command(team, make_character, capsys):
     make_character(5, "Recovered")
     call_command("grant_admin", "Recovered")
-    assert Membership.objects.get(user__characters__character_id=5).role == Role.ADMIN
+    assert Membership.objects.get(user__characters__character_id=5).role.slug == Role.ADMIN
     call_command("grant_admin", "777")  # not logged in yet
     assert "applies on first login" in capsys.readouterr().out
-    assert Membership.objects.get(user__characters__character_id=777).role == Role.ADMIN
+    assert Membership.objects.get(user__characters__character_id=777).role.slug == Role.ADMIN
 
 
 def test_refresh_affiliations_grace_and_reactivation(team, admins, make_character, monkeypatch):

@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from apps.core.models import Team
+from apps.accounts import roles
 from apps.library.models import Fit
 from tests.conftest import ABSO_FIT
 from tests.rules.engine import atxxii as at
@@ -36,7 +36,9 @@ def test_auth_matrix(client, library_sde, imported_atxxii, login_as):
     login_as(role="pilot")
     assert client.get("/api/comps").status_code == 200
     assert client.get("/api/comps/vocab").status_code == 200
-    Team.objects.update(pilots_can_browse_library=False)
+    pilot_role = roles.by_slug("pilot")
+    pilot_role.permissions = [p for p in pilot_role.permissions if p != "browse_library"]
+    pilot_role.save()
     assert client.get("/api/comps").status_code == 403
 
 

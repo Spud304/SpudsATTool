@@ -7,8 +7,7 @@ from django.shortcuts import get_object_or_404
 from ninja import Router, Schema
 from ninja.errors import HttpError
 
-from apps.accounts.models import Role
-from apps.accounts.permissions import require_role
+from apps.accounts.permissions import require_browse_library
 
 from . import adapters
 from .engine import BanInput, SlotInput, evaluate_comp
@@ -122,7 +121,7 @@ def _inputs(ruleset: Ruleset) -> adapters.EngineInputs:
 
 @router.get("", response=list[RulesetOut])
 def list_rulesets(request: HttpRequest):
-    require_role(request.user, Role.PILOT)
+    require_browse_library(request.user)
     out = []
     for rs in Ruleset.objects.select_related("tournament").prefetch_related(
         "hull_sizes", "point_versions"
@@ -157,7 +156,7 @@ def list_rulesets(request: HttpRequest):
 
 @router.get("/{code}/ships", response=list[ShipOut])
 def list_ships(request: HttpRequest, code: str):
-    require_role(request.user, Role.PILOT)
+    require_browse_library(request.user)
     inputs = _inputs(_ruleset(code))
     return [
         {
@@ -176,7 +175,7 @@ def list_ships(request: HttpRequest, code: str):
 
 @router.post("/{code}/evaluate", response=EvaluateOut)
 def evaluate(request: HttpRequest, code: str, payload: EvaluateIn):
-    require_role(request.user, Role.PILOT)
+    require_browse_library(request.user)
     inputs = _inputs(_ruleset(code))
     slots = [SlotInput(**s.dict()) for s in payload.slots]
     bans = [BanInput(**b.dict()) for b in payload.bans]

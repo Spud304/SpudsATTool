@@ -13,7 +13,6 @@ from apps.core.models import Team
 from apps.esi.client import EsiError, get_client
 
 from .models import (
-    ROLE_RANK,
     AdmissionRule,
     EveCharacter,
     Invite,
@@ -110,11 +109,14 @@ def matching_rule(characters) -> AdmissionRule | None:
     return None
 
 
-def _set_membership(user: User, *, role: str, source: str, note: str = "") -> Membership:
+def _set_membership(user: User, *, role, source: str, note: str = "") -> Membership:
+    from . import roles
+
+    team_role = roles.by_slug(role)
     membership, _ = Membership.objects.update_or_create(
         user=user,
         defaults={
-            "role": role,
+            "role": team_role,
             "status": MembershipStatus.ACTIVE,
             "source": source,
             "suspended_at": None,
@@ -125,7 +127,7 @@ def _set_membership(user: User, *, role: str, source: str, note: str = "") -> Me
     if not user.is_active:
         user.is_active = True
         user.save(update_fields=["is_active"])
-    if ROLE_RANK[Role(role)] >= ROLE_RANK[Role.PILOT]:
+    if team_role.grants("fly"):
         from apps.scrims.roster import ensure_pilot_for  # roster row for anyone who can fly
 
         ensure_pilot_for(user)
@@ -154,7 +156,7 @@ def admit(character: EveCharacter, *, invite_token: str | None = None) -> AdmitR
             existing = getattr(user, "membership", None)
             if (
                 existing is None
-                or existing.role != Role.ADMIN
+                or not existing.role.is_system
                 or existing.status != MembershipStatus.ACTIVE
             ):
                 membership = grant_admin(character, source=MembershipSource.ENV_ADMIN)
@@ -186,7 +188,7 @@ def admit(character: EveCharacter, *, invite_token: str | None = None) -> AdmitR
                     actor=user,
                     action="membership.admitted_by_invite",
                     target=user,
-                    after={"role": invite.role, "invite_id": invite.pk},
+                    after={"role": invite.role.slug, "invite_id": invite.pk},
                 )
                 return AdmitResult(user, membership, "invite")
 
@@ -202,7 +204,7 @@ def admit(character: EveCharacter, *, invite_token: str | None = None) -> AdmitR
                     actor=user,
                     action="membership.admitted_by_rule",
                     target=user,
-                    after={"role": rule.default_role, "rule_id": rule.pk},
+                    after={"role": rule.default_role.slug, "rule_id": rule.pk},
                 )
                 return AdmitResult(user, membership, "rule")
 

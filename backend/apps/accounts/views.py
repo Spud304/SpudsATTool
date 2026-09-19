@@ -12,7 +12,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_http_methods
 
 from . import services, sso
-from .models import MembershipSource, Role, User
+from .models import MembershipSource, TeamRole, User
 
 log = logging.getLogger(__name__)
 BACKEND = "django.contrib.auth.backends.ModelBackend"
@@ -140,7 +140,7 @@ def dev_login_view(request: HttpRequest) -> HttpResponse:
     character = services.upsert_character(identity, affiliation)
     role = request.GET.get("role")
     if role:
-        if role not in Role.values:
+        if not TeamRole.objects.filter(slug=role).exists():
             return HttpResponseBadRequest("unknown role")
         user = services.ensure_user(character)
         membership = services._set_membership(

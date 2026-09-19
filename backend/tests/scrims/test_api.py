@@ -31,7 +31,8 @@ def test_permissions(client, imported_atxxii, login_as):
     tonight = timezone.now() + timedelta(hours=2)
     assert client.get("/api/scrims").status_code == 401
     login_as(character_id=5, name="Guest", role="guest")
-    assert client.get("/api/scrims").status_code == 403
+    resp = client.get("/api/scrims")  # assigned-only members get the list, empty until fielded
+    assert resp.status_code == 200 and resp.json() == []
     client.get("/auth/logout")
 
     login_as(character_id=6, name="Viewer", role="viewer")

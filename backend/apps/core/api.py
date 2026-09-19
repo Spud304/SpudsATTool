@@ -6,8 +6,7 @@ from django.http import HttpRequest
 from ninja import Router, Schema
 from ninja.errors import HttpError
 
-from apps.accounts.models import Role
-from apps.accounts.permissions import require_role
+from apps.accounts import permissions
 from apps.audit.services import record
 from apps.rules import selection
 from apps.rules.models import Ruleset
@@ -33,8 +32,6 @@ class TeamOut(Schema):
     name: str
     slug: str
     alliance_id: int | None
-    pilots_can_score: bool
-    pilots_can_browse_library: bool
     affiliation_grace_hours: int
     active_ruleset: str | None
     active_ruleset_is_fallback: bool
@@ -43,8 +40,6 @@ class TeamOut(Schema):
 class TeamPatch(Schema):
     name: str | None = None
     alliance_id: int | None = None
-    pilots_can_score: bool | None = None
-    pilots_can_browse_library: bool | None = None
     affiliation_grace_hours: int | None = None
     active_ruleset: str | None = None  # tournament code
 
@@ -56,8 +51,6 @@ def team_out(team: Team) -> dict:
         "name": team.name,
         "slug": team.slug,
         "alliance_id": team.alliance_id,
-        "pilots_can_score": team.pilots_can_score,
-        "pilots_can_browse_library": team.pilots_can_browse_library,
         "affiliation_grace_hours": team.affiliation_grace_hours,
         "active_ruleset": active.code if active else None,
         "active_ruleset_is_fallback": team.active_ruleset_id is None,
@@ -82,13 +75,13 @@ def health(request: HttpRequest):
 
 @router.get("/team", response=TeamOut)
 def get_team(request: HttpRequest):
-    require_role(request.user, Role.PILOT)
+    permissions.require_member(request.user)
     return team_out(Team.get_solo())
 
 
 @router.patch("/team", response=TeamOut)
 def patch_team(request: HttpRequest, payload: TeamPatch):
-    require_role(request.user, Role.ADMIN)
+    permissions.require_perm(request.user, "manage_team")
     team = Team.get_solo()
     changes = payload.dict(exclude_unset=True)
     before = {k: getattr(team, k) for k in changes if k != "active_ruleset"}
