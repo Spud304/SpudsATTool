@@ -35,7 +35,7 @@ export function ReviewView({ scrim }: { scrim: SessionOut }) {
         {sets.length === 0 ? (
           <Empty>No sets were played.</Empty>
         ) : (
-          <div className="flex flex-wrap items-center gap-4 text-[12px]">
+          <div className="flex flex-wrap items-center gap-4 text-body">
             <span>
               <Mono>{sets.length}</Mono> set{sets.length === 1 ? '' : 's'}, <Mono>{rounds.length}</Mono> round{rounds.length === 1 ? '' : 's'}
             </span>
@@ -71,7 +71,7 @@ export function ReviewView({ scrim }: { scrim: SessionOut }) {
           }
           testId={`scrim.review.set.${s.id}`}
         >
-          <div className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px]">
+          <div className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-body">
             <span>
               <span className="text-muted">bans </span>
               {s.bans.filter((b) => b.type_id != null).length === 0 ? (

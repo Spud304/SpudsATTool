@@ -80,7 +80,7 @@ function RosterPanel({ canManage }: { canManage: boolean }) {
           <Field label="Roles">
             <Input data-testid="pilots.new.roles" value={roles} onChange={(e) => setRoles(e.target.value)} placeholder="logi, tackle" className="w-36" />
           </Field>
-          <label className="flex h-7 items-center gap-1 text-[12px]">
+          <label className="flex h-7 items-center gap-1 text-body">
             <Checkbox data-testid="pilots.new.merc" checked={merc} onChange={(e) => setMerc(e.target.checked)} /> merc
           </label>
           <Button data-testid="pilots.new.create" type="submit" variant="primary" disabled={!name.trim() || createPilot.isPending}>

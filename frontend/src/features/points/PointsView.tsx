@@ -141,7 +141,7 @@ export function PointsView({ code, compact = false, onPick }: { code: string; co
               </option>
             ))}
           </Select>
-          <span className="flex items-center gap-1 text-[12px] text-muted" title="Both ends included: a hull shows when min ≤ points ≤ max.">
+          <span className="flex items-center gap-1 text-body text-muted" title="Both ends included: a hull shows when min ≤ points ≤ max.">
             pts
             <Input
               type="number"
@@ -165,7 +165,7 @@ export function PointsView({ code, compact = false, onPick }: { code: string; co
             <span className="text-[11px]">(inclusive)</span>
           </span>
         </>
-        <span className="text-[12px] text-muted" data-testid="points.count">
+        <span className="text-body text-muted" data-testid="points.count">
           {rows.length} of {all.length} hulls
         </span>
         {active ? (

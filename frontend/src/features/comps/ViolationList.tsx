@@ -14,7 +14,7 @@ export function ViolationList({ violations, slotCount, testId }: { violations: V
   const empty = violations.filter((v) => v.code === 'EMPTY_SLOT')
   const rest = violations.filter((v) => v.code !== 'EMPTY_SLOT')
   return (
-    <ul className="space-y-1 text-[12px]" data-testid={testId}>
+    <ul className="space-y-1 text-body" data-testid={testId}>
       {empty.length ? (
         <li className="text-muted" data-testid={testId ? `${testId}.empty` : undefined}>
           {empty.length} of {slotCount} slots empty

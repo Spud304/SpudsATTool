@@ -198,7 +198,7 @@ function LegalityPanel({ fit }: { fit: FitOut }) {
             </Mono>
           </div>
           {result.violations.length ? (
-            <ul className="space-y-1 text-[12px]">
+            <ul className="space-y-1 text-body">
               {result.violations.map((v, i) => (
                 <li key={i} className="flex flex-wrap items-baseline gap-1">
                   <Badge tone={severityTone(v.severity)}>{v.code}</Badge>

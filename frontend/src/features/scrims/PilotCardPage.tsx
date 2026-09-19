@@ -112,7 +112,7 @@ export function PilotCardPage() {
                 <Mono className="text-lg">R{round.round_no}</Mono>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-[12px]">
+            <div className="flex flex-wrap items-center gap-2 text-body">
               <span className="text-muted">warp calls</span>
               {['1st', '2nd', '3rd', '4th'].map((label, i) => (
                 <span key={label} className="rounded border border-line bg-bg px-1.5">
@@ -121,7 +121,7 @@ export function PilotCardPage() {
               ))}
             </div>
             {mine.link_scripts.length ? (
-              <div className="flex items-center gap-1 text-[12px]">
+              <div className="flex items-center gap-1 text-body">
                 <span className="text-muted">links</span>
                 {mine.link_index ? <Badge tone="accent">L{mine.link_index}</Badge> : null}
                 {mine.link_scripts.map((code) => (
@@ -132,18 +132,18 @@ export function PilotCardPage() {
               </div>
             ) : null}
             {mine.repeat_note || mine.custom_note ? (
-              <div className="rounded border border-line bg-bg p-2 text-[12px]">
+              <div className="rounded border border-line bg-bg p-2 text-body">
                 {mine.repeat_note ? <div className="text-muted">{mine.repeat_note}</div> : null}
                 {mine.custom_note ? <div>{mine.custom_note}</div> : null}
               </div>
             ) : null}
-            {set.tactics_note ? <div className="text-[12px]">tactics: {set.tactics_note}</div> : null}
+            {set.tactics_note ? <div className="text-body">tactics: {set.tactics_note}</div> : null}
             {mine.fit_text ? (
               <div>
                 <Button variant="primary" onClick={copy} data-testid="pilotcard.copy">
                   {copied ? 'Copied' : 'Copy fit'}
                 </Button>
-                <pre className="mono mt-2 overflow-x-auto rounded border border-line bg-bg p-2 text-[12px] leading-snug">{mine.fit_text}</pre>
+                <pre className="mono mt-2 overflow-x-auto rounded border border-line bg-bg p-2 text-body leading-snug">{mine.fit_text}</pre>
               </div>
             ) : (
               <p className="text-muted">No fit text on this slot yet.</p>

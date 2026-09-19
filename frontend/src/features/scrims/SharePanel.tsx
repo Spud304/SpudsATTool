@@ -26,9 +26,9 @@ export function SharePanel({ scrimId, onClose }: { scrimId: number; onClose: () 
   }
   return createPortal(
     <div className="fixed inset-0 z-40 flex justify-end bg-black/30" onMouseDown={onClose} data-testid="scrim.share">
-      <aside className="flex h-full w-[460px] flex-col gap-3 overflow-y-auto border-l border-line bg-panel p-3 text-[12px] shadow-lg" onMouseDown={(e) => e.stopPropagation()}>
+      <aside className="flex h-full w-[460px] flex-col gap-3 overflow-y-auto border-l border-line bg-panel p-3 text-body shadow-lg" onMouseDown={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <h2 className="text-[12px] font-semibold uppercase tracking-wide text-muted">Share links</h2>
+          <h2 className="text-body font-semibold uppercase tracking-wide text-muted">Share links</h2>
           <Button variant="ghost" className="h-6 px-1.5" onClick={onClose} data-testid="scrim.share.close">
             close
           </Button>

@@ -24,7 +24,7 @@ export function DashboardPage() {
             <p className="text-warn">EVE SSO is not configured: set EVE_CLIENT_ID and EVE_CLIENT_SECRET.</p>
           )}
           {me.data && !me.data.admins_configured ? (
-            <p className="mt-3 text-[12px] text-warn">No admins configured: set ADMIN_CHARACTER_IDS before anyone can log in.</p>
+            <p className="mt-3 text-body text-warn">No admins configured: set ADMIN_CHARACTER_IDS before anyone can log in.</p>
           ) : null}
         </Panel>
       </div>

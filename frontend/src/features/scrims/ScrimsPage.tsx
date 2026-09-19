@@ -124,7 +124,7 @@ function RollCall({ scrimId }: { scrimId: number }) {
   if (!scrim.data) return <p className="mt-2 text-[11px] text-muted">Loading…</p>
   const groups = ['yes', 'maybe', 'none', 'no']
   return (
-    <div className="mt-2 grid gap-2 rounded border border-line bg-bg p-2 text-[12px] md:grid-cols-4" data-testid={`scrims.row.${scrimId}.rollcall.list`}>
+    <div className="mt-2 grid gap-2 rounded border border-line bg-bg p-2 text-body md:grid-cols-4" data-testid={`scrims.row.${scrimId}.rollcall.list`}>
       {groups.map((g) => {
         const rows = scrim.data.attendance.filter((a) => a.rsvp === g)
         return (

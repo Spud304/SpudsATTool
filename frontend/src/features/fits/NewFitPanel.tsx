@@ -85,7 +85,7 @@ export function NewFitPanel() {
 function PreviewBlock({ preview }: { preview: ParseOut }) {
   const stats = preview.stats
   return (
-    <div className="space-y-1 border-t border-line pt-2 text-[12px]" data-testid="fits.new.preview">
+    <div className="space-y-1 border-t border-line pt-2 text-body" data-testid="fits.new.preview">
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone={preview.hull_type_id ? 'ok' : 'bad'}>{preview.hull_name || 'no hull'}</Badge>
         <span>{preview.fit_name}</span>

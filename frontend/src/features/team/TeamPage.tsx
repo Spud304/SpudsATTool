@@ -217,7 +217,7 @@ function RulesPanel({ isAdmin }: { isAdmin: boolean }) {
   const [role, setRole] = useState<Role>('pilot')
   return (
     <Panel title="Admission rules" testId="team.rules">
-      <p className="mb-2 text-[12px] text-muted">
+      <p className="mb-2 text-body text-muted">
         Characters in these corporations or alliances are admitted automatically. Re-checked hourly; members who leave are suspended after the grace period.
       </p>
       <form

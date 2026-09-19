@@ -317,7 +317,7 @@ function Editor({ ruleset, saved }: { ruleset: RulesetOut; saved: ScratchpadOut 
             </tbody>
           </Table>
           {unknown.length ? (
-            <p className="mt-2 text-[12px] text-warn" data-testid="scratchpad.paste.unknown">
+            <p className="mt-2 text-body text-warn" data-testid="scratchpad.paste.unknown">
               Not in this ruleset: {unknown.join(', ')}
             </p>
           ) : null}
