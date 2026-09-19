@@ -135,12 +135,16 @@ export function Badge({ tone = 'muted', children, testId }: { tone?: Tone; child
   )
 }
 
-export function Table({ children, className, ...props }: TableHTMLAttributes<HTMLTableElement> & { children: ReactNode }) {
+/** `hover` tints the row under the pointer so the eye can follow it across a wide list. */
+export function Table({ children, className, hover = false, ...props }: TableHTMLAttributes<HTMLTableElement> & { children: ReactNode; hover?: boolean }) {
   return (
     <div className={clsx('overflow-x-auto', className)}>
       <table
         {...props}
-        className="w-full border-collapse text-left text-[12px] [&_td]:border-t [&_td]:border-line [&_td]:px-2 [&_td]:py-1 [&_th]:px-2 [&_th]:py-1 [&_th]:text-[11px] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted"
+        className={clsx(
+          'w-full border-collapse text-left text-[12px] [&_td]:border-t [&_td]:border-line [&_td]:px-2 [&_td]:py-1 [&_th]:px-2 [&_th]:py-1 [&_th]:text-[11px] [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted',
+          hover && '[&_tbody_tr:hover]:bg-panel-2',
+        )}
       >
         {children}
       </table>

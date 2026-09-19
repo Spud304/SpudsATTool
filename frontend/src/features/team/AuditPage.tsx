@@ -40,7 +40,7 @@ export function AuditPage() {
     >
       <ErrorText error={audit.error} />
       {items.length ? (
-        <Table>
+        <Table hover>
           <thead>
             <tr>
               <th>When</th>

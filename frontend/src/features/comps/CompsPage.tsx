@@ -67,7 +67,7 @@ export function CompsPage() {
       >
         <ErrorText error={comps.error} />
         {comps.data?.length ? (
-          <Table>
+          <Table hover>
             <thead>
               <tr>
                 <th>Comp</th>
@@ -106,7 +106,9 @@ export function CompsPage() {
                       )}
                     </td>
                     <td>{ev ? <Badge tone={ev.is_legal ? 'ok' : 'bad'}>{ev.is_legal ? 'legal' : `${ev.error_count} err`}</Badge> : null}</td>
-                    <td className="max-w-md text-[11px] text-muted">{c.hulls.filter(Boolean).join(', ')}</td>
+                    <td className="max-w-md truncate text-[11px] text-muted" title={c.hulls.filter(Boolean).join(', ')}>
+                      {c.hulls.filter(Boolean).join(', ')}
+                    </td>
                     <td className="text-right">
                       <Mono>{num(c.stats.dps_total)}</Mono>
                     </td>

@@ -174,7 +174,7 @@ export function PointsView({ code, compact = false, onPick }: { code: string; co
           </Button>
         ) : null}
       </div>
-      <Table className={compact ? 'max-h-[50vh] overflow-y-auto' : undefined}>
+      <Table hover className={compact ? 'max-h-[50vh] overflow-y-auto' : undefined}>
         <thead>
           <tr>
             {header('name', 'Ship')}
@@ -208,7 +208,11 @@ export function PointsView({ code, compact = false, onPick }: { code: string; co
               {compact ? null : (
                 <td className="space-x-1">
                   {s.is_unique ? <Badge tone="warn">unique</Badge> : null}
-                  {s.flagship_eligible ? <Badge tone="accent">flagship</Badge> : null}
+                  {s.flagship_eligible ? (
+                    <span className="text-[11px] text-muted" title="flagship eligible">
+                      flag
+                    </span>
+                  ) : null}
                 </td>
               )}
             </tr>

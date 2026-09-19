@@ -35,7 +35,7 @@ function MembersPanel({ canManage, isAdmin, myUserId }: { canManage: boolean; is
     <Panel title={`Members${members.data ? ` (${members.data.length})` : ''}`}>
       <ErrorText error={patchMember.error ?? removeMember.error} />
       {members.data?.length ? (
-        <Table>
+        <Table hover>
           <thead>
             <tr>
               <th>Member</th>
@@ -161,7 +161,7 @@ function InvitesPanel({ isAdmin }: { isAdmin: boolean }) {
       </form>
       <ErrorText error={createInvite.error} />
       {invites.data?.length ? (
-        <Table>
+        <Table hover>
           <thead>
             <tr>
               <th>Role</th>
@@ -263,7 +263,7 @@ function RulesPanel({ isAdmin }: { isAdmin: boolean }) {
       </form>
       <ErrorText error={createRule.error} />
       {rules.data?.length ? (
-        <Table>
+        <Table hover>
           <thead>
             <tr>
               <th>Kind</th>

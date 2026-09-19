@@ -36,7 +36,7 @@ export function ScrimsPage() {
         </Panel>
         <Panel title={`Past${past.data ? ` (${past.data.length})` : ''}`} testId="scrims.past">
           {past.data?.length ? (
-            <Table>
+            <Table hover>
               <thead>
                 <tr>
                   <th>Scrim</th>

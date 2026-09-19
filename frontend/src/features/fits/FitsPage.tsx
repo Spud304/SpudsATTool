@@ -50,7 +50,7 @@ export function FitsPage() {
       >
         <ErrorText error={fits.error} />
         {groups.length ? (
-          <Table>
+          <Table hover>
             <thead>
               <tr>
                 <th>Fit</th>
@@ -77,7 +77,7 @@ export function FitsPage() {
                   {closed[hull] ? null : rows.map((f) => (
                     <tr key={f.id} data-testid={`fits.row.${f.id}`}>
                       <td>
-                        <Link to="/fits/$fitId" params={{ fitId: String(f.id) }} className="text-accent hover:underline">
+                        <Link to="/fits/$fitId" params={{ fitId: String(f.id) }} className="inline-block max-w-xs truncate align-bottom text-accent hover:underline" title={f.name}>
                           {f.name}
                         </Link>
                       </td>

@@ -29,7 +29,7 @@ function RosterPanel({ canManage }: { canManage: boolean }) {
     <Panel title={`Roster${pilots.data ? ` (${pilots.data.length})` : ''}`} testId="pilots">
       <ErrorText error={patchPilot.error} />
       {pilots.data?.length ? (
-        <Table>
+        <Table hover>
           <thead>
             <tr>
               <th>Pilot</th>
@@ -166,7 +166,7 @@ function OpponentsPanel({ canManage }: { canManage: boolean }) {
     <Panel title={`Opponents${opponents.data ? ` (${opponents.data.length})` : ''}`} testId="opponents">
       <ErrorText error={patchOpponent.error} />
       {opponents.data?.length ? (
-        <Table>
+        <Table hover>
           <thead>
             <tr>
               <th>Team</th>
