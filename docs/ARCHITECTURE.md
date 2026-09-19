@@ -266,7 +266,7 @@ Top nav as built: **Home · Comp scratchpad · Points · Comps · Fits · Scrims
 
 | Area | Routes | Status | Purpose |
 |---|---|---|---|
-| Dashboard | `/` | built | Upcoming scrims with the pilot's own RSVP buttons and tally, recent scrims, the review queue of suggested comps and fits. Library health alerts (comps broken by a points revision) are still to come. |
+| Dashboard | `/` | built, reworked 2026-09-18 | Two columns: the next scrim large with the viewer's RSVP and the tally, the nights after it, the last scrim's record with result pips per set, the review queue of suggested comps and fits; on the right the viewer's characters, library health (comps over cap or illegal under the current table, active fits without stats), server state, next steps for captains. |
 | Scratchpad | `/scratchpad` | built, reworked 2026-09-18 | Evaluate any ten hulls against a ruleset without saving a comp; saved per member on the server (400 ms debounce, flushed when the tab hides); Paste hulls from the clipboard (newline or comma separated, unknown names reported); Clear all; Move to comp editor creates a construction comp with the same hulls; bans; a points side panel that fills the next empty slot on click. |
 | Points | `/points` | built 2026-09-18 | Every legal hull in a ruleset with class, size and points; sort by any column, filter by text, size and points range; remembered per ruleset. |
 | Scrims | `/scrims`, `/scrims/:id`, `/scrims/:id/me` | built | Upcoming list with RSVP and roll call, past list with results, the live page (9.2), the pilot card. |
