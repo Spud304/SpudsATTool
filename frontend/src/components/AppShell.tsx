@@ -16,6 +16,7 @@ const NAV: NavItem[] = [
   { to: '/scrims', label: 'Scrims', id: 'scrims', show: (me) => Boolean(me?.capabilities?.view_scrims || me?.capabilities?.view_assigned_scrims) },
   { to: '/team', label: 'Team', id: 'team', show: (me) => Boolean(me?.membership) },
   { to: '/team/pilots', label: 'Pilots', id: 'pilots', show: (me) => Boolean(me?.capabilities?.manage_scrims) },
+  { to: '/team/configurables', label: 'Configurables', id: 'configurables', show: (me) => Boolean(me?.capabilities?.manage_scrims || me?.capabilities?.manage_library || me?.capabilities?.manage_team) },
   { to: '/team/audit', label: 'Audit', id: 'audit', show: (me) => Boolean(me?.capabilities?.view_audit) },
   { to: '/team/roles', label: 'Roles', id: 'roles', show: (me) => Boolean(me?.capabilities?.manage_team) },
 ]

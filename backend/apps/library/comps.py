@@ -393,3 +393,22 @@ def update_archetype(actor: User, archetype: Archetype, **fields) -> Archetype:
         raise CompError(409, f"archetype {archetype.name!r} exists") from exc
     record(actor=actor, action="archetype.updated", target=archetype, before=before, after=fields)
     return archetype
+
+
+def archetype_uses(archetype: Archetype) -> int:
+    """Comps plus scrim sets (either side) that point at the archetype."""
+    from apps.scrims.models import Set
+
+    return (
+        Comp.objects.filter(archetype=archetype).count()
+        + Set.all_objects.filter(our_archetype=archetype).count()
+        + Set.all_objects.filter(opp_archetype=archetype).count()
+    )
+
+
+def delete_archetype(actor: User, archetype: Archetype) -> None:
+    uses = archetype_uses(archetype)
+    if uses:
+        raise CompError(409, f"{uses} comp(s) or set(s) use this archetype; retire it instead")
+    record(actor=actor, action="archetype.deleted", target=archetype)
+    archetype.delete()

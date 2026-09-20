@@ -435,7 +435,8 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete Archetype */
+        delete: operations["apps_library_comps_api_delete_archetype"];
         options?: never;
         head?: never;
         /** Patch Archetype */
@@ -946,6 +947,45 @@ export interface paths {
         head?: never;
         /** Patch Opponent */
         patch: operations["apps_scrims_api_patch_opponent"];
+        trace?: never;
+    };
+    "/api/warp-labels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Labels
+         * @description Every label, active or not; the scrim vocabulary endpoint serves only the active ones.
+         */
+        get: operations["apps_scrims_labels_api_list_labels"];
+        put?: never;
+        /** Create Label */
+        post: operations["apps_scrims_labels_api_create_label"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/warp-labels/{label_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Label */
+        delete: operations["apps_scrims_labels_api_delete_label"];
+        options?: never;
+        head?: never;
+        /** Patch Label */
+        patch: operations["apps_scrims_labels_api_patch_label"];
         trace?: never;
     };
 }
@@ -1980,6 +2020,11 @@ export interface components {
             is_retired: boolean;
             /** Sort Order */
             sort_order: number;
+            /**
+             * In Use
+             * @default 0
+             */
+            in_use: number;
         };
         /** CompVocabOut */
         CompVocabOut: {
@@ -2862,6 +2907,38 @@ export interface components {
             /** Is Active */
             is_active?: boolean | null;
         };
+        /** WarpLabelOut */
+        WarpLabelOut: {
+            /** Id */
+            id: number;
+            /** Label */
+            label: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Is Active */
+            is_active: boolean;
+            /** In Use */
+            in_use: number;
+        };
+        /** WarpLabelIn */
+        WarpLabelIn: {
+            /** Label */
+            label: string;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** WarpLabelPatch */
+        WarpLabelPatch: {
+            /** Label */
+            label?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+            /** Is Active */
+            is_active?: boolean | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -3650,6 +3727,26 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ArchetypeOut"];
                 };
+            };
+        };
+    };
+    apps_library_comps_api_delete_archetype: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                archetype_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -4619,6 +4716,96 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OpponentOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_labels_api_list_labels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WarpLabelOut"][];
+                };
+            };
+        };
+    };
+    apps_scrims_labels_api_create_label: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WarpLabelIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WarpLabelOut"];
+                };
+            };
+        };
+    };
+    apps_scrims_labels_api_delete_label: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                label_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    apps_scrims_labels_api_patch_label: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                label_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WarpLabelPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WarpLabelOut"];
                 };
             };
         };

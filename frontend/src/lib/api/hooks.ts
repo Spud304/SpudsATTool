@@ -4,7 +4,10 @@ import {
   unwrap,
   type CompCreateIn,
   type CompPatchIn,
+  type ArchetypePatchIn,
   type RoleIn,
+  type WarpLabelIn,
+  type WarpLabelPatch,
   type RolePatch,
   type ScratchpadIn,
   type FitCreateIn,
@@ -49,6 +52,7 @@ export const keys = {
   share: (token: string) => ['share', token] as const,
   scratchpad: ['scratchpad'] as const,
   roles: ['team', 'roles'] as const,
+  warpLabels: ['scrims', 'warp-labels'] as const,
   pilotHistory: (typeId: number, exclude: number) => ['pilots', 'history', typeId, exclude] as const,
 }
 
@@ -170,7 +174,10 @@ export function useCompVocab(enabled = true) {
 
 export function useCompMutations() {
   const qc = useQueryClient()
-  const refreshComps = () => qc.invalidateQueries({ queryKey: ['comps'] })
+  const refreshComps = () => {
+    void qc.invalidateQueries({ queryKey: ['comps'] })
+    void qc.invalidateQueries({ queryKey: keys.compVocab })
+  }
   return {
     createComp: useMutation({
       meta: { toast: 'Comp created' },
@@ -192,6 +199,17 @@ export function useCompMutations() {
     createArchetype: useMutation({
       meta: { toast: 'Archetype added' },
       mutationFn: async (body: { name: string; description: string; sort_order: number }) => unwrap(await api.POST('/api/comps/archetypes', { body })),
+      onSuccess: refreshComps,
+    }),
+    patchArchetype: useMutation({
+      meta: { toast: 'Archetype saved' },
+      mutationFn: async (vars: { id: number; body: ArchetypePatchIn }) =>
+        unwrap(await api.PATCH('/api/comps/archetypes/{archetype_id}', { params: { path: { archetype_id: vars.id } }, body: vars.body })),
+      onSuccess: refreshComps,
+    }),
+    deleteArchetype: useMutation({
+      meta: { toast: 'Archetype deleted' },
+      mutationFn: async (id: number) => unwrap(await api.DELETE('/api/comps/archetypes/{archetype_id}', { params: { path: { archetype_id: id } } })),
       onSuccess: refreshComps,
     }),
   }
@@ -564,6 +582,36 @@ export function useRoleMutations() {
       meta: { toast: 'Role deleted' },
       mutationFn: async (vars: { id: number; reassignTo?: number }) =>
         unwrap(await api.DELETE('/api/team/roles/{role_id}', { params: { path: { role_id: vars.id }, query: vars.reassignTo != null ? { reassign_to: vars.reassignTo } : {} } })),
+      onSuccess: refresh,
+    }),
+  }
+}
+
+/** Every warp-in label, active or not, with how many sets use it. */
+export function useWarpLabels(enabled = true) {
+  return useQuery({ queryKey: keys.warpLabels, queryFn: async () => unwrap(await api.GET('/api/warp-labels')), enabled })
+}
+
+export function useWarpLabelMutations() {
+  const qc = useQueryClient()
+  const refresh = () => {
+    void qc.invalidateQueries({ queryKey: keys.warpLabels })
+    void qc.invalidateQueries({ queryKey: keys.scrimVocab })
+  }
+  return {
+    createLabel: useMutation({
+      meta: { toast: 'Label added' },
+      mutationFn: async (body: WarpLabelIn) => unwrap(await api.POST('/api/warp-labels', { body })),
+      onSuccess: refresh,
+    }),
+    patchLabel: useMutation({
+      meta: { toast: 'Label saved' },
+      mutationFn: async (vars: { id: number; body: WarpLabelPatch }) => unwrap(await api.PATCH('/api/warp-labels/{label_id}', { params: { path: { label_id: vars.id } }, body: vars.body })),
+      onSuccess: refresh,
+    }),
+    deleteLabel: useMutation({
+      meta: { toast: 'Label deleted' },
+      mutationFn: async (id: number) => unwrap(await api.DELETE('/api/warp-labels/{label_id}', { params: { path: { label_id: id } } })),
       onSuccess: refresh,
     }),
   }

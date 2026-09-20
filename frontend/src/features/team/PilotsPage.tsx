@@ -1,21 +1,18 @@
 import { useState } from 'react'
-import { useMe, useMembers, useOpponents, usePilots, useRosterMutations } from '@/lib/api/hooks'
-import type { OpponentOut, PilotOut } from '@/lib/api/client'
+import { useMe, useMembers, usePilots, useRosterMutations } from '@/lib/api/hooks'
+import type { PilotOut } from '@/lib/api/client'
 import { Badge, Button, Checkbox, Empty, ErrorText, Field, Input, PageHeader, Panel, Select, Table } from '@/components/ui'
 import { usePageTitle } from '@/hooks/usePageTitle'
 
-/** Roster and opponent registry. Members with role pilot or above appear here on their own; mercs are added by hand. */
+/** The roster. Members whose role can fly appear here on their own; mercs and alumni are added by hand. */
 export function PilotsPage() {
   usePageTitle('Pilots')
   const me = useMe()
   const canManage = Boolean(me.data?.capabilities?.manage_scrims)
   return (
     <>
-      <PageHeader title="Pilots and opponents" context={<span>the roster the scrim pages draw from</span>} />
-    <div className="grid gap-4 xl:grid-cols-[3fr_2fr]">
+      <PageHeader title="Pilots" context={<span>the roster the scrim pages draw from; opponents live under Configurables</span>} />
       <RosterPanel canManage={canManage} />
-      <OpponentsPanel canManage={canManage} />
-    </div>
     </>
   )
 }
@@ -156,82 +153,6 @@ function PilotRow({
           <span className="text-muted">{pilot.notes}</span>
         )}
       </td>
-    </tr>
-  )
-}
-
-function OpponentsPanel({ canManage }: { canManage: boolean }) {
-  const opponents = useOpponents()
-  const { createOpponent, patchOpponent } = useRosterMutations()
-  const [name, setName] = useState('')
-  const [notes, setNotes] = useState('')
-  return (
-    <Panel title={`Opponents${opponents.data ? ` (${opponents.data.length})` : ''}`} testId="opponents">
-      <ErrorText error={patchOpponent.error} />
-      {opponents.data?.length ? (
-        <Table hover>
-          <thead>
-            <tr>
-              <th>Team</th>
-              <th>Notes</th>
-              <th>Active</th>
-            </tr>
-          </thead>
-          <tbody>
-            {opponents.data.map((o) => (
-              <OpponentRow key={o.id} opponent={o} canManage={canManage} onPatch={(body) => patchOpponent.mutate({ id: o.id, body })} />
-            ))}
-          </tbody>
-        </Table>
-      ) : (
-        <Empty>No opponents yet.</Empty>
-      )}
-      {canManage ? (
-        <form
-          className="mt-3 flex flex-wrap items-end gap-2 border-t border-line pt-3"
-          onSubmit={(e) => {
-            e.preventDefault()
-            createOpponent.mutate(
-              { name: name.trim(), notes: notes.trim(), alliance_id: null },
-              {
-                onSuccess: () => {
-                  setName('')
-                  setNotes('')
-                },
-              },
-            )
-          }}
-        >
-          <Field label="New opponent">
-            <Input data-testid="opponents.new.name" value={name} onChange={(e) => setName(e.target.value)} />
-          </Field>
-          <Field label="Notes">
-            <Input data-testid="opponents.new.notes" value={notes} onChange={(e) => setNotes(e.target.value)} className="w-48" />
-          </Field>
-          <Button data-testid="opponents.new.create" type="submit" variant="primary" disabled={!name.trim() || createOpponent.isPending}>
-            Add opponent
-          </Button>
-          <ErrorText error={createOpponent.error} testId="opponents.new.error" />
-        </form>
-      ) : null}
-    </Panel>
-  )
-}
-
-function OpponentRow({ opponent, canManage, onPatch }: { opponent: OpponentOut; canManage: boolean; onPatch: (body: { notes?: string; is_active?: boolean }) => void }) {
-  const [notes, setNotes] = useState(opponent.notes)
-  const id = `opponents.row.${opponent.id}`
-  return (
-    <tr data-testid={id}>
-      <td className="font-medium">{opponent.name}</td>
-      <td>
-        {canManage ? (
-          <Input data-testid={`${id}.notes`} className="w-full" value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={() => notes !== opponent.notes && onPatch({ notes })} />
-        ) : (
-          <span className="text-muted">{opponent.notes}</span>
-        )}
-      </td>
-      <td>{canManage ? <Checkbox data-testid={`${id}.active`} checked={opponent.is_active} onChange={(e) => onPatch({ is_active: e.target.checked })} /> : <Badge tone={opponent.is_active ? 'ok' : 'muted'}>{opponent.is_active ? 'yes' : 'no'}</Badge>}</td>
     </tr>
   )
 }

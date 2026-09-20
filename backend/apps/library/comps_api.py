@@ -127,6 +127,7 @@ class ArchetypeOut(Schema):
     description: str
     is_retired: bool
     sort_order: int
+    in_use: int = 0
 
 
 class ArchetypeIn(Schema):
@@ -258,6 +259,7 @@ def _archetype_out(a: Archetype) -> dict:
         "description": a.description,
         "is_retired": a.is_retired,
         "sort_order": a.sort_order,
+        "in_use": comps.archetype_uses(a),
     }
 
 
@@ -349,6 +351,17 @@ def patch_archetype(request: HttpRequest, archetype_id: int, payload: ArchetypeP
     archetype = get_object_or_404(Archetype, pk=archetype_id)
     fields = payload.dict(exclude_unset=True)
     return _archetype_out(_wrap(lambda: comps.update_archetype(user, archetype, **fields)))
+
+
+@router.delete("/archetypes/{archetype_id}", response={204: None})
+def delete_archetype(request: HttpRequest, archetype_id: int):
+    permissions.require_browse_library(request.user)
+    user = cast(User, request.user)
+    if not permissions.can_manage_library(user):
+        raise HttpError(403, "only theorycrafters and above edit archetypes")
+    archetype = get_object_or_404(Archetype, pk=archetype_id)
+    _wrap(lambda: comps.delete_archetype(user, archetype))
+    return 204, None
 
 
 @router.get("/{comp_id}", response=CompOut)

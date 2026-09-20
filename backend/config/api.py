@@ -10,6 +10,7 @@ from apps.library.comps_api import router as comps_router
 from apps.library.scratchpad_api import router as scratchpad_router
 from apps.rules.api import router as rules_router
 from apps.scrims.api import opponents_router, pilots_router
+from apps.scrims.labels_api import router as labels_router
 from apps.scrims.api import router as scrims_router
 from apps.scrims.share_api import public_router as share_public_router
 from apps.scrims.share_api import router as share_router
@@ -35,3 +36,4 @@ api.add_router("/scrims", scrims_router)
 api.add_router("/share", share_public_router)
 api.add_router("/pilots", pilots_router)
 api.add_router("/opponents", opponents_router)
+api.add_router("/warp-labels", labels_router)

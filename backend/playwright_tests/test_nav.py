@@ -5,12 +5,23 @@ from playwright.sync_api import Page, expect
 
 from .conftest import ROLES
 
-ALL = ["home", "scratchpad", "points", "comps", "fits", "team", "audit"]
+ALL = [
+    "home",
+    "scratchpad",
+    "points",
+    "comps",
+    "fits",
+    "team",
+    "audit",
+    "configurables",
+    "pilots",
+    "roles",
+]
 # Pilots see the library because Team.pilots_can_browse_library defaults to true.
 VISIBLE = {
     "admin": ALL,
-    "captain": ALL,
-    "theorycrafter": ["home", "scratchpad", "points", "comps", "fits", "team"],
+    "captain": [i for i in ALL if i != "roles"],  # roles need manage_team
+    "theorycrafter": ["home", "scratchpad", "points", "comps", "fits", "team", "configurables"],
     "pilot": ["home", "scratchpad", "points", "comps", "fits", "team"],
     "guest": ["home", "scratchpad", "points", "team"],
     "viewer": ["home", "scratchpad", "points", "team"],
