@@ -71,18 +71,39 @@ Captains can hand out `/share/<token>` links that show one scrim read-only to an
 
 The scrim page holds one server-sent-events stream per open tab (`GET /api/scrims/<id>/events`) and posts a presence heartbeat every 15 s. Events fan out between workers over Redis pub/sub (`REDIS_URL`); `SCRIM_BROKER=memory` switches to an in-process broker for single-worker tests. Reverse proxies must pass it through unbuffered and uncompressed: the shipped Caddyfile excludes `text/event-stream` from `encode`; if you front the stack with your own nginx, add `proxy_buffering off;` and skip gzip for that location. The Vite dev proxy streams it without changes.
 
-## 5. Roles
+## 5. Roles and permissions
 
-| Role | Can |
+Roles are defined by the team. Admins edit them at **Team → Roles and permissions** (`/team/roles`): one row per role, one checkbox per permission, with Create, Rename and Delete (a deleted role's members move to a role you pick). Changing a role applies to everyone holding it at once. The catalogue:
+
+| Group | Permission | Grants |
+|---|---|---|
+| Scrims | View all scrims | every scrim, its page, history and CSV |
+| | View assigned scrims | only the scrims the member is fielded in |
+| | RSVP | answer attending, unable or maybe |
+| | Fly | a roster row; can be put in a lineup and edits their own slot |
+| | Score | toggle deaths and set round outcomes |
+| | Edit sets | bans, comp load, lineups, set fields and rounds |
+| | Manage scrims | create, edit and archive scrims; attendance; roster and opponents; share links |
+| Library | Browse library | comps, fits, rulesets, points and the scratchpad |
+| | Suggest | create comps and fits as suggestions, edit own suggestions |
+| | Manage library | statuses, any comp or fit, archetypes |
+| Team | Manage members | members, invites and admission rules; assign any role except admin |
+| | View audit log | the audit log |
+| | View pilot notes | leadership notes on pilots |
+| | Manage team | team settings, the season, and the roles themselves |
+
+The roles a fresh install starts with:
+
+| Role | Holds |
 |---|---|
-| admin | everything, including granting admin and team settings |
-| captain | members, invites, admission rules (below admin), scrims |
-| theorycrafter | comps and fits, any scrim field |
-| pilot | RSVP, own slot, suggest comps and fits, score if the team allows |
-| guest | only scrims they are assigned to, own fits |
-| viewer | read-only |
+| admin | everything, always; cannot be edited or deleted |
+| captain | everything except Manage team |
+| theorycrafter | view, RSVP, fly, score, edit sets, the whole library |
+| pilot | view, RSVP, fly, score, browse and suggest |
+| guest | view assigned scrims, fly |
+| viewer | view all scrims |
 
-Any member can also carry the **leadership** flag, which unlocks the audit log and pilot notes without full captain rights. Every membership change is written to the audit log with who did it and why.
+Any member can also carry the **leadership** flag, which adds the audit log and pilot notes on top of their role. Every membership and role change is written to the audit log with who did it and why.
 
 ## 6. Development
 
