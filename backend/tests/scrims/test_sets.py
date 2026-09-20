@@ -222,6 +222,8 @@ def test_delete_set_emits_and_audits(scrim, captain):
 
 @pytest.mark.django_db(transaction=True)
 def test_concurrent_edits_serialise_on_the_session_lock(scrim, captain, theo):
+    scrim.refresh_from_db()
+    start = scrim.event_seq  # members admitted after the scrim already put attendance events here
     doc = sets.create_set(captain, scrim.pk)
     set_id = doc["id"]
     errors: list[Exception] = []
@@ -243,9 +245,9 @@ def test_concurrent_edits_serialise_on_the_session_lock(scrim, captain, theo):
     seqs = list(
         ChangeEvent.objects.filter(session=scrim).order_by("seq").values_list("seq", flat=True)
     )
-    assert seqs == list(range(1, 8))  # create + six edits, no gaps, no duplicates
+    assert seqs[-7:] == list(range(start + 1, start + 8))  # create + six edits, no gaps
     scrim.refresh_from_db()
-    assert scrim.event_seq == 7
+    assert scrim.event_seq == start + 7
 
 
 def test_the_same_pilot_in_two_slots_is_an_error(scrim, captain, theo, of99_comp):

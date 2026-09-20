@@ -109,8 +109,12 @@ async def test_events_view_needs_a_member(scrim, client, login_as):
 
     await sync_to_async(login_as)(character_id=10, name="Member", role="pilot")
     aclient.cookies = client.cookies
+    await sync_to_async(scrim.refresh_from_db)()  # the two logins joined the roll call: events
     resp = cast(
-        Any, await aclient.get(f"/api/scrims/{scrim.pk}/events", headers={"Last-Event-ID": "0"})
+        Any,
+        await aclient.get(
+            f"/api/scrims/{scrim.pk}/events", headers={"Last-Event-ID": str(scrim.event_seq)}
+        ),
     )
     assert resp.status_code == 200 and resp["Content-Type"].startswith("text/event-stream")
     assert resp["X-Accel-Buffering"] == "no"

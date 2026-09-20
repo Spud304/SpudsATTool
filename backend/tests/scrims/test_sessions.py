@@ -70,10 +70,10 @@ def test_rsvp_rules(imported_atxxii, captain, pilot, viewer, tonight):
     assert past.value.status == 409
 
 
-def test_new_pilot_joins_open_sessions_on_rsvp(imported_atxxii, captain, tonight):
+def test_new_pilot_is_already_on_open_sessions(imported_atxxii, captain, tonight):
     session = sessions.create_session(captain, title="OF 99", date=tonight)
     late_joiner = roster.create_pilot(captain, name="Late Joiner")
-    assert not SessionAttendance.objects.filter(session=session, pilot=late_joiner).exists()
+    assert SessionAttendance.objects.filter(session=session, pilot=late_joiner).exists()
     row = sessions.set_attendance(captain, session, late_joiner, "present")
     assert row.attendance == "present"
 

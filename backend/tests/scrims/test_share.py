@@ -90,9 +90,12 @@ async def test_share_stream_needs_a_live_token_and_strips_fits(scrim, captain, t
     assert resp.status_code == 200 and resp["Content-Type"].startswith("text/event-stream")
     await resp.streaming_content.aclose()
 
-    stream = event_stream(scrim.pk, 0, keepalive=0.2, public=True)
+    await sync_to_async(scrim.refresh_from_db)()
+    stream = event_stream(scrim.pk, scrim.event_seq, keepalive=0.2, public=True)
     first = await anext(stream)
-    assert '"kind":"ping"' in first  # no presence frame for the public
+    assert (
+        '"kind":"ping"' in first
+    )  # nothing after the fetched document, no presence for the public
     doc = await sync_to_async(sets.create_set)(captain, scrim.pk)
     await sync_to_async(sets.patch_set)(theo, scrim.pk, doc["id"], comp_id=of99_comp.pk)
     frames = [await anext(stream), await anext(stream)]

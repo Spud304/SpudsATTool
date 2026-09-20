@@ -3,8 +3,8 @@ import pytest
 from apps.accounts import services as account_services
 from apps.accounts.models import Role
 from apps.audit.models import AuditLog
-from apps.scrims import roster
-from apps.scrims.models import Pilot
+from apps.scrims import roster, sessions
+from apps.scrims.models import ChangeEvent, Pilot, SessionAttendance
 
 from .conftest import make_member
 
@@ -60,3 +60,38 @@ def test_opponents(captain):
     roster.update_opponent(captain, opp, is_active=False)
     assert not opp.is_active
     assert AuditLog.objects.filter(action="opponent.updated").exists()
+
+
+def test_new_pilots_join_upcoming_scrims_only(scrim, captain, tonight):
+    from datetime import timedelta
+
+    last_week = sessions.create_session(captain, title="Old", date=tonight - timedelta(days=7))
+    archived = sessions.create_session(captain, title="Gone", date=tonight + timedelta(days=1))
+    sessions.archive_session(captain, archived, "cancelled")
+    seq_before = scrim.event_seq
+
+    late = make_member(300, "Late Joiner", Role.PILOT)  # admitted after the scrims were created
+    pilot_row = Pilot.objects.get(user=late)
+    rows = SessionAttendance.objects.filter(pilot=pilot_row)
+    assert set(rows.values_list("session_id", flat=True)) == {scrim.pk}
+    row = rows.get()
+    assert row.rsvp == "none" and row.attendance == "none"
+    assert not SessionAttendance.objects.filter(
+        pilot=pilot_row, session__in=[last_week, archived]
+    ).exists()
+    # the open scrim pages hear about it
+    scrim.refresh_from_db()
+    assert scrim.event_seq == seq_before + 1
+    assert ChangeEvent.objects.filter(session=scrim, kind="attendance").exists()
+
+    # a second run adds nothing
+    assert roster.attach_to_upcoming(pilot_row) == 0
+    assert SessionAttendance.objects.filter(pilot=pilot_row).count() == 1
+
+    # a hand-added merc and a reactivated pilot join too
+    merc = roster.create_pilot(captain, name="Hired Late", is_merc=True)
+    assert SessionAttendance.objects.filter(pilot=merc, session=scrim).exists()
+    roster.update_pilot(captain, merc, status="inactive")
+    SessionAttendance.objects.filter(pilot=merc).delete()
+    roster.update_pilot(captain, merc, status="active")
+    assert SessionAttendance.objects.filter(pilot=merc, session=scrim).exists()

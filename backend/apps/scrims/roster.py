@@ -22,6 +22,26 @@ def _display_name(user: User) -> str:
     return character.name if character is not None else user.display_name or user.username
 
 
+def attach_to_upcoming(pilot: Pilot) -> int:
+    """Put a pilot on the roll call of every scrim still to come, so late joiners can RSVP. Idempotent."""
+    from . import events, sessions
+    from .models import Session, SessionAttendance
+
+    upcoming = Session.objects.filter(is_archived=False, date__gte=sessions.past_cutoff()).exclude(
+        attendance__pilot=pilot
+    )
+    session_ids = list(upcoming.values_list("pk", flat=True))
+    if not session_ids:
+        return 0
+    SessionAttendance.objects.bulk_create(
+        [SessionAttendance(session_id=sid, pilot=pilot) for sid in session_ids],
+        ignore_conflicts=True,
+    )
+    for sid in session_ids:
+        events.notify(sid, events.KIND_ATTENDANCE)
+    return len(session_ids)
+
+
 def ensure_pilot_for(user: User) -> Pilot:
     """Idempotent: the member's pilot row, adopting an unlinked row with the same name if one exists."""
     existing = Pilot.objects.filter(user=user).first()
@@ -33,13 +53,16 @@ def ensure_pilot_for(user: User) -> Pilot:
         unlinked.user = user
         unlinked.status = PilotStatus.ACTIVE
         unlinked.save(update_fields=["user", "status", "updated_at"])
+        attach_to_upcoming(unlinked)
         return unlinked
     try:
         with transaction.atomic():
-            return Pilot.objects.create(name=name, user=user)
+            pilot = Pilot.objects.create(name=name, user=user)
     except IntegrityError:
         # a different login already owns that name: keep both, make ours unique
-        return Pilot.objects.create(name=f"{name} ({user.pk})"[:100], user=user)
+        pilot = Pilot.objects.create(name=f"{name} ({user.pk})"[:100], user=user)
+    attach_to_upcoming(pilot)
+    return pilot
 
 
 def create_pilot(
@@ -62,6 +85,7 @@ def create_pilot(
             )
     except IntegrityError as exc:
         raise ScrimError(409, f"a pilot named {name!r} already exists") from exc
+    attach_to_upcoming(pilot)
     record(actor=actor, action="pilot.created", target=pilot, after={"name": name, "merc": is_merc})
     return pilot
 
@@ -94,6 +118,8 @@ def update_pilot(actor: User, pilot: Pilot, **fields) -> Pilot:
             pilot.save()
     except IntegrityError as exc:
         raise ScrimError(409, f"a pilot named {pilot.name!r} already exists") from exc
+    if fields.get("status") == PilotStatus.ACTIVE and before.get("status") != PilotStatus.ACTIVE:
+        attach_to_upcoming(pilot)  # back on the roster: back on the roll call
     after = {k: getattr(pilot, k) for k in before if k != "user"}
     if "user" in before:
         after["user"] = pilot.user.display_name if pilot.user else None
