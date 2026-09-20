@@ -70,7 +70,9 @@ function MembersPanel({ canManage, isAdmin, myUserId }: { canManage: boolean; is
           <tbody>
             {members.data.map((m) => {
               const locked = m.role === 'admin' && !isAdmin // the system role: only admins touch it
+              const self = m.user_id === myUserId
               const editable = canManage && !locked
+              const roleEditable = editable && !self // nobody changes their own role or status
               return (
                 <tr key={m.user_id} data-testid={`team.members.row.${m.user_id}`}>
                   <td className="font-medium">
@@ -79,7 +81,7 @@ function MembersPanel({ canManage, isAdmin, myUserId }: { canManage: boolean; is
                   </td>
                   <td className="text-muted">{m.characters.map((c) => c.name).join(', ')}</td>
                   <td>
-                    {editable ? (
+                    {roleEditable ? (
                       <Select data-testid="team.members.role" value={m.role} onChange={(e) => patchMember.mutate({ userId: m.user_id, body: { role: e.target.value, reason: 'role change' } })}>
                         {options.map((r) => (
                           <option key={r.slug} value={r.slug}>
@@ -108,7 +110,7 @@ function MembersPanel({ canManage, isAdmin, myUserId }: { canManage: boolean; is
                   <td className="text-muted">{m.source}</td>
                   {canManage ? (
                     <td className="text-right">
-                      {m.status !== 'active' && !locked ? (
+                      {m.status !== 'active' && !locked && !self ? (
                         <Button data-testid="team.members.reinstate" onClick={() => patchMember.mutate({ userId: m.user_id, body: { status: 'active', reason: 'reinstated' } })}>
                           Reinstate
                         </Button>

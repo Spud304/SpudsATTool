@@ -74,11 +74,13 @@ def test_member_management_flow(client, team, admins, login_as):
 def test_last_admin_guard_and_role_ceilings(client, team, admins, login_as):
     login_as(role=None)
     me = client.get("/api/me").json()
+    # The only admin demoting themselves: the self-change rule answers first (403); the last-admin
+    # guard (409) stays behind it for any other path that could drop the final admin.
     assert (
         client.patch(
             f"/api/team/members/{me['user_id']}", {"role": "pilot"}, content_type="application/json"
         ).status_code
-        == 409
+        == 403
     )
     client.logout()
     login_as(character_id=2, name="Cap", role="captain")
@@ -94,6 +96,18 @@ def test_last_admin_guard_and_role_ceilings(client, team, admins, login_as):
         ).status_code
         == 201
     )
+
+
+def test_members_cannot_change_their_own_role_or_status(client, team, admins, login_as):
+    login_as(character_id=2, name="Cap", role="captain")
+    me = client.get("/api/me").json()
+    url = f"/api/team/members/{me['user_id']}"
+    for body in ({"role": "pilot"}, {"status": "suspended"}):
+        assert client.patch(url, body, content_type="application/json").status_code == 403
+    assert client.delete(url, {"reason": "bye"}, content_type="application/json").status_code == 403
+    # a note about yourself is fine
+    resp = client.patch(url, {"note": "on holiday next week"}, content_type="application/json")
+    assert resp.status_code == 200 and resp.json()["note"] == "on holiday next week"
 
 
 def test_team_settings_admin_only(client, team, login_as):

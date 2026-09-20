@@ -9,6 +9,10 @@ from .conftest import INVITEE_BASE, join_as, uniq
 def test_invite_link_admits_a_pilot_and_admin_manages_them(login_as, browser: Browser):
     admin = login_as("admin")
     admin.page.goto("/team")
+    # your own row: role shown as text, no select
+    own = admin.page.get_by_test_id(f"team.members.row.{admin.json('/api/me')['user_id']}")
+    expect(own.get_by_test_id("team.members.role")).to_have_text("Admin")
+    expect(own.locator("select")).to_have_count(0)
 
     note = uniq("invite")
     admin.page.get_by_test_id("team.invites.role").select_option("pilot")
