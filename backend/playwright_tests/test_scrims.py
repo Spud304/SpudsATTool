@@ -104,7 +104,9 @@ def test_viewer_reads_scrims_but_cannot_schedule_or_rsvp(login_as):
         == 403
     )
 
+    # Guests see only the scrims they are fielded in: the nav entry is there, the list is empty.
     guest = login_as("guest")
     guest.page.goto("/")
-    expect(guest.page.get_by_test_id("nav.scrims")).to_have_count(0)
-    assert guest.api.get("/api/scrims").status == 403
+    expect(guest.page.get_by_test_id("nav.scrims")).to_be_visible()
+    listing = guest.api.get("/api/scrims")
+    assert listing.status == 200 and listing.json() == []

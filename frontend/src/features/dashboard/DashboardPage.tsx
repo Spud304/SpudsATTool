@@ -49,8 +49,8 @@ export function DashboardPage() {
       <PageHeader title="Home" context={<span>{me.data.team?.name}</span>} />
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         <div className="space-y-4">
-          {caps?.browse_scrims ? <NextScrimPanel /> : null}
-          {caps?.browse_scrims ? <LastScrimPanel /> : null}
+          {caps?.view_scrims || caps?.view_assigned_scrims ? <NextScrimPanel /> : null}
+          {caps?.view_scrims || caps?.view_assigned_scrims ? <LastScrimPanel /> : null}
           {caps?.manage_library ? <ReviewQueuePanel /> : null}
         </div>
         <div className="space-y-4">

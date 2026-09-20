@@ -1,19 +1,34 @@
 import { useState } from 'react'
-import { useAdmissionRules, useInvites, useMe, useMembers, useTeamMutations } from '@/lib/api/hooks'
-import type { Role } from '@/lib/api/client'
+import { Link } from '@tanstack/react-router'
+import { useAdmissionRules, useInvites, useMe, useMembers, useRoles, useTeamMutations } from '@/lib/api/hooks'
+import type { RoleOut } from '@/lib/api/client'
 import { Badge, Button, Checkbox, Empty, ErrorText, Field, Input, Mono, PageHeader, Panel, Select, Table } from '@/components/ui'
 import { usePageTitle } from '@/hooks/usePageTitle'
 
-const ROLES: Role[] = ['admin', 'captain', 'theorycrafter', 'pilot', 'guest', 'viewer']
+/** The roles a manager may hand out: every role except admin, which only admins assign. */
+function assignable(roles: RoleOut[] | undefined, isAdmin: boolean): RoleOut[] {
+  return (roles ?? []).filter((r) => !r.is_system || isAdmin)
+}
 
 export function TeamPage() {
   usePageTitle('Team')
   const me = useMe()
   const canManage = Boolean(me.data?.capabilities?.manage_members)
-  const isAdmin = me.data?.membership?.role === 'admin'
+  const isAdmin = Boolean(me.data?.capabilities?.is_admin)
+  const canEditRoles = Boolean(me.data?.capabilities?.manage_team)
   return (
     <>
-      <PageHeader title="Team" context={<span>{canManage ? 'members, invites and admission rules' : 'members'}</span>} />
+      <PageHeader
+        title="Team"
+        context={<span>{canManage ? 'members, invites and admission rules' : 'members'}</span>}
+        actions={
+          canEditRoles ? (
+            <Link to="/team/roles" className="text-accent" data-testid="team.roles.link">
+              Roles and permissions
+            </Link>
+          ) : null
+        }
+      />
     <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
       <MembersPanel canManage={canManage} isAdmin={isAdmin} myUserId={me.data?.user_id ?? null} />
       {canManage ? (
@@ -33,6 +48,8 @@ function statusTone(status: string) {
 
 function MembersPanel({ canManage, isAdmin, myUserId }: { canManage: boolean; isAdmin: boolean; myUserId: number | null }) {
   const members = useMembers()
+  const roles = useRoles()
+  const options = assignable(roles.data?.roles, isAdmin)
   const { patchMember, removeMember } = useTeamMutations()
   return (
     <Panel title={`Members${members.data ? ` (${members.data.length})` : ''}`}>
@@ -52,7 +69,7 @@ function MembersPanel({ canManage, isAdmin, myUserId }: { canManage: boolean; is
           </thead>
           <tbody>
             {members.data.map((m) => {
-              const locked = m.role === 'admin' && !isAdmin
+              const locked = m.role === 'admin' && !isAdmin // the system role: only admins touch it
               const editable = canManage && !locked
               return (
                 <tr key={m.user_id} data-testid={`team.members.row.${m.user_id}`}>
@@ -63,16 +80,16 @@ function MembersPanel({ canManage, isAdmin, myUserId }: { canManage: boolean; is
                   <td className="text-muted">{m.characters.map((c) => c.name).join(', ')}</td>
                   <td>
                     {editable ? (
-                      <Select data-testid="team.members.role" value={m.role} onChange={(e) => patchMember.mutate({ userId: m.user_id, body: { role: e.target.value as Role, reason: 'role change' } })}>
-                        {ROLES.filter((r) => r !== 'admin' || isAdmin).map((r) => (
-                          <option key={r} value={r}>
-                            {r}
+                      <Select data-testid="team.members.role" value={m.role} onChange={(e) => patchMember.mutate({ userId: m.user_id, body: { role: e.target.value, reason: 'role change' } })}>
+                        {options.map((r) => (
+                          <option key={r.slug} value={r.slug}>
+                            {r.name}
                           </option>
                         ))}
                       </Select>
                     ) : (
                       <Badge tone="accent" testId="team.members.role">
-                        {m.role}
+                        {m.role_name}
                       </Badge>
                     )}
                   </td>
@@ -125,8 +142,10 @@ function MembersPanel({ canManage, isAdmin, myUserId }: { canManage: boolean; is
 
 function InvitesPanel({ isAdmin }: { isAdmin: boolean }) {
   const invites = useInvites()
+  const roles = useRoles()
+  const options = assignable(roles.data?.roles, isAdmin)
   const { createInvite, revokeInvite } = useTeamMutations()
-  const [role, setRole] = useState<Role>('pilot')
+  const [role, setRole] = useState('pilot')
   const [uses, setUses] = useState(1)
   const [hours, setHours] = useState(72)
   const [note, setNote] = useState('')
@@ -141,10 +160,10 @@ function InvitesPanel({ isAdmin }: { isAdmin: boolean }) {
         }}
       >
         <Field label="Role">
-          <Select data-testid="team.invites.role" value={role} onChange={(e) => setRole(e.target.value as Role)}>
-            {ROLES.filter((r) => r !== 'admin' || isAdmin).map((r) => (
-              <option key={r} value={r}>
-                {r}
+          <Select data-testid="team.invites.role" value={role} onChange={(e) => setRole(e.target.value)}>
+            {options.map((r) => (
+              <option key={r.slug} value={r.slug}>
+                {r.name}
               </option>
             ))}
           </Select>
@@ -178,7 +197,7 @@ function InvitesPanel({ isAdmin }: { isAdmin: boolean }) {
             {invites.data.map((inv) => (
               <tr key={inv.id} data-testid={`team.invites.row.${inv.id}`}>
                 <td>
-                  <Badge tone="accent">{inv.role}</Badge>
+                  <Badge tone="accent">{inv.role_name}</Badge>
                 </td>
                 <td>
                   <Mono>{inv.uses_left}</Mono>
@@ -213,11 +232,13 @@ function InvitesPanel({ isAdmin }: { isAdmin: boolean }) {
 
 function RulesPanel({ isAdmin }: { isAdmin: boolean }) {
   const rules = useAdmissionRules()
+  const roles = useRoles()
+  const options = assignable(roles.data?.roles, isAdmin)
   const { createRule, patchRule, deleteRule } = useTeamMutations()
   const [kind, setKind] = useState<'corporation' | 'alliance'>('alliance')
   const [entityId, setEntityId] = useState('')
   const [entityName, setEntityName] = useState('')
-  const [role, setRole] = useState<Role>('pilot')
+  const [role, setRole] = useState('pilot')
   return (
     <Panel title="Admission rules" testId="team.rules">
       <p className="mb-2 text-body text-muted">
@@ -252,10 +273,10 @@ function RulesPanel({ isAdmin }: { isAdmin: boolean }) {
           <Input data-testid="team.rules.name" value={entityName} onChange={(e) => setEntityName(e.target.value)} />
         </Field>
         <Field label="Role">
-          <Select data-testid="team.rules.role" value={role} onChange={(e) => setRole(e.target.value as Role)}>
-            {ROLES.filter((r) => r !== 'admin' || isAdmin).map((r) => (
-              <option key={r} value={r}>
-                {r}
+          <Select data-testid="team.rules.role" value={role} onChange={(e) => setRole(e.target.value)}>
+            {options.map((r) => (
+              <option key={r.slug} value={r.slug}>
+                {r.name}
               </option>
             ))}
           </Select>
@@ -284,7 +305,7 @@ function RulesPanel({ isAdmin }: { isAdmin: boolean }) {
                   {r.entity_name || <span className="text-muted">unnamed</span>} <Mono className="text-muted">{r.entity_id}</Mono>
                 </td>
                 <td>
-                  <Badge tone="accent">{r.default_role}</Badge>
+                  <Badge tone="accent">{r.default_role_name}</Badge>
                 </td>
                 <td>
                   <Checkbox data-testid="team.rules.enabled" checked={r.enabled} onChange={(e) => patchRule.mutate({ id: r.id, enabled: e.target.checked })} />

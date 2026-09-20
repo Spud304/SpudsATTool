@@ -45,7 +45,7 @@ export function ScrimPage() {
   if (!scrim.data || !me.data) return <Empty>Loading\u2026</Empty>
   const caps = me.data.capabilities
   const perms: Perms = {
-    edit: Boolean(caps?.manage_library), // theorycrafter and up
+    edit: Boolean(caps?.edit_sets),
     manage: Boolean(caps?.manage_scrims),
     score: Boolean(caps?.score),
     userId: me.data.user_id ?? null,

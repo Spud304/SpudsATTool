@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import clsx from 'clsx'
-import { useScrimMutations } from '@/lib/api/hooks'
+import { useMe, useScrimMutations } from '@/lib/api/hooks'
 import type { SessionSummaryOut } from '@/lib/api/client'
 import { Badge, Button, ErrorText, Input } from '@/components/ui'
 import { RSVP_LABELS, rsvpTone } from './format'
@@ -8,9 +8,11 @@ import { RSVP_LABELS, rsvpTone } from './format'
 /** Attending / Unable / Maybe for the viewer's own pilot. Maybe needs a reason, so it opens a field first. */
 export function RsvpButtons({ scrim, testPrefix }: { scrim: Pick<SessionSummaryOut, 'id' | 'my_rsvp' | 'my_rsvp_reason'>; testPrefix: string }) {
   const { rsvp } = useScrimMutations()
+  const me = useMe()
   const [reason, setReason] = useState(scrim.my_rsvp_reason ?? '')
   const [askReason, setAskReason] = useState(false)
 
+  if (me.data && !me.data.capabilities?.rsvp) return null // the role cannot answer
   if (scrim.my_rsvp === null) {
     return (
       <span className="text-[11px] text-muted" data-testid={`${testPrefix}.rsvp.none`}>

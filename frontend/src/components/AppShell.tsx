@@ -13,10 +13,11 @@ const NAV: NavItem[] = [
   { to: '/points', label: 'Points', id: 'points', show: (me) => Boolean(me?.membership) },
   { to: '/comps', label: 'Comps', id: 'comps', show: (me) => Boolean(me?.capabilities?.browse_library) },
   { to: '/fits', label: 'Fits', id: 'fits', show: (me) => Boolean(me?.capabilities?.browse_library) },
-  { to: '/scrims', label: 'Scrims', id: 'scrims', show: (me) => Boolean(me?.capabilities?.browse_scrims) },
+  { to: '/scrims', label: 'Scrims', id: 'scrims', show: (me) => Boolean(me?.capabilities?.view_scrims || me?.capabilities?.view_assigned_scrims) },
   { to: '/team', label: 'Team', id: 'team', show: (me) => Boolean(me?.membership) },
   { to: '/team/pilots', label: 'Pilots', id: 'pilots', show: (me) => Boolean(me?.capabilities?.manage_scrims) },
   { to: '/team/audit', label: 'Audit', id: 'audit', show: (me) => Boolean(me?.capabilities?.view_audit) },
+  { to: '/team/roles', label: 'Roles', id: 'roles', show: (me) => Boolean(me?.capabilities?.manage_team) },
 ]
 
 export function AppShell({ children }: { children: ReactNode }) {

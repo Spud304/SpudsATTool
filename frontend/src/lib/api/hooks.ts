@@ -4,6 +4,8 @@ import {
   unwrap,
   type CompCreateIn,
   type CompPatchIn,
+  type RoleIn,
+  type RolePatch,
   type ScratchpadIn,
   type FitCreateIn,
   type FitPatchIn,
@@ -12,7 +14,6 @@ import {
   type OpponentPatchIn,
   type PilotIn,
   type PilotPatchIn,
-  type Role,
   type AssignmentPatchIn,
   type SessionCreateIn,
   type SessionOut,
@@ -46,6 +47,7 @@ export const keys = {
   shareLinks: (id: number) => ['scrims', 'share-links', id] as const,
   share: (token: string) => ['share', token] as const,
   scratchpad: ['scratchpad'] as const,
+  roles: ['team', 'roles'] as const,
   pilotHistory: (typeId: number, exclude: number) => ['pilots', 'history', typeId, exclude] as const,
 }
 
@@ -215,7 +217,7 @@ export function useTeamMutations() {
     }),
     createInvite: useMutation({
       meta: { toast: 'Invite created' },
-      mutationFn: async (body: { role: Role; uses: number; expires_in_hours: number; note: string }) =>
+      mutationFn: async (body: { role: string; uses: number; expires_in_hours: number; note: string }) =>
         unwrap(await api.POST('/api/team/invites', { body })),
       onSuccess: () => refresh(keys.invites),
     }),
@@ -226,7 +228,7 @@ export function useTeamMutations() {
     }),
     createRule: useMutation({
       meta: { toast: 'Admission rule added' },
-      mutationFn: async (body: { kind: 'corporation' | 'alliance'; entity_id: number; entity_name: string; default_role: Role; enabled: boolean }) =>
+      mutationFn: async (body: { kind: 'corporation' | 'alliance'; entity_id: number; entity_name: string; default_role: string; enabled: boolean }) =>
         unwrap(await api.POST('/api/team/admission-rules', { body })),
       onSuccess: () => refresh(keys.rules),
     }),
@@ -523,6 +525,38 @@ export function useScratchpadMutations() {
     save: useMutation({
       mutationFn: async (body: ScratchpadIn) => unwrap(await api.PUT('/api/scratchpad', { body })),
       onSuccess: (doc) => qc.setQueryData(keys.scratchpad, doc),
+    }),
+  }
+}
+
+/** Every role with its permission set, plus the permission catalogue; any member may read it. */
+export function useRoles(enabled = true) {
+  return useQuery({ queryKey: keys.roles, queryFn: async () => unwrap(await api.GET('/api/team/roles')), enabled, staleTime: 60_000 })
+}
+
+export function useRoleMutations() {
+  const qc = useQueryClient()
+  const refresh = () => {
+    void qc.invalidateQueries({ queryKey: keys.roles })
+    void qc.invalidateQueries({ queryKey: keys.members })
+    void qc.invalidateQueries({ queryKey: keys.me })
+  }
+  return {
+    createRole: useMutation({
+      meta: { toast: 'Role created' },
+      mutationFn: async (body: RoleIn) => unwrap(await api.POST('/api/team/roles', { body })),
+      onSuccess: refresh,
+    }),
+    patchRole: useMutation({
+      meta: { toast: 'Role saved' },
+      mutationFn: async (vars: { id: number; body: RolePatch }) => unwrap(await api.PATCH('/api/team/roles/{role_id}', { params: { path: { role_id: vars.id } }, body: vars.body })),
+      onSuccess: refresh,
+    }),
+    deleteRole: useMutation({
+      meta: { toast: 'Role deleted' },
+      mutationFn: async (vars: { id: number; reassignTo?: number }) =>
+        unwrap(await api.DELETE('/api/team/roles/{role_id}', { params: { path: { role_id: vars.id }, query: vars.reassignTo != null ? { reassign_to: vars.reassignTo } : {} } })),
+      onSuccess: refresh,
     }),
   }
 }

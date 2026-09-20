@@ -13,6 +13,7 @@ import { PilotsPage } from './features/team/PilotsPage'
 import { SharePage } from './features/share/SharePage'
 import { PilotCardPage } from './features/scrims/PilotCardPage'
 import { AuditPage } from './features/team/AuditPage'
+import { RolesPage } from './features/team/RolesPage'
 import { TeamPage } from './features/team/TeamPage'
 
 const rootRoute = createRootRoute({
@@ -38,6 +39,7 @@ const routes = [
   createRoute({ getParentRoute: () => rootRoute, path: '/team', component: TeamPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/team/pilots', component: PilotsPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/team/audit', component: AuditPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/team/roles', component: RolesPage }),
 ]
 
 export const router = createRouter({ routeTree: rootRoute.addChildren(routes) })

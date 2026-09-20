@@ -57,7 +57,7 @@ def test_pilot_is_refused_on_the_audit_log(login_as):
     page = login_as("pilot").page
     page.goto("/team/audit")
     expect(
-        page.get_by_text(re.compile("requires captain, admin, or the leadership flag"))
+        page.get_by_text(re.compile("requires the audit log permission or the leadership flag"))
     ).to_be_visible()
 
 

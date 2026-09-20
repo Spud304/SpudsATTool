@@ -179,6 +179,42 @@ export interface paths {
         patch: operations["apps_accounts_api_patch_rule"];
         trace?: never;
     };
+    "/api/team/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Roles */
+        get: operations["apps_accounts_roles_api_list_roles"];
+        put?: never;
+        /** Create Role */
+        post: operations["apps_accounts_roles_api_create_role"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/team/roles/{role_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Role */
+        delete: operations["apps_accounts_roles_api_delete_role"];
+        options?: never;
+        head?: never;
+        /** Patch Role */
+        patch: operations["apps_accounts_roles_api_patch_role"];
+        trace?: never;
+    };
     "/api/audit": {
         parameters: {
             query?: never;
@@ -926,10 +962,6 @@ export interface components {
             slug: string;
             /** Alliance Id */
             alliance_id: number | null;
-            /** Pilots Can Score */
-            pilots_can_score: boolean;
-            /** Pilots Can Browse Library */
-            pilots_can_browse_library: boolean;
             /** Affiliation Grace Hours */
             affiliation_grace_hours: number;
             /** Active Ruleset */
@@ -943,35 +975,46 @@ export interface components {
             name?: string | null;
             /** Alliance Id */
             alliance_id?: number | null;
-            /** Pilots Can Score */
-            pilots_can_score?: boolean | null;
-            /** Pilots Can Browse Library */
-            pilots_can_browse_library?: boolean | null;
             /** Affiliation Grace Hours */
             affiliation_grace_hours?: number | null;
             /** Active Ruleset */
             active_ruleset?: string | null;
         };
-        /** Capabilities */
+        /**
+         * Capabilities
+         * @description One boolean per permission code in permissions.PERMISSIONS, plus is_admin.
+         */
         Capabilities: {
-            /** Manage Members */
-            manage_members: boolean;
-            /** Manage Team */
-            manage_team: boolean;
-            /** Manage Library */
-            manage_library: boolean;
+            /** Is Admin */
+            is_admin: boolean;
+            /** View Scrims */
+            view_scrims: boolean;
+            /** View Assigned Scrims */
+            view_assigned_scrims: boolean;
+            /** Rsvp */
+            rsvp: boolean;
+            /** Fly */
+            fly: boolean;
+            /** Score */
+            score: boolean;
+            /** Edit Sets */
+            edit_sets: boolean;
             /** Manage Scrims */
             manage_scrims: boolean;
+            /** Browse Library */
+            browse_library: boolean;
+            /** Suggest Library */
+            suggest_library: boolean;
+            /** Manage Library */
+            manage_library: boolean;
+            /** Manage Members */
+            manage_members: boolean;
             /** View Audit */
             view_audit: boolean;
             /** View Pilot Notes */
             view_pilot_notes: boolean;
-            /** Score */
-            score: boolean;
-            /** Browse Library */
-            browse_library: boolean;
-            /** Browse Scrims */
-            browse_scrims: boolean;
+            /** Manage Team */
+            manage_team: boolean;
         };
         /** CharacterOut */
         CharacterOut: {
@@ -1025,6 +1068,8 @@ export interface components {
         MembershipOut: {
             /** Role */
             role: string;
+            /** Role Name */
+            role_name: string;
             /** Status */
             status: string;
             /** Source */
@@ -1036,10 +1081,6 @@ export interface components {
         TeamBrief: {
             /** Name */
             name: string;
-            /** Pilots Can Score */
-            pilots_can_score: boolean;
-            /** Pilots Can Browse Library */
-            pilots_can_browse_library: boolean;
             /** Active Ruleset */
             active_ruleset?: string | null;
         };
@@ -1056,6 +1097,8 @@ export interface components {
             display_name: string;
             /** Role */
             role: string;
+            /** Role Name */
+            role_name: string;
             /** Status */
             status: string;
             /** Source */
@@ -1074,7 +1117,8 @@ export interface components {
         };
         /** MemberPatch */
         MemberPatch: {
-            role?: components["schemas"]["Role"] | null;
+            /** Role */
+            role?: string | null;
             /** Is Leadership */
             is_leadership?: boolean | null;
             status?: components["schemas"]["MembershipStatus"] | null;
@@ -1091,11 +1135,6 @@ export interface components {
          * @enum {string}
          */
         MembershipStatus: "active" | "suspended" | "removed";
-        /**
-         * Role
-         * @enum {string}
-         */
-        Role: "admin" | "captain" | "theorycrafter" | "pilot" | "guest" | "viewer";
         /** RemoveIn */
         RemoveIn: {
             /**
@@ -1114,6 +1153,8 @@ export interface components {
             url: string;
             /** Role */
             role: string;
+            /** Role Name */
+            role_name: string;
             /** Uses Left */
             uses_left: number;
             /**
@@ -1131,8 +1172,11 @@ export interface components {
         };
         /** InviteIn */
         InviteIn: {
-            /** @default pilot */
-            role: components["schemas"]["Role"];
+            /**
+             * Role
+             * @default pilot
+             */
+            role: string;
             /**
              * Uses
              * @default 1
@@ -1161,6 +1205,8 @@ export interface components {
             entity_name: string;
             /** Default Role */
             default_role: string;
+            /** Default Role Name */
+            default_role_name: string;
             /** Enabled */
             enabled: boolean;
             /**
@@ -1179,8 +1225,11 @@ export interface components {
              * @default
              */
             entity_name: string;
-            /** @default pilot */
-            default_role: components["schemas"]["Role"];
+            /**
+             * Default Role
+             * @default pilot
+             */
+            default_role: string;
             /**
              * Enabled
              * @default true
@@ -1196,9 +1245,74 @@ export interface components {
         AdmissionRulePatch: {
             /** Entity Name */
             entity_name?: string | null;
-            default_role?: components["schemas"]["Role"] | null;
+            /** Default Role */
+            default_role?: string | null;
             /** Enabled */
             enabled?: boolean | null;
+        };
+        /** PermissionOut */
+        PermissionOut: {
+            /** Code */
+            code: string;
+            /** Group */
+            group: string;
+            /** Label */
+            label: string;
+            /** Description */
+            description: string;
+        };
+        /** RoleOut */
+        RoleOut: {
+            /** Id */
+            id: number;
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            /** Permissions */
+            permissions: string[];
+            /** Is System */
+            is_system: boolean;
+            /** Member Count */
+            member_count: number;
+        };
+        /** RolesOut */
+        RolesOut: {
+            /** Roles */
+            roles: components["schemas"]["RoleOut"][];
+            /** Catalog */
+            catalog: components["schemas"]["PermissionOut"][];
+        };
+        /** RoleIn */
+        RoleIn: {
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Permissions
+             * @default []
+             */
+            permissions: string[];
+        };
+        /** RolePatch */
+        RolePatch: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Permissions */
+            permissions?: string[] | null;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
         };
         /** AuditFilter */
         AuditFilter: {
@@ -3043,6 +3157,99 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdmissionRuleOut"];
+                };
+            };
+        };
+    };
+    apps_accounts_roles_api_list_roles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RolesOut"];
+                };
+            };
+        };
+    };
+    apps_accounts_roles_api_create_role: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleOut"];
+                };
+            };
+        };
+    };
+    apps_accounts_roles_api_delete_role: {
+        parameters: {
+            query?: {
+                reassign_to?: number | null;
+                reason?: string;
+            };
+            header?: never;
+            path: {
+                role_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    apps_accounts_roles_api_patch_role: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                role_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RolePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleOut"];
                 };
             };
         };
