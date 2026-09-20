@@ -46,6 +46,7 @@ def test_pilot_suggests_theorycrafter_activates_audit_records(login_as):
     admin = login_as("admin")
     admin.page.goto("/team/audit")
     admin.page.get_by_test_id("audit.filter").fill("fit.status_changed")
+    admin.page.get_by_test_id("audit.filter.actor").select_option(label="PW theorycrafter")
     expect(
         admin.page.get_by_test_id("audit.row").filter(has_text="pw looks good").first
     ).to_be_visible()

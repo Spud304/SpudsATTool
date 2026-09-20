@@ -303,7 +303,7 @@ def patch_member(request: HttpRequest, user_id: int, payload: MemberPatch):
     if membership.role.is_system and not permissions.is_admin(request.user):
         raise HttpError(403, "only an admin may change another admin")
     changes = payload.dict(exclude_unset=True, exclude={"reason"})
-    if membership.user_id == request.user.pk and ({"role", "status"} & set(changes)):
+    if membership.user.pk == request.user.pk and ({"role", "status"} & set(changes)):
         raise HttpError(403, "you cannot change your own role or status")
     if "role" in changes:
         changes["role"] = roles.by_slug(changes["role"])
@@ -346,7 +346,7 @@ def remove_member(request: HttpRequest, user_id: int, payload: RemoveIn):
     )
     if membership.role.is_system and not permissions.is_admin(request.user):
         raise HttpError(403, "only an admin may remove an admin")
-    if membership.user_id == request.user.pk:
+    if membership.user.pk == request.user.pk:
         raise HttpError(403, "you cannot remove yourself")
     with transaction.atomic():
         _guard_last_admin(membership, {"status": MembershipStatus.REMOVED})

@@ -30,6 +30,7 @@ export const keys = {
   invites: ['team', 'invites'] as const,
   rules: ['team', 'admission-rules'] as const,
   audit: (filters: Record<string, string | number | undefined>) => ['audit', filters] as const,
+  auditFacets: ['audit', 'facets'] as const,
   rulesets: ['rulesets'] as const,
   ships: (code: string) => ['rulesets', code, 'ships'] as const,
   fits: (filters: FitFilters) => ['fits', 'list', filters] as const,
@@ -77,11 +78,18 @@ export function useAdmissionRules(enabled = true) {
   return useQuery({ queryKey: keys.rules, queryFn: async () => unwrap(await api.GET('/api/team/admission-rules')), enabled })
 }
 
-export function useAudit(filters: { action?: string; limit: number; offset: number }) {
+export type AuditFilters = { actor_id?: number; action?: string; target_type?: string; since?: string; until?: string; q?: string; limit: number; offset: number }
+
+export function useAudit(filters: AuditFilters) {
   return useQuery({
     queryKey: keys.audit(filters),
     queryFn: async () => unwrap(await api.GET('/api/audit', { params: { query: filters } })),
   })
+}
+
+/** Distinct actions, target types and actors in the log, for the filter dropdowns. */
+export function useAuditFacets() {
+  return useQuery({ queryKey: keys.auditFacets, queryFn: async () => unwrap(await api.GET('/api/audit/facets')), staleTime: 30_000 })
 }
 
 export function useRulesets() {

@@ -232,6 +232,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/audit/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Facets
+         * @description What the log contains, for the filter dropdowns: distinct actions, target types and actors.
+         */
+        get: operations["apps_audit_api_facets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rulesets": {
         parameters: {
             query?: never;
@@ -1324,6 +1344,12 @@ export interface components {
             target_id?: string | null;
             /** Actor Id */
             actor_id?: number | null;
+            /** Since */
+            since?: string | null;
+            /** Until */
+            until?: string | null;
+            /** Q */
+            q?: string | null;
         };
         /** Input */
         Input: {
@@ -1372,6 +1398,22 @@ export interface components {
             items: components["schemas"]["AuditOut"][];
             /** Count */
             count: number;
+        };
+        /** ActorOut */
+        ActorOut: {
+            /** User Id */
+            user_id: number;
+            /** Display Name */
+            display_name: string;
+        };
+        /** FacetsOut */
+        FacetsOut: {
+            /** Actions */
+            actions: string[];
+            /** Target Types */
+            target_types: string[];
+            /** Actors */
+            actors: components["schemas"]["ActorOut"][];
         };
         /** HullSizeOut */
         HullSizeOut: {
@@ -3261,6 +3303,9 @@ export interface operations {
                 target_type?: string | null;
                 target_id?: string | null;
                 actor_id?: number | null;
+                since?: string | null;
+                until?: string | null;
+                q?: string | null;
                 limit?: number;
                 offset?: number;
             };
@@ -3277,6 +3322,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PagedAuditOut"];
+                };
+            };
+        };
+    };
+    apps_audit_api_facets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FacetsOut"];
                 };
             };
         };
