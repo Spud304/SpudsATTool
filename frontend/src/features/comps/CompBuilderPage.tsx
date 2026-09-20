@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import clsx from 'clsx'
+import { NO_SPINNER } from '@/lib/styles'
 import { api, unwrap, type CompOut, type CompSlotIn, type EvaluateOut, type FitSummaryOut, type SlotIn } from '@/lib/api/client'
 import { useComp, useCompMutations, useCompVocab, useFits, useMe, useRulesets, useRulesetShips } from '@/lib/api/hooks'
 import { Badge, Button, Checkbox, Empty, ErrorText, Field, Input, Mono, PageHeader, Panel, Select, Table, Textarea } from '@/components/ui'
@@ -245,7 +246,7 @@ function Builder({ comp }: { comp: CompOut }) {
                       <Checkbox data-testid={`comp.slot.${i + 1}.unique`} checked={slot.is_unique} disabled={!comp.can_edit} onChange={(e) => update(i, { is_unique: e.target.checked })} />
                     </td>
                     <td>
-                      <Input data-testid={`comp.slot.${i + 1}.warp`} type="number" className="w-16" min={0} max={1000} value={slot.warp_in_km ?? ''} readOnly={!comp.can_edit} onChange={(e) => update(i, { warp_in_km: e.target.value === '' ? null : Number(e.target.value) })} />
+                      <Input data-testid={`comp.slot.${i + 1}.warp`} type="number" className={clsx('w-16', NO_SPINNER)} min={0} max={1000} value={slot.warp_in_km ?? ''} readOnly={!comp.can_edit} onChange={(e) => update(i, { warp_in_km: e.target.value === '' ? null : Number(e.target.value) })} />
                     </td>
                     <td>
                       <Select data-testid={`comp.slot.${i + 1}.fit`} value={slot.default_fit_id ?? ''} disabled={!comp.can_edit || slot.type_id == null} onChange={(e) => update(i, { default_fit_id: e.target.value === '' ? null : Number(e.target.value) })}>

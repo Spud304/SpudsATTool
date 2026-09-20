@@ -159,7 +159,7 @@ export function SessionForm({
         </Field>
       </div>
       <Field label="MotD">
-        <Textarea data-testid={`${testPrefix}.motd`} rows={3} className="w-full" value={d.motd} onChange={(e) => set('motd')(e.target.value)} />
+        <Textarea data-testid={`${testPrefix}.motd`} rows={Math.min(12, Math.max(3, d.motd.split('\n').length + 1))} className="w-full" value={d.motd} onChange={(e) => set('motd')(e.target.value)} />
       </Field>
       <div className="flex items-center gap-2">
         <Button data-testid={`${testPrefix}.submit`} type="submit" variant="primary" disabled={!valid || pending || createOpponent.isPending}>

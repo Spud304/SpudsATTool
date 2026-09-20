@@ -427,13 +427,9 @@ Sizes relative; assume a solo dev at ~10 h/week. Phase 2 is the critical path; s
 
 ### 13.1 Small items (QoL backlog)
 
-- Members must not be able to change their own role or status. Today `PATCH /api/team/members/{user_id}` only protects the last active admin; a captain or admin can demote or suspend themselves. Reject `user_id == request.user` with 403 and hide the controls on the Team page for the viewer's own row.
-- MotD field grows with its text instead of a fixed height.
-- Comp editor: the warp-in box should be a plain number field without the spinner arrows, like the scrim page
 - Scratchpad items (save on leave, Clear all, Move to comp editor, clipboard paste, points panel, parity pass): DONE 2026-09-18.
 - Comp scratchpad storage: decided 2026-09-18, one private document per member on the server (`library.Scratchpad`). Browsing other members' scratchpads was not wanted; the comp library is where shared work goes.
 - Audit Log: Filter by more than just actions (e.g., by user, by date range, by target)
-- Scrims: When a new pilot gets added to the team they should appear automatically in the upcoming scrims with an empty slot, ready for RSVP and attendance tracking.
 - Custom vocabularies: a tab for adding statuses, archetypes and other attributes a captain may want to extend (anything that is an enum today). Roles themselves are data since 2026-09-19; this covers the rest.
 
 ---
