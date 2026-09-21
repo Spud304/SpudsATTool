@@ -114,14 +114,7 @@ function ArchetypesPanel() {
   const { createArchetype, patchArchetype, deleteArchetype } = useCompMutations()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const rows = [...(vocab.data?.archetypes ?? [])].sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
-  const move = (a: ArchetypeOut, dir: -1 | 1) => {
-    const i = rows.findIndex((r) => r.id === a.id)
-    const other = rows[i + dir]
-    if (!other) return
-    patchArchetype.mutate({ id: a.id, body: { sort_order: other.sort_order } })
-    patchArchetype.mutate({ id: other.id, body: { sort_order: a.sort_order } })
-  }
+  const rows = [...(vocab.data?.archetypes ?? [])].sort((a, b) => Number(a.is_retired) - Number(b.is_retired) || a.name.localeCompare(b.name))
   return (
     <Panel title={`Archetypes${vocab.data ? ` (${rows.length})` : ''}`} testId="config.archetypes">
       <ErrorText error={patchArchetype.error ?? deleteArchetype.error} />
@@ -137,14 +130,11 @@ function ArchetypesPanel() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((a, i) => (
+            {rows.map((a) => (
               <ArchetypeRow
                 key={a.id}
                 archetype={a}
-                first={i === 0}
-                last={i === rows.length - 1}
                 onPatch={(body) => patchArchetype.mutate({ id: a.id, body })}
-                onMove={(d) => move(a, d)}
                 onDelete={() => window.confirm(`Delete the archetype "${a.name}"?`) && deleteArchetype.mutate(a.id)}
               />
             ))}
@@ -158,7 +148,7 @@ function ArchetypesPanel() {
         onSubmit={(e) => {
           e.preventDefault()
           createArchetype.mutate(
-            { name: name.trim(), description: description.trim(), sort_order: (rows.at(-1)?.sort_order ?? 0) + 1 },
+            { name: name.trim(), description: description.trim(), sort_order: 0 },
             {
               onSuccess: () => {
                 setName('')
@@ -183,21 +173,7 @@ function ArchetypesPanel() {
   )
 }
 
-function ArchetypeRow({
-  archetype: a,
-  first,
-  last,
-  onPatch,
-  onMove,
-  onDelete,
-}: {
-  archetype: ArchetypeOut
-  first: boolean
-  last: boolean
-  onPatch: (body: { name?: string; description?: string; is_retired?: boolean }) => void
-  onMove: (dir: -1 | 1) => void
-  onDelete: () => void
-}) {
+function ArchetypeRow({ archetype: a, onPatch, onDelete }: { archetype: ArchetypeOut; onPatch: (body: { name?: string; description?: string; is_retired?: boolean }) => void; onDelete: () => void }) {
   const [name, setName] = useState(a.name)
   const [description, setDescription] = useState(a.description)
   const id = `config.archetypes.row.${a.id}`
@@ -222,12 +198,6 @@ function ArchetypeRow({
         <Checkbox data-testid={`${id}.retired`} checked={a.is_retired} onChange={(e) => onPatch({ is_retired: e.target.checked })} />
       </td>
       <td className="whitespace-nowrap text-right">
-        <Button variant="ghost" className="h-6 px-1" disabled={first} onClick={() => onMove(-1)} title="move up">
-          {'▲'}
-        </Button>
-        <Button variant="ghost" className="h-6 px-1" disabled={last} onClick={() => onMove(1)} title="move down">
-          {'▼'}
-        </Button>
         {a.in_use === 0 ? (
           <Button variant="ghost" className="h-6 px-2 text-bad" onClick={onDelete} data-testid={`${id}.delete`}>
             Delete
@@ -244,13 +214,6 @@ function WarpLabelsPanel() {
   const { createLabel, patchLabel, deleteLabel } = useWarpLabelMutations()
   const [label, setLabel] = useState('')
   const rows = labels.data ?? []
-  const move = (r: WarpLabelOut, dir: -1 | 1) => {
-    const i = rows.findIndex((x) => x.id === r.id)
-    const other = rows[i + dir]
-    if (!other) return
-    patchLabel.mutate({ id: r.id, body: { sort_order: other.sort_order } })
-    patchLabel.mutate({ id: other.id, body: { sort_order: r.sort_order } })
-  }
   return (
     <Panel title={`Warp-in labels${labels.data ? ` (${rows.length})` : ''}`} testId="config.warp">
       <ErrorText error={patchLabel.error ?? deleteLabel.error} />
@@ -265,14 +228,11 @@ function WarpLabelsPanel() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r, i) => (
+            {rows.map((r) => (
               <WarpLabelRow
                 key={r.id}
                 row={r}
-                first={i === 0}
-                last={i === rows.length - 1}
                 onPatch={(body) => patchLabel.mutate({ id: r.id, body })}
-                onMove={(d) => move(r, d)}
                 onDelete={() => window.confirm(`Delete the label "${r.label}"?`) && deleteLabel.mutate(r.id)}
               />
             ))}
@@ -285,7 +245,7 @@ function WarpLabelsPanel() {
         className="mt-3 flex flex-wrap items-end gap-2 border-t border-line pt-3"
         onSubmit={(e) => {
           e.preventDefault()
-          createLabel.mutate({ label: label.trim(), sort_order: (rows.at(-1)?.sort_order ?? 0) + 1 }, { onSuccess: () => setLabel('') })
+          createLabel.mutate({ label: label.trim(), sort_order: 0 }, { onSuccess: () => setLabel('') })
         }}
       >
         <Field label="New label">
@@ -300,21 +260,7 @@ function WarpLabelsPanel() {
   )
 }
 
-function WarpLabelRow({
-  row: r,
-  first,
-  last,
-  onPatch,
-  onMove,
-  onDelete,
-}: {
-  row: WarpLabelOut
-  first: boolean
-  last: boolean
-  onPatch: (body: { label?: string; is_active?: boolean }) => void
-  onMove: (dir: -1 | 1) => void
-  onDelete: () => void
-}) {
+function WarpLabelRow({ row: r, onPatch, onDelete }: { row: WarpLabelOut; onPatch: (body: { label?: string; is_active?: boolean }) => void; onDelete: () => void }) {
   const [label, setLabel] = useState(r.label)
   const id = `config.warp.row.${r.id}`
   return (
@@ -329,12 +275,6 @@ function WarpLabelRow({
         <Checkbox data-testid={`${id}.active`} checked={r.is_active} onChange={(e) => onPatch({ is_active: e.target.checked })} />
       </td>
       <td className="whitespace-nowrap text-right">
-        <Button variant="ghost" className="h-6 px-1" disabled={first} onClick={() => onMove(-1)} title="move up">
-          {'▲'}
-        </Button>
-        <Button variant="ghost" className="h-6 px-1" disabled={last} onClick={() => onMove(1)} title="move down">
-          {'▼'}
-        </Button>
         {r.in_use === 0 ? (
           <Button variant="ghost" className="h-6 px-2 text-bad" onClick={onDelete} data-testid={`${id}.delete`}>
             Delete

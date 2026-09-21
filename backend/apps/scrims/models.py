@@ -71,7 +71,7 @@ class WarpInLabel(models.Model):
 
     class Meta:
         db_table = "scrims_warp_in_label"
-        ordering = ["sort_order", "label"]
+        ordering = ["label"]
 
     def __str__(self) -> str:
         return self.label

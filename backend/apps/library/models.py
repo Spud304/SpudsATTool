@@ -81,7 +81,7 @@ class Archetype(models.Model):
 
     class Meta:
         db_table = "library_archetype"
-        ordering = ["is_retired", "sort_order", "name"]
+        ordering = ["is_retired", "name"]
 
     def __str__(self) -> str:
         return self.name
