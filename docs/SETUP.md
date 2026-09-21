@@ -103,7 +103,9 @@ The roles a fresh install starts with:
 | guest | view assigned scrims, fly |
 | viewer | view all scrims |
 
-Any member can also carry the **leadership** flag, which adds the audit log and pilot notes on top of their role. Every membership and role change is written to the audit log with who did it and why.
+Any member can also carry the **leadership** flag, which adds the audit log and pilot notes on top of their role. Every membership and role change is written to the audit log with who did it and why. Nobody can change their own role or status, so hand another member the admin role before stepping down.
+
+Opponents, comp archetypes and warp-in labels are edited under **Team → Configurables**; each list needs its own permission (Manage scrims, Manage library, Manage team). Entries in use can be retired or deactivated but not deleted.
 
 ## 6. Development
 
