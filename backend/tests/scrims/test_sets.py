@@ -265,3 +265,23 @@ def test_the_same_pilot_in_two_slots_is_an_error(scrim, captain, theo, of99_comp
     assert "DUPLICATE_PILOT" in slot(doc, 1, "us", 5)["flags"]
     doc = sets.patch_assignment(theo, scrim.pk, set_id, 1, "US", 5, pilot_id=None)
     assert doc["rounds"][0]["us"]["is_legal"]
+
+
+def test_an_archived_scrim_is_read_only(scrim, captain, pilot):
+    from apps.scrims import sessions
+
+    doc = sets.create_set(captain, scrim.pk)
+    sessions.archive_session(captain, scrim, "done")
+    scrim.refresh_from_db()
+    edits = [
+        lambda: sets.create_set(captain, scrim.pk),
+        lambda: sets.patch_set(captain, scrim.pk, doc["id"], label="late edit"),
+        lambda: sets.add_round(captain, scrim.pk, doc["id"]),
+        lambda: sets.delete_set(captain, scrim.pk, doc["id"]),
+        lambda: sessions.update_session(captain, scrim, title="renamed"),
+        lambda: sessions.set_attendance(captain, scrim, Pilot.objects.get(user=pilot), "attended"),
+    ]
+    for edit in edits:
+        with pytest.raises(ScrimError) as err:
+            edit()
+        assert err.value.status == 409

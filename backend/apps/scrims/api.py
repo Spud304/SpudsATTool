@@ -393,9 +393,10 @@ def get_session(request: HttpRequest, session_id: int):
 
 @router.patch("/{session_id}", response=SessionOut)
 def patch_session(request: HttpRequest, session_id: int, payload: SessionPatchIn):
+    session = _session(session_id)
+    permissions.require_view_session(request.user, session)
     permissions.require_manage_scrims(request.user)
     user = cast(User, request.user)
-    session = _session(session_id)
     fields = payload.dict(exclude_unset=True)
     _wrap(lambda: sessions.update_session(user, session, **fields))
     return _full(_session(session.pk), user)
@@ -403,27 +404,30 @@ def patch_session(request: HttpRequest, session_id: int, payload: SessionPatchIn
 
 @router.post("/{session_id}/archive", response=SessionOut)
 def archive_session(request: HttpRequest, session_id: int, payload: ArchiveIn):
+    session = _session(session_id)
+    permissions.require_view_session(request.user, session)
     permissions.require_manage_scrims(request.user)
     user = cast(User, request.user)
-    session = _session(session_id)
     sessions.archive_session(user, session, payload.reason)
     return _full(_session(session.pk), user)
 
 
 @router.put("/{session_id}/rsvp", response=SessionOut)
 def put_rsvp(request: HttpRequest, session_id: int, payload: RsvpIn):
+    session = _session(session_id)
+    permissions.require_view_session(request.user, session)
     permissions.require_rsvp(request.user)
     user = cast(User, request.user)
-    session = _session(session_id)
     _wrap(lambda: sessions.set_rsvp(user, session, payload.rsvp, payload.reason))
     return _full(_session(session.pk), user)
 
 
 @router.patch("/{session_id}/attendance/{pilot_id}", response=SessionOut)
 def patch_attendance(request: HttpRequest, session_id: int, pilot_id: int, payload: AttendanceIn):
+    session = _session(session_id)
+    permissions.require_view_session(request.user, session)
     permissions.require_manage_scrims(request.user)
     user = cast(User, request.user)
-    session = _session(session_id)
     pilot = get_object_or_404(Pilot, pk=pilot_id)
     _wrap(lambda: sessions.set_attendance(user, session, pilot, payload.attendance, payload.reason))
     return _full(_session(session.pk), user)

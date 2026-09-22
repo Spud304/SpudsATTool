@@ -135,3 +135,19 @@ def test_roster_and_opponents_api(client, imported_atxxii, login_as):
     )
     assert resp.json()["title"] == "OF 100" and resp.json()["motd"] == "be there"
     assert Session.objects.count() == 1
+
+
+def test_rsvp_needs_sight_of_the_scrim(client, imported_atxxii, login_as):
+    from apps.accounts.models import TeamRole
+
+    tonight = timezone.now() + timedelta(hours=2)
+    login_as(character_id=7, name="Cap", role="captain")
+    scrim_id = post(client, "/api/scrims", {"title": "OF 99", "date": iso(tonight)}).json()["id"]
+    client.get("/auth/logout")
+
+    TeamRole.objects.create(
+        slug="merc-rsvp", name="Merc RSVP", permissions=["view_assigned_scrims", "rsvp", "fly"]
+    )
+    login_as(character_id=9, name="Merc", role="merc-rsvp")  # not fielded, so cannot see it
+    assert client.get(f"/api/scrims/{scrim_id}").status_code == 403
+    assert put(client, f"/api/scrims/{scrim_id}/rsvp", {"rsvp": "yes"}).status_code == 403

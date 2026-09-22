@@ -122,7 +122,13 @@ def _snapshot(session: Session) -> dict:
     }
 
 
+def _require_not_archived(session: Session) -> None:
+    if session.is_archived:
+        raise ScrimError(409, "this scrim is archived and read-only")
+
+
 def update_session(actor: User, session: Session, **fields) -> Session:
+    _require_not_archived(session)
     before = _snapshot(session)
     if "title" in fields:
         title = (fields.pop("title") or "").strip()[:120]
@@ -226,6 +232,7 @@ def set_rsvp(actor: User, session: Session, rsvp: str, reason: str = "") -> Sess
 def set_attendance(
     actor: User, session: Session, pilot: Pilot, attendance: str, reason: str = ""
 ) -> SessionAttendance:
+    _require_not_archived(session)
     _check_choices(attendance, Attendance, "attendance")
     reason = reason.strip()[:200]
     row, _ = SessionAttendance.objects.get_or_create(session=session, pilot=pilot)

@@ -148,6 +148,14 @@ def can_manage_library(user) -> bool:
     return has_perm(user, "manage_library")
 
 
+def require_add_to_library(user) -> None:
+    """Creating a comp or fit (new, clone, move from scratchpad) needs suggest or manage."""
+    if not getattr(user, "is_authenticated", False):
+        raise HttpError(401, "login required")
+    if not (can_suggest_library(user) or can_manage_library(user)):
+        raise HttpError(403, "your role cannot add to the library")
+
+
 def can_manage_scrims(user) -> bool:
     return has_perm(user, "manage_scrims")
 

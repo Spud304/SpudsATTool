@@ -146,3 +146,32 @@ def test_part_a_writes_announce_themselves(db, scrim, captain, pilot):
     assert kinds == ["attendance", "session"]
     doc = sets.create_set(captain, scrim.pk)
     assert ChangeEvent.objects.get(seq=3).payload["set"]["id"] == doc["id"]
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_stream_ends_when_access_is_withdrawn(scrim, captain):
+    calls = 0
+
+    async def allowed() -> bool:
+        nonlocal calls
+        calls += 1
+        return calls < 2
+
+    stream = event_stream(scrim.pk, 0, keepalive=0.1, allowed=allowed)
+    frames = []
+    with pytest.raises(StopAsyncIteration):
+        for _ in range(10):
+            frames.append(await asyncio.wait_for(anext(stream), 2))
+    assert calls == 2 and [parse(f)["kind"] for f in frames] == ["presence", "ping"]
+
+
+@pytest.mark.django_db(transaction=True)
+async def test_member_access_is_read_fresh(scrim, captain, viewer):
+    from apps.accounts import roles
+    from apps.scrims.stream import _member_can_view
+
+    assert await sync_to_async(_member_can_view)(viewer.pk, scrim.pk)
+    membership = await sync_to_async(lambda: viewer.membership)()
+    membership.role = await sync_to_async(roles.by_slug)("guest")
+    await sync_to_async(membership.save)()
+    assert not await sync_to_async(_member_can_view)(viewer.pk, scrim.pk)

@@ -13,7 +13,7 @@ from apps.audit.services import record
 from apps.core.models import Team
 from apps.rules import selection
 
-from . import permissions, roles
+from . import permissions, roles, services
 from .models import (
     AdmissionRule,
     AdmissionRuleKind,
@@ -303,8 +303,10 @@ def patch_member(request: HttpRequest, user_id: int, payload: MemberPatch):
     if membership.role.is_system and not permissions.is_admin(request.user):
         raise HttpError(403, "only an admin may change another admin")
     changes = payload.dict(exclude_unset=True, exclude={"reason"})
-    if membership.user.pk == request.user.pk and ({"role", "status"} & set(changes)):
-        raise HttpError(403, "you cannot change your own role or status")
+    if membership.user.pk == request.user.pk and (
+        {"role", "status", "is_leadership"} & set(changes)
+    ):
+        raise HttpError(403, "you cannot change your own role, status or leadership flag")
     if "role" in changes:
         changes["role"] = roles.by_slug(changes["role"])
         if not permissions.can_assign_role(request.user, changes["role"]):
@@ -319,9 +321,11 @@ def patch_member(request: HttpRequest, user_id: int, payload: MemberPatch):
             membership.user.is_active = active
             membership.user.save(update_fields=["is_active"])
             membership.suspended_at = None if active else timezone.now()
-            if active:
-                membership.source = MembershipSource.EXPLICIT
+            # A status set by hand is no longer the admission rule's to undo.
+            membership.source = MembershipSource.EXPLICIT
+            membership.rule_failed_since = None
         membership.save()
+        services.sync_staff_flags(membership.user, membership)
         if membership.status == MembershipStatus.ACTIVE and membership.role.grants("fly"):
             from apps.scrims.roster import ensure_pilot_for
 
@@ -355,6 +359,7 @@ def remove_member(request: HttpRequest, user_id: int, payload: RemoveIn):
         membership.save(update_fields=["status", "suspended_at"])
         membership.user.is_active = False
         membership.user.save(update_fields=["is_active"])
+        services.sync_staff_flags(membership.user, membership)
     record(
         actor=request.user,
         action="membership.removed",

@@ -9,7 +9,7 @@ from ninja.errors import HttpError
 from apps.audit.services import record
 
 from .models import AdmissionRule, Invite, Membership, Role, TeamRole
-from .permissions import PERMISSION_CODES
+from .permissions import PERMISSION_CODES, is_admin
 
 ADMIN_SLUG = Role.ADMIN
 
@@ -210,6 +210,8 @@ def delete_role(
             raise HttpError(409, "the role is in use; pass reassign_to")
         if reassign_to.pk == role.pk:
             raise HttpError(422, "reassign_to must be a different role")
+        if reassign_to.is_system and not is_admin(actor):
+            raise HttpError(403, "only an admin may move members into the admin role")
     with transaction.atomic():
         if reassign_to is not None:
             Membership.objects.filter(role=role).update(role=reassign_to)

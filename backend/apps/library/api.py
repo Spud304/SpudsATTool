@@ -155,7 +155,11 @@ def _summary(fit: Fit) -> dict:
 def _can_edit(user: User, fit: Fit) -> bool:
     if permissions.can_manage_library(user):
         return True
-    return fit.created_by_id == user.pk and fit.status == FitStatus.SUGGESTED
+    return (
+        permissions.can_suggest_library(user)
+        and fit.created_by_id == user.pk
+        and fit.status == FitStatus.SUGGESTED
+    )
 
 
 def _full(fit: Fit, user: User) -> dict:
@@ -196,6 +200,7 @@ def list_fits(
 @router.post("", response={201: FitOut})
 def create_fit(request: HttpRequest, payload: FitCreateIn):
     permissions.require_browse_library(request.user)
+    permissions.require_add_to_library(request.user)
     user = cast(User, request.user)
     try:
         fit = services.create_fit(

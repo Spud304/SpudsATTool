@@ -154,3 +154,22 @@ def test_assigned_only_member_lists_just_their_scrims(team, admins, client, logi
     assert client.get("/api/scrims").json() == []
     assert client.get("/api/team").status_code == 200  # any member reads the team brief
     assert client.get("/api/rulesets").status_code == 403  # no browse_library
+
+
+def test_deleting_a_role_cannot_move_its_members_into_admin(team, admins, client, login_as):
+    ops = TeamRole.objects.create(slug="ops", name="Ops", permissions=["manage_team"])
+    login_as(character_id=41, name="Ops Lead", role="ops")
+    admin_id = roles.by_slug(Role.ADMIN).pk
+    resp = client.delete(f"/api/team/roles/{ops.pk}?reassign_to={admin_id}")
+    assert resp.status_code == 403, resp.content
+    assert Membership.objects.get(user__characters__character_id=41).role == ops
+    viewer_id = roles.by_slug("viewer").pk
+    assert client.delete(f"/api/team/roles/{ops.pk}?reassign_to={viewer_id}").status_code == 204
+
+
+def test_members_cannot_set_their_own_leadership_flag(team, client, login_as):
+    login_as(character_id=42, name="Cap", role="captain")
+    me = client.get("/api/me").json()
+    resp = patch(client, f"/api/team/members/{me['user_id']}", {"is_leadership": True})
+    assert resp.status_code == 403
+    assert not Membership.objects.get(user_id=me["user_id"]).is_leadership

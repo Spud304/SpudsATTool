@@ -177,7 +177,11 @@ def _parse_banned(raw: str | None) -> tuple[int, ...]:
 def _can_edit(user: User, comp: Comp) -> bool:
     if permissions.can_manage_library(user):
         return True
-    return comp.created_by_id == user.pk and comp.status == CompStatus.SUGGESTED
+    return (
+        permissions.can_suggest_library(user)
+        and comp.created_by_id == user.pk
+        and comp.status == CompStatus.SUGGESTED
+    )
 
 
 def _summary(comp: Comp, banned: tuple[int, ...] = ()) -> tuple[dict, CompEvaluation | None]:
@@ -301,6 +305,7 @@ def list_comps(
 @router.post("", response={201: CompOut})
 def create_comp(request: HttpRequest, payload: CompCreateIn):
     permissions.require_browse_library(request.user)
+    permissions.require_add_to_library(request.user)
     user = cast(User, request.user)
     ruleset = _ruleset(payload.ruleset) if payload.ruleset else None
     comp = _wrap(
@@ -414,6 +419,7 @@ def patch_comp(request: HttpRequest, comp_id: int, payload: CompPatchIn):
 @router.post("/{comp_id}/clone", response={201: CompOut})
 def clone_comp(request: HttpRequest, comp_id: int, payload: CloneIn):
     permissions.require_browse_library(request.user)
+    permissions.require_add_to_library(request.user)
     user = cast(User, request.user)
     comp = _comp(comp_id)
     ruleset = _ruleset(payload.ruleset) if payload.ruleset else None

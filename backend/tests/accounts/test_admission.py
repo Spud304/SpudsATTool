@@ -142,3 +142,38 @@ def test_refresh_affiliations_grace_and_reactivation(team, admins, make_characte
     assert services.refresh_affiliations()["reactivated"] == 1
     membership.refresh_from_db()
     assert membership.status == MembershipStatus.ACTIVE
+
+
+def test_a_hand_suspension_is_not_lifted_by_a_matching_rule(
+    client, team, admins, make_character, login_as
+):
+    AdmissionRule.objects.create(kind=AdmissionRuleKind.CORPORATION, entity_id=1000)
+    user, _ = admitted(services.admit(make_character(2, "Pilot", corporation_id=1000)))
+    login_as(role=None)  # env admin
+    resp = client.patch(
+        f"/api/team/members/{user.pk}",
+        {"status": "suspended", "reason": "conduct"},
+        content_type="application/json",
+    )
+    assert resp.status_code == 200, resp.content
+    result = services.admit(make_character(2, "Pilot", corporation_id=1000))
+    assert result.outcome == "suspended" and not result.admitted
+
+
+def test_django_admin_access_is_for_env_admins_only(client, team, settings, make_character):
+    settings.ADMIN_CHARACTER_IDS = [ADMIN_ID, 6]
+    first, _ = admitted(services.admit(make_character(ADMIN_ID, "Spud")))
+    other, _ = admitted(services.admit(make_character(6, "Second")))
+    assert other.is_superuser and other.is_staff
+    make_character(5, "Recovered")
+    call_command("grant_admin", "Recovered")
+    recovered = Membership.objects.get(user__characters__character_id=5)
+    assert recovered.role.slug == Role.ADMIN and not recovered.user.is_superuser
+
+    client.force_login(first)  # demotes the second env admin
+    resp = client.patch(
+        f"/api/team/members/{other.pk}", {"role": "pilot"}, content_type="application/json"
+    )
+    assert resp.status_code == 200, resp.content
+    other.refresh_from_db()
+    assert not other.is_superuser and not other.is_staff

@@ -127,11 +127,25 @@ def _set_membership(user: User, *, role, source: str, note: str = "") -> Members
     if not user.is_active:
         user.is_active = True
         user.save(update_fields=["is_active"])
+    sync_staff_flags(user, membership)
     if team_role.grants("fly"):
         from apps.scrims.roster import ensure_pilot_for  # roster row for anyone who can fly
 
         ensure_pilot_for(user)
     return membership
+
+
+def sync_staff_flags(user: User, membership: Membership | None) -> None:
+    """Django admin edits bypass the audit log, so only active admins in ADMIN_CHARACTER_IDS get it."""
+    wanted = (
+        membership is not None
+        and membership.status == MembershipStatus.ACTIVE
+        and membership.role.is_system
+        and user.characters.filter(character_id__in=settings.ADMIN_CHARACTER_IDS).exists()
+    )
+    if user.is_staff != wanted or user.is_superuser != wanted:
+        user.is_staff = user.is_superuser = wanted
+        user.save(update_fields=["is_staff", "is_superuser"])
 
 
 def grant_admin(character: EveCharacter, *, source: str, actor=None) -> Membership:
@@ -140,10 +154,6 @@ def grant_admin(character: EveCharacter, *, source: str, actor=None) -> Membersh
     if not membership.is_leadership:
         membership.is_leadership = True
         membership.save(update_fields=["is_leadership"])
-    if not (user.is_staff and user.is_superuser):
-        user.is_staff = True
-        user.is_superuser = True
-        user.save(update_fields=["is_staff", "is_superuser"])
     record(actor=actor, action="membership.admin_granted", target=user, after={"source": source})
     return membership
 
@@ -168,9 +178,14 @@ def admit(character: EveCharacter, *, invite_token: str | None = None) -> AdmitR
         if existing is not None:
             if existing.status == MembershipStatus.ACTIVE:
                 return AdmitResult(user, existing, "existing")
-            if existing.status == MembershipStatus.SUSPENDED and matching_rule(
-                user.characters.all()
-            ):
+            # Only a suspension the affiliation check made is lifted by matching a rule again;
+            # a member suspended by hand stays suspended.
+            suspended_by_rule = (
+                existing.status == MembershipStatus.SUSPENDED
+                and existing.source == MembershipSource.RULE
+                and existing.rule_failed_since is not None
+            )
+            if suspended_by_rule and matching_rule(user.characters.all()):
                 membership = _set_membership(user, role=existing.role, source=MembershipSource.RULE)
                 record(actor=user, action="membership.reactivated_by_rule", target=user)
                 return AdmitResult(user, membership, "rule")
@@ -192,8 +207,8 @@ def admit(character: EveCharacter, *, invite_token: str | None = None) -> AdmitR
                 )
                 return AdmitResult(user, membership, "invite")
 
-        removed = existing is not None and existing.status == MembershipStatus.REMOVED
-        if not removed:
+        # A removed or hand-suspended member is not re-admitted by a rule; an invite can.
+        if existing is None:
             rule = matching_rule([character])
             if rule is not None:
                 user = ensure_user(character)
@@ -231,6 +246,7 @@ def suspend_membership(membership: Membership, *, actor=None, reason: str = "") 
     membership.save(update_fields=["status", "suspended_at"])
     membership.user.is_active = False
     membership.user.save(update_fields=["is_active"])
+    sync_staff_flags(membership.user, membership)
     record(actor=actor, action="membership.suspended", target=membership.user, reason=reason)
 
 

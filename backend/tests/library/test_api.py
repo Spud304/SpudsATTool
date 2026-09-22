@@ -125,3 +125,17 @@ def test_legality_endpoint(client, library_sde, imported_atxxii, login_as):
     assert not client.get(f"/api/fits/{fit_id}/legality", {"ruleset": "ATXXII"}).json()["is_legal"]
     flag = client.get(f"/api/fits/{fit_id}/legality", {"ruleset": "ATXXII", "flagship": "true"})
     assert flag.json()["is_legal"] and flag.json()["is_flagship"]
+
+
+def test_adding_to_the_library_needs_suggest_or_manage(client, library_sde, login_as):
+    login_as(role="pilot")
+    fit_id = post(client, "/api/fits", {"eft_text": ABSO_FIT}).json()["id"]
+    assert client.get(f"/api/fits/{fit_id}").json()["can_edit"] is True
+    pilot_role = roles.by_slug("pilot")
+    pilot_role.permissions = [p for p in pilot_role.permissions if p != "suggest_library"]
+    pilot_role.save()
+    assert post(client, "/api/fits", {"eft_text": ABSO_FIT}).status_code == 403
+    assert post(client, "/api/comps", {"name": "Nope"}).status_code == 403
+    # their own earlier suggestion is read-only now too
+    assert client.get(f"/api/fits/{fit_id}").json()["can_edit"] is False
+    assert patch(client, f"/api/fits/{fit_id}", {"name": "Renamed"}).status_code == 403

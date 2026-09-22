@@ -1,5 +1,7 @@
 """Sets, bans, rounds and lineups. Every function here runs under the session lock and emits one event."""
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 
 from django.utils import timezone
@@ -31,6 +33,15 @@ from .sessions import scope
 _UNSET = object()
 
 PILOT_OWN_FIELDS = frozenset({"fit_id", "custom_note", "warp_in_km"})
+
+
+@contextmanager
+def _writable(session_id: int) -> Iterator[Session]:
+    """`events.locked()` for edits: an archived scrim is read-only."""
+    with events.locked(session_id) as session:
+        if session.is_archived:
+            raise ScrimError(409, "this scrim is archived and read-only")
+        yield session
 
 
 def _check(value: str, choices, label: str) -> str:
@@ -94,9 +105,7 @@ def _copy_assignments(source: Round, target: Round) -> list[Assignment]:
 def create_set(
     actor: User, session_id: int, *, copy_previous: bool = True, label: str = ""
 ) -> dict:
-    with events.locked(session_id) as session:
-        if session.is_archived:
-            raise ScrimError(409, "this scrim is archived")
+    with _writable(session_id) as session:
         ctx = derived.context_for(session)
         previous = session.sets.order_by("-index").first()
         our_side = session.default_our_side or (previous.our_side if previous else SIDE_A)
@@ -146,7 +155,7 @@ def _set_in(session: Session, set_id: int) -> Set:
 
 def delete_set(actor: User, session_id: int, set_id: int, reason: str = "") -> None:
     """Soft delete: the set drops out of every read and can be restored from the history drawer."""
-    with events.locked(session_id) as session:
+    with _writable(session_id) as session:
         the_set = _set_in(session, set_id)
         the_set.deleted_at = timezone.now()
         the_set.deleted_by = actor
@@ -164,7 +173,7 @@ def delete_set(actor: User, session_id: int, set_id: int, reason: str = "") -> N
 
 
 def restore_set(actor: User, session_id: int, set_id: int) -> dict:
-    with events.locked(session_id) as session:
+    with _writable(session_id) as session:
         the_set = Set.all_objects.filter(
             session=session, pk=set_id, deleted_at__isnull=False
         ).first()
@@ -190,7 +199,7 @@ def _warp_calls(value: Any) -> list[str]:
 
 
 def patch_set(actor: User, session_id: int, set_id: int, **fields) -> dict:
-    with events.locked(session_id) as session:
+    with _writable(session_id) as session:
         the_set = _set_in(session, set_id)
         if "label" in fields:
             the_set.label = (fields["label"] or "").strip()[:60]
@@ -280,7 +289,7 @@ def put_ban(
     type_id: int | None,
     in_effect_from_round: int = 1,
 ) -> dict:
-    with events.locked(session_id) as session:
+    with _writable(session_id) as session:
         the_set = _set_in(session, set_id)
         ctx = derived.context_for(session)
         _check(side, Side, "side")
@@ -347,7 +356,7 @@ def _round_in(the_set: Set, round_no: int) -> Round:
 
 
 def add_round(actor: User, session_id: int, set_id: int) -> dict:
-    with events.locked(session_id) as session:
+    with _writable(session_id) as session:
         the_set = _set_in(session, set_id)
         last = the_set.rounds.order_by("-round_no").first()
         round_no = (last.round_no + 1) if last else 1
@@ -364,7 +373,7 @@ def add_round(actor: User, session_id: int, set_id: int) -> dict:
 
 def delete_round(actor: User, session_id: int, set_id: int, round_no: int) -> dict:
     """Soft delete of the last round; restore from the history drawer while no newer round exists."""
-    with events.locked(session_id) as session:
+    with _writable(session_id) as session:
         the_set = _set_in(session, set_id)
         rnd = _round_in(the_set, round_no)
         last = the_set.rounds.order_by("-round_no").first()
@@ -394,7 +403,7 @@ def round_restorable(the_set: Set, rnd: Round) -> bool:
 
 
 def restore_round(actor: User, session_id: int, set_id: int, round_no: int) -> dict:
-    with events.locked(session_id) as session:
+    with _writable(session_id) as session:
         the_set = _set_in(session, set_id)
         rnd = Round.all_objects.filter(
             set=the_set, round_no=round_no, deleted_at__isnull=False
@@ -425,7 +434,7 @@ def patch_round(
     outcome: Any = _UNSET,
     notes: Any = _UNSET,
 ) -> dict:
-    with events.locked(session_id) as session:
+    with _writable(session_id) as session:
         the_set = _set_in(session, set_id)
         rnd = _round_in(the_set, round_no)
         ctx = derived.context_for(session)
@@ -463,7 +472,7 @@ def _link_scripts(value: Any) -> list[str]:
 def patch_assignment(
     actor: User, session_id: int, set_id: int, round_no: int, side: str, slot_no: int, **fields
 ) -> dict:
-    with events.locked(session_id) as session:
+    with _writable(session_id) as session:
         the_set = _set_in(session, set_id)
         ctx = derived.context_for(session)
         a = _assignment(the_set, round_no, side, slot_no)
@@ -533,7 +542,7 @@ def paste_opp_lineup(
     actor: User, session_id: int, set_id: int, round_no: int, text: str
 ) -> tuple[dict, list[str]]:
     """Ten hull names from chat, one per line (or comma separated), into the opponent's slots in order."""
-    with events.locked(session_id) as session:
+    with _writable(session_id) as session:
         the_set = _set_in(session, set_id)
         ctx = derived.context_for(session)
         rnd = _round_in(the_set, round_no)
