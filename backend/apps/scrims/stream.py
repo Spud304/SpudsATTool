@@ -49,7 +49,10 @@ def _replay(session_id: int, since: int) -> tuple[list[dict], int]:
                 "payload": {"reason": "too many events since last seen"},
             }
         ], current
-    return [events.as_message(e) for e in rows], current
+    # Resume from the last row actually read, not from `current`: an event committed between the
+    # two queries is not in `rows` but is already queued on the subscription, and must pass.
+    last = rows[-1].seq if rows else min(since, current)
+    return [events.as_message(e) for e in rows], last
 
 
 async def event_stream(

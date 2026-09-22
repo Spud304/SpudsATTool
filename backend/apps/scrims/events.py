@@ -35,6 +35,9 @@ def emit(session: Session, kind: str, payload: dict, actor=None) -> ChangeEvent:
     # Atomic increment: a caller may hold a stale copy of the row, so never write the in-memory value.
     Session.objects.filter(pk=session.pk).update(event_seq=F("event_seq") + 1)
     session.refresh_from_db(fields=["event_seq"])
+    if kind == KIND_SET:
+        # Stamped so a client can tell a late copy of this set (a slow reply) from a newer one.
+        payload["set"]["seq"] = session.event_seq
     event = ChangeEvent.objects.create(
         session=session,
         seq=session.event_seq,
@@ -45,7 +48,9 @@ def emit(session: Session, kind: str, payload: dict, actor=None) -> ChangeEvent:
     # The stream replays at most 500 events; older ones are dead weight (each carries a set document).
     ChangeEvent.objects.filter(session=session, seq__lt=event.seq - 500).delete()
     message = as_message(event)
-    transaction.on_commit(lambda: broker.get_broker().publish(session.pk, message))
+    # Robust: the write has committed, so a broker outage must not turn it into a 500 (and a
+    # retried duplicate). Open pages catch up from the replay when they reconnect.
+    transaction.on_commit(lambda: broker.get_broker().publish(session.pk, message), robust=True)
     return event
 
 

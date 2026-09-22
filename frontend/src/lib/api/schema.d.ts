@@ -2358,6 +2358,8 @@ export interface components {
         SetDocOut: {
             /** Id */
             id: number;
+            /** Seq */
+            seq: number;
             /** Index */
             index: number;
             /** Label */

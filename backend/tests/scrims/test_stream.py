@@ -175,3 +175,31 @@ async def test_member_access_is_read_fresh(scrim, captain, viewer):
     membership.role = await sync_to_async(roles.by_slug)("guest")
     await sync_to_async(membership.save)()
     assert not await sync_to_async(_member_can_view)(viewer.pk, scrim.pk)
+
+
+@pytest.mark.django_db
+def test_replay_resumes_from_the_last_row_read(scrim, captain):
+    from apps.scrims.stream import _replay
+
+    for _ in range(3):
+        events.notify(scrim.pk, events.KIND_SESSION, captain)
+    # Event 3 committing between the replay's two queries looks like this: not in the rows,
+    # already counted in event_seq. It arrives on the subscription and must not be skipped.
+    ChangeEvent.objects.filter(session=scrim, seq=3).delete()
+    replayed, last = _replay(scrim.pk, 0)
+    assert [m["seq"] for m in replayed] == [1, 2] and last == 2
+    assert _replay(scrim.pk, 5) == ([], 3)  # a client ahead of the server resumes at the server
+
+
+@pytest.mark.django_db
+def test_a_broker_outage_does_not_fail_a_committed_write(
+    scrim, captain, monkeypatch, django_capture_on_commit_callbacks
+):
+    class Down:
+        def publish(self, session_id, message):
+            raise ConnectionError("redis is down")
+
+    monkeypatch.setattr(broker, "get_broker", lambda: Down())
+    with django_capture_on_commit_callbacks(execute=True):
+        doc = sets.create_set(captain, scrim.pk)
+    assert doc["seq"] == ChangeEvent.objects.get(session=scrim).seq

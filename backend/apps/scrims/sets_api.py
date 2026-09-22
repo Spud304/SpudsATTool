@@ -115,6 +115,7 @@ class RecordOut(Schema):
 
 class SetDocOut(Schema):
     id: int
+    seq: int  # the session event_seq this document is current as of
     index: int
     label: str
     comp_id: int | None
@@ -428,6 +429,7 @@ def leave(request: HttpRequest, session_id: int):
 
 def set_documents(session: Session) -> list[dict]:
     """Every set of a session as documents; used by the session detail endpoint."""
+    seq = session.event_seq  # read before the sets, so a set can only be newer than it says
     ctx = derived.context_for(session)
     qs = session.sets.select_related("comp").prefetch_related(*derived.SET_PREFETCH)
-    return [derived.set_document(ctx, s) for s in qs]
+    return [{**derived.set_document(ctx, s), "seq": seq} for s in qs]

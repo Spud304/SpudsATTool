@@ -42,7 +42,11 @@ export function useScrimStream(sessionId: number, enabled: boolean, options: Str
     const on = (kind: string, handler: (msg: Message) => void) =>
       source.addEventListener(kind, (event) => {
         alive()
-        handler(JSON.parse((event as MessageEvent).data) as Message)
+        const msg = JSON.parse((event as MessageEvent).data) as Message
+        handler(msg)
+        // After the handler: upsertSet compares a new set against the position before this event.
+        const seq = msg.seq
+        if (seq != null) qc.setQueryData<SessionOut>(key, (old) => (old && seq > old.event_seq ? { ...old, event_seq: seq } : old))
       })
     source.onopen = alive
     source.onerror = () => setStatus('offline')

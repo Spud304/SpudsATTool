@@ -316,7 +316,10 @@ export function useOpponents(enabled = true) {
 export function useScrimMutations() {
   const qc = useQueryClient()
   const landed = (session: SessionOut) => {
-    qc.setQueryData(keys.scrim(session.id), session)
+    // A slow reply can be older than what the stream already applied; then fetch instead.
+    const held = qc.getQueryData<SessionOut>(keys.scrim(session.id))
+    if (held && held.event_seq > session.event_seq) qc.invalidateQueries({ queryKey: keys.scrim(session.id) })
+    else qc.setQueryData(keys.scrim(session.id), session)
     qc.invalidateQueries({ queryKey: ['scrims', 'list'] })
   }
   const path = (id: number) => ({ params: { path: { session_id: id } } })
@@ -386,10 +389,18 @@ export function useRosterMutations() {
 }
 
 /** Replace (or add) one set document inside the cached session; the stream and every set write use this. */
+/**
+ * Replace one set document. Replies and stream events race, so a copy older than the one held is
+ * dropped, and so is an unknown set no newer than the stream position (it was deleted since).
+ */
 export function upsertSet(session: SessionOut, doc: SetDoc): SessionOut {
   const idx = session.sets.findIndex((s) => s.id === doc.id)
-  const sets = idx === -1 ? [...session.sets, doc].sort((a, b) => a.index - b.index) : session.sets.map((s) => (s.id === doc.id ? doc : s))
-  return { ...session, sets }
+  if (idx === -1) {
+    if (doc.seq <= session.event_seq) return session
+    return { ...session, sets: [...session.sets, doc].sort((a, b) => a.index - b.index) }
+  }
+  if (session.sets[idx].seq >= doc.seq) return session
+  return { ...session, sets: session.sets.map((s) => (s.id === doc.id ? doc : s)) }
 }
 
 export function useSetMutations(sessionId: number) {
