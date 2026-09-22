@@ -152,3 +152,26 @@ def test_vocab_archetypes_and_clone(client, library_sde, imported_atxxii, login_
         client.get(f"/api/comps/{comp['id']}").json()["slots"][2]["default_fit_status"]
         == "inactive"
     )
+
+
+def test_slots_past_a_reduced_pilot_count_are_flagged_and_clearable(
+    client, library_sde, imported_atxxii, login_as
+):
+    ruleset, _ = imported_atxxii
+    login_as(role="theorycrafter")
+    comp = post(client, "/api/comps", {"name": "Big"}).json()
+    lineup = [at.RIFTER] * 8 + [RATTLESNAKE, at.RIFTER]
+    assert patch(client, f"/api/comps/{comp['id']}", {"slots": slots(*lineup)}).status_code == 200
+    ruleset.fielded_pilots = 8  # a re-imported rules revision
+    ruleset.save()
+
+    body = client.get(f"/api/comps/{comp['id']}").json()
+    assert [s["slot_no"] for s in body["slots"] if s["over_count"]] == [9, 10]
+    codes = [v["code"] for v in body["evaluation_detail"]["violations"]]
+    assert "SLOTS_OVER_COUNT" in codes and "WRONG_SLOT_COUNT" not in codes
+    # the editor still saves slots 1..8 while 9 and 10 wait to be cleared
+    resp = patch(client, f"/api/comps/{comp['id']}", {"slots": slots(*lineup[:8])})
+    assert resp.status_code == 200, resp.content
+    body = patch(client, f"/api/comps/{comp['id']}", {"clear_over_count": True}).json()
+    assert [s["slot_no"] for s in body["slots"]] == list(range(1, 9))
+    assert "SLOTS_OVER_COUNT" not in [v["code"] for v in body["evaluation_detail"]["violations"]]

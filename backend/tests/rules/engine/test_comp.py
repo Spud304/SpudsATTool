@@ -195,3 +195,14 @@ class TestUnique:
             at.SPEC, at.TABLE, at.HULLS, [SlotInput(1, at.RIFTER, is_unique=True)]
         )
         assert c.UNIQUE_NOT_UNIQUE_HULL in codes_of(result2)
+
+
+def test_slots_past_the_pilot_count_are_reported_and_do_not_fly():
+    ten = at.slots(*at.OF99_SET1)
+    extra = [SlotInput(11, at.RATTLESNAKE), SlotInput(12, None)]
+    result = evaluate_comp(at.SPEC, at.TABLE, at.HULLS, ten + extra)
+    over = next(v for v in result.violations if v.code == c.SLOTS_OVER_COUNT)
+    assert over.slot_nos == (11, 12) and over.severity == c.SEVERITY_ERROR
+    assert c.WRONG_SLOT_COUNT not in codes_of(result)
+    assert result.total_points == 200  # the Rattlesnake in slot 11 costs nothing
+    assert [s.slot_no for s in result.slots] == list(range(1, 11))

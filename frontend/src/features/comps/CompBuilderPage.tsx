@@ -33,8 +33,9 @@ type SlotState = {
   show_scripts: boolean
 }
 
+/** Slots past the ruleset's pilot count (it went down) are shown apart and cleared, never edited. */
 function fromComp(comp: CompOut): SlotState[] {
-  return comp.slots.map((s) => ({
+  return comp.slots.filter((s) => !s.over_count).map((s) => ({
     type_id: s.type_id,
     is_flagship: s.is_flagship,
     is_unique: s.is_unique,
@@ -198,6 +199,7 @@ function Builder({ comp }: { comp: CompOut }) {
       <ErrorText error={patchComp.error ?? cloneComp.error} />
       <div className="grid gap-4 xl:grid-cols-[1fr_380px]">
         <Panel title="Lineup">
+          <OverCount comp={comp} dirty={dirty} pending={patchComp.isPending} onClear={() => patchComp.mutate({ id: comp.id, body: { clear_over_count: true, reason: '' } })} />
           <datalist id="builder-hulls">{(ships.data ?? []).map((s) => <option key={s.type_id} value={s.name} />)}</datalist>
           <Table>
             <thead>
@@ -445,5 +447,26 @@ function StatusPanel({ comp }: { comp: CompOut }) {
       </div>
       <ErrorText error={patchComp.error} />
     </Panel>
+  )
+}
+
+
+function OverCount({ comp, dirty, pending, onClear }: { comp: CompOut; dirty: boolean; pending: boolean; onClear: () => void }) {
+  const over = comp.slots.filter((s) => s.over_count)
+  if (!over.length) return null
+  const n = comp.fielded_pilots
+  return (
+    <div className="mb-2 rounded border border-bad/40 bg-bad/10 p-2 text-body" data-testid="comp.overcount">
+      <p>
+        This ruleset now fields {n} pilots. Slot{over.length > 1 ? 's' : ''}{' '}
+        {over.map((s) => `${s.slot_no} (${s.ship_name ?? 'empty'})`).join(', ')} {over.length > 1 ? 'do' : 'does'} not fly and make the comp illegal.
+        Move any ship you want to keep into slots 1 to {n} and save, then clear them.
+      </p>
+      {comp.can_edit ? (
+        <Button className="mt-1" data-testid="comp.overcount.clear" disabled={dirty || pending} title={dirty ? 'save your changes first' : ''} onClick={onClear}>
+          Clear slots past {n}
+        </Button>
+      ) : null}
+    </div>
   )
 }

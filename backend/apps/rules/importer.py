@@ -81,8 +81,9 @@ def resolve_names(doc: RulesetDocument) -> Resolved:
     hull_names = {s.hull for s in doc.ships} | set(doc.banned_hulls) | set(doc.unique_hulls)
     for limit in doc.group_limits:
         hull_names |= {m.hull for m in limit.members if m.hull}
-    if doc.point_table:
-        hull_names |= {o.hull for o in doc.point_table.hull_overrides}
+    for table in (doc.point_table, doc.kill_table):
+        if table:
+            hull_names |= {o.hull for o in table.hull_overrides}
     ships = EveType.objects.filter(
         published=True, removed=False, group__category_id=sde.CATEGORY_SHIP
     )
@@ -454,17 +455,27 @@ def _write(doc, effective, plans, resolved, report, replace_points, new_hash) ->
     if removed_count:
         report.warn(f"{removed_count} ruleset ship(s) removed (no longer in the document)")
 
-    if doc.point_table is not None:
-        _write_points(
-            ruleset, doc, effective, classes, resolved, report, replace_points, TablePurpose.COST
-        )
-    if doc.kill_table is not None:
-        _write_points(
-            ruleset, doc, effective, classes, resolved, report, replace_points, TablePurpose.KILL
-        )
+    for table, purpose in (
+        (doc.point_table, TablePurpose.COST),
+        (doc.kill_table, TablePurpose.KILL),
+    ):
+        if table is not None:
+            _write_points(
+                ruleset, doc, effective, classes, resolved, report, replace_points, purpose
+            )
+        else:
+            # A table the document dropped stops being current; old versions stay for pinned matches.
+            dropped = ruleset.point_versions.filter(purpose=purpose, is_current=True).update(
+                is_current=False
+            )
+            if dropped:
+                report.warn(f"{purpose} table: no longer in the document, marked not current")
 
+    # Every module-rule table is cleared first, so a document without module_rules leaves none behind.
     ruleset.module_rules.all().delete()
     ruleset.banned_module_types.all().delete()
+    ruleset.banned_module_groups.all().delete()
+    ruleset.module_name_patterns.all().delete()
     if doc.module_rules is not None:
         mr = doc.module_rules
         default = ModuleRule.objects.create(
@@ -499,11 +510,9 @@ def _write(doc, effective, plans, resolved, report, replace_points, new_hash) ->
         BannedModuleType.objects.bulk_create(
             BannedModuleType(ruleset=ruleset, type=resolved.types[n]) for n in mr.banned_types
         )
-        ruleset.banned_module_groups.all().delete()
         BannedModuleGroup.objects.bulk_create(
             BannedModuleGroup(ruleset=ruleset, group=resolved.groups[g]) for g in mr.banned_groups
         )
-        ruleset.module_name_patterns.all().delete()
         ModuleNamePattern.objects.bulk_create(
             [
                 ModuleNamePattern(

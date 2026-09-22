@@ -62,7 +62,7 @@ Shipped documents live in `backend/fixtures/rulesets/`: `atxxii.yaml`, `atxxi.ya
 
 ## `stages[]`
 
-`{ code, label, best_of (1|3|5|7), bans_per_side, ban_order, blind, ban_targets (hull|class), deadline_minutes, avalanche: { loser, winner, blind, persists }, flagship_uses }`. `ban_order` is a string of `A` and `B` with exactly `bans_per_side` of each; `A` is the side that bans first. AT XXII main bracket: `ABBAABAB`. `avalanche` is only allowed in a best-of series.
+`{ code, label, best_of (1|3|5|7), bans_per_side, ban_order, blind, ban_targets (hull|class), deadline_minutes, avalanche: { loser, winner, blind, persists }, flagship_uses }`. `ban_order` is a string of `A` and `B` with exactly `bans_per_side` of each; `A` is the side that bans first. AT XXII main bracket: `ABBAABAB`. `avalanche` is only allowed in a best-of series. `flagship_uses` is how many matches of the series a flagship may be fielded in: AT XXII allows it in every main-tournament match until destroyed, so bracket and final carry their `best_of`, and prelims 0 (flagships banned there).
 
 ## `ship_classes[]` and `ships[]`
 
@@ -98,7 +98,7 @@ How a fit is checked (`apps/rules/engine/modules.py`):
 - Every EFT line (modules, charges, drones, implants, cargo) is resolved to an SDE type; unknown names are `UNRESOLVED_ITEM` warnings and never make a fit illegal.
 - `allowed_name_patterns` first: a match is legal and skips the rest. Then `banned_name_patterns` and `banned_types` → `BANNED_TYPE` error; `banned_groups` (whole SDE groups, e.g. `Booster` for drugs) → `BANNED_GROUP` error.
 - `default.allowed_meta_groups` applies to **modules and drones only**. Charges, implants, subsystems and deployables are checked only by `by_group` entries that name them.
-- A `by_group` entry with `allowed_meta_groups` replaces the default set for its groups or categories. With the flagship toggle on, `flagship.allowed_meta_groups` is added on top (for every family when `groups` is empty). Meta group misses are `META_GROUP_NOT_ALLOWED` errors.
+- A `by_group` entry with `allowed_meta_groups` replaces the default set for its groups or categories. With the flagship toggle on, `flagship.allowed_meta_groups` is added on top (for every family when `groups` is empty, which would include drones; the AT XXII document lists the families the rules post names as SDE groups). Meta group misses are `META_GROUP_NOT_ALLOWED` errors.
 - `max_meta_level` compares against the SDE `metaLevel`. Hardwiring implants have none, so the grade digit in the name is used (`EE-603` is 3, which is what CCP means by Meta 3). `hulls: bonused_only` misses are warnings until hull bonuses are checked. Elsewhere `META_LEVEL_TOO_HIGH` is an error; a missing level is `META_LEVEL_UNKNOWN`.
 
 ## Minimal example

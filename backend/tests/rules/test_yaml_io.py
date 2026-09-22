@@ -93,3 +93,24 @@ def test_points_hash_ignores_metadata_and_order():
         == yaml_io.points_hash(reordered)
     )
     assert yaml_io.points_hash(doc) != yaml_io.points_hash(changed)
+
+
+def test_group_limit_class_must_be_listed():
+    bad = MINI_ATXXII.replace(
+        "members: [{ hull_size: LC, weight: 2 }, { hull_size: LF, weight: 1 }]",
+        "members: [{ class: Nope, weight: 2 }]",
+    )
+    with pytest.raises(DocumentInvalid) as exc:
+        load_ruleset_document(bad)
+    assert "class 'Nope' is not in ship_classes" in str(exc.value)
+
+
+def test_shipped_documents_are_valid():
+    from pathlib import Path
+
+    from django.conf import settings
+
+    shipped = sorted((Path(settings.BASE_DIR) / "fixtures" / "rulesets").glob("*.yaml"))
+    assert shipped
+    for path in shipped:
+        load_ruleset_document(path.read_text(encoding="utf-8"))

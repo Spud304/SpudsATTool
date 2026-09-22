@@ -1,4 +1,4 @@
-"""Bump Ruleset.revision whenever a child row changes, so cached engine inputs invalidate."""
+"""Bump Ruleset.revision whenever the ruleset or a child row changes, so cached engine inputs invalidate."""
 
 from django.db.models import F
 from django.db.models.signals import m2m_changed, post_delete, post_save
@@ -10,6 +10,7 @@ from .models import (
     GroupLimit,
     GroupLimitMember,
     HullSizeRule,
+    ModuleNamePattern,
     ModuleRule,
     PointTableEntry,
     PointTableVersion,
@@ -56,6 +57,7 @@ _CHILD_MODELS = (
     ModuleRule,
     BannedModuleType,
     BannedModuleGroup,
+    ModuleNamePattern,
     TextSection,
 )
 
@@ -65,6 +67,12 @@ for _model in _CHILD_MODELS:
     @receiver(post_delete, sender=_model, weak=False)
     def _on_child_change(sender, instance, **kwargs):
         bump_revision(_ruleset_id_of(instance))
+
+
+@receiver(post_save, sender=Ruleset, weak=False)
+def _on_ruleset_save(sender, instance, **kwargs):
+    # The ruleset's own knobs (point cap, max same hull, flagship flags) feed the cached spec too.
+    bump_revision(instance.pk)
 
 
 @receiver(m2m_changed, sender=Ruleset.flagship_eligible_meta_groups.through, weak=False)

@@ -1986,6 +1986,8 @@ export interface components {
             ship_note: string;
             /** Link Scripts */
             link_scripts: string[];
+            /** Over Count */
+            over_count: boolean;
         };
         /** CompCreateIn */
         CompCreateIn: {
@@ -2086,6 +2088,8 @@ export interface components {
             ban_theory?: string | null;
             /** Slots */
             slots?: components["schemas"]["CompSlotIn"][] | null;
+            /** Clear Over Count */
+            clear_over_count?: boolean | null;
             /**
              * Reason
              * @default

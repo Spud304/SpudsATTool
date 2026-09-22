@@ -61,8 +61,8 @@ group_limits:
   - {hull_size: LF, weight: 1}
 stages:
 - {code: prelim, label: Swiss preliminaries, best_of: 1, bans_per_side: 3, ban_order: ABBAAB, blind: false, ban_targets: hull, flagship_uses: 0}
-- {code: bracket, label: Finals bracket, best_of: 3, bans_per_side: 4, ban_order: ABBAABAB, blind: false, ban_targets: hull, avalanche: {loser: 2, winner: 1, blind: true, persists: true}, flagship_uses: 1}
-- {code: final, label: Grand final, best_of: 5, bans_per_side: 4, ban_order: ABBAABAB, blind: false, ban_targets: hull, avalanche: {loser: 2, winner: 1, blind: true, persists: true}, flagship_uses: 2}
+- {code: bracket, label: Finals bracket, best_of: 3, bans_per_side: 4, ban_order: ABBAABAB, blind: false, ban_targets: hull, avalanche: {loser: 2, winner: 1, blind: true, persists: true}, flagship_uses: 3}
+- {code: final, label: Grand final, best_of: 5, bans_per_side: 4, ban_order: ABBAABAB, blind: false, ban_targets: hull, avalanche: {loser: 2, winner: 1, blind: true, persists: true}, flagship_uses: 5}
 ship_classes:
 - {name: 'Rattlesnake (Battleship, Pirate Faction)', size: BS, points: 53}
 - {name: 'Barghest (Battleship, Pirate Faction)', size: BS, points: 53}
@@ -538,13 +538,69 @@ module_rules:
   banned_groups: [Booster]
   allowed_name_patterns: ["Cerebral Accelerator$", "^Basic Glamourex Booster$"]
   banned_name_patterns: ["^'(Augmented|Integrated)'\\s", "-\\d{3}-I$"]
-  flagship: {allowed_meta_groups: [Deadspace, Faction, Officer, Storyline, Tech I, Tech II], groups: []}
+  flagship:
+    allowed_meta_groups: [Deadspace, Faction, Officer, Storyline, Tech I, Tech II]
+    # The module families the rules post lists (2026-09-22), as SDE groups. Drones are not among them.
+    groups:
+    - Energy Weapon
+    - Hybrid Weapon
+    - Projectile Weapon
+    - Precursor Weapon
+    - Vorton Projector
+    - Missile Launcher Light
+    - Missile Launcher Rapid Light
+    - Missile Launcher Heavy
+    - Missile Launcher Heavy Assault
+    - Missile Launcher Rapid Heavy
+    - Missile Launcher Cruise
+    - Missile Launcher Torpedo
+    - Missile Launcher Rapid Torpedo
+    - Missile Launcher Rocket
+    - Stasis Web
+    - Smart Bomb
+    - Propulsion Module
+    - Micro Jump Drive
+    - Warp Scrambler
+    - Stasis Grappler
+    - Target Painter
+    - Sensor Booster
+    - Signal Amplifier
+    - Overdrive Injector System
+    - Nanofiber Internal Structure
+    - Inertial Stabilizer
+    - Ballistic Control System
+    - Gyrostabilizer
+    - Heat Sink
+    - Magnetic Field Stabilizer
+    - Entropic Radiation Sink
+    - Vorton Projector Upgrade
+    - Tracking Enhancer
+    - Missile Guidance Enhancer
+    - Drone Damage Modules
+    - Drone Tracking Modules
+    - Drone Tracking Enhancer
+    - Drone Navigation Computer
+    - Drone Control Range Module
+    - Armor Plate
+    - Shield Extender
+    - Damage Control
+    - Shield Booster
+    - Ancillary Shield Booster
+    - Armor Repair Unit
+    - Ancillary Armor Repairer
 text_sections:
 - heading: Flagship
-  body: One pre-declared T1, T2 or faction battleship (Bhaalgorn excluded). May fit faction, officer, COSMOS and deadspace versions of the listed module families; abyssal modules stay banned. One use per
-    Bo1 match, one per Bo3 round, two per Bo5. Permanently lost if destroyed. Immune to bans.
+  body: 'One pre-declared T1, T2 or faction battleship (Bhaalgorn excluded). Not allowed in the preliminaries; in the main tournament it may be fielded in any match
+    until destroyed, then never again. Immune to bans. May fit faction, officer, COSMOS and deadspace versions of the listed module families (turrets and launchers,
+    webs, smartbombs, prop mods and MJDs, points and grapplers, target painters, sensor boosters and signal amplifiers, overdrives, nanofibers and inertial stabilizers,
+    weapon and drone upgrades, plates and extenders, damage controls); abyssal modules stay banned. Of the repair modules only ONE shield booster (ancillary or not)
+    or up to TWO armor repairers may ignore meta restrictions: that count is not machine-checked.'
+- heading: Uniques
+  body: 'Geri, Bestla, Cybele, Shapash, Cobra, Sidewinder, Skua and Anhinga, main tournament only. Regular fitting rules, at most one fielded at a time. Once per
+    Bo1 match; once per Bo3 series (used in round 1, it cannot come back in round 2 or 3); twice per Bo5. Declaring one gives the opponent two extra bans (one regular, one on uniques).'
+
   source_url: https://www.eveonline.com/news/view/alliance-tournament-xxii-rules-and-regulations
 - heading: Ships and modules (not machine-checked)
   body: 'Max 3 of any hull size, battleships max 2 (flagship exempt). T2 rigs banned. Ancillary shield boosters max 1 per ship. ECM only on ECM-bonused hulls. Battleships: one armor plate or two shield
-    extenders. Pirate faction ammunition banned; navy faction ammo and boosters allowed. Under-fielded points count for the opponent.'
+    extenders. Pirate faction ammunition banned; navy faction ammo, missiles and capacitor booster charges allowed. Under-fielded points count for the opponent.'
   source_url: https://www.eveonline.com/news/view/alliance-tournament-xxii-rules-and-regulations

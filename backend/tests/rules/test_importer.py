@@ -226,3 +226,58 @@ def test_invalid_pattern_is_a_document_error():
     with pytest.raises(DocumentInvalid) as exc:
         load_ruleset_document(bad)
     assert "not a valid regex" in str(exc.value)
+
+
+def test_editing_the_ruleset_row_invalidates_the_cached_spec(imported_atxxii):
+    ruleset, _ = imported_atxxii
+    assert adapters.engine_inputs_for(ruleset).spec.point_cap == 200  # cached
+    ruleset.point_cap = 190  # what a Django admin edit does
+    ruleset.save()
+    fresh = Ruleset.objects.get(pk=ruleset.pk)
+    assert adapters.engine_inputs_for(fresh).spec.point_cap == 190
+
+
+def test_dropping_module_rules_clears_every_module_table(imported_atxxii):
+    ruleset, _ = imported_atxxii
+    assert ruleset.banned_module_groups.exists()
+    start = MINI_ATXXII.index("module_rules:")
+    end = MINI_ATXXII.index("text_sections:")
+    import_ruleset(
+        load_ruleset_document(MINI_ATXXII[:start] + MINI_ATXXII[end:]),
+        report=ImportReport(source="no modules"),
+    )
+    assert not ruleset.module_rules.exists()
+    assert not ruleset.banned_module_groups.exists()
+    assert not ruleset.module_name_patterns.exists()
+
+
+def _without_points(text: str) -> str:
+    text = text.replace(
+        "point_table:\n  label: Test table\n  hull_overrides: []\n", "point_table: null\n"
+    )
+    for points in (53, 33, 25, 21, 19, 18, 15, 12, 10, 7, 3):
+        text = text.replace(f", points: {points} }}", " }")
+    return text
+
+
+def test_dropping_the_point_table_retires_it(imported_atxxii):
+    ruleset, _ = imported_atxxii
+    report = ImportReport(source="no points")
+    import_ruleset(load_ruleset_document(_without_points(MINI_ATXXII)), report=report)
+    assert not ruleset.point_versions.filter(purpose="cost", is_current=True).exists()
+    assert ruleset.point_versions.filter(purpose="cost").count() == 1  # kept for history
+    assert any("marked not current" in w for w in report.warnings)
+    with pytest.raises(adapters.NoPointTable):
+        adapters.engine_inputs_for(Ruleset.objects.get(pk=ruleset.pk))
+    load_ruleset_document(export_ruleset(Ruleset.objects.get(pk=ruleset.pk)))  # still valid
+
+
+def test_kill_table_overrides_resolve_their_hulls(tiny_sde):
+    text = MINI_ATXXII.replace(
+        "ships_inference: prefix", "ships_inference: prefix\n  kill_points_source: kill_table"
+    ) + (
+        "kill_table:\n  classes: [{ name: Frigate, points: 5 }]\n  hull_overrides: [{ hull: Zealot, points: 30 }]\n"
+    )
+    ruleset = import_ruleset(load_ruleset_document(text), report=ImportReport(source="kill"))
+    kill = ruleset.point_versions.get(purpose="kill", is_current=True)
+    assert kill.entries.filter(ship__name="Zealot", points=30).exists()

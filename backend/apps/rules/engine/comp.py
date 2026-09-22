@@ -77,6 +77,19 @@ def evaluate_comp(
             flags[n].append(code)
 
     ordered = sorted(slots, key=lambda s: s.slot_no)
+    # Slots numbered past the pilot count do not fly: they are reported, then left out of the
+    # count, points and every other check.
+    over = [s.slot_no for s in ordered if s.slot_no > spec.fielded_pilots]
+    if over:
+        violate(
+            codes.SLOTS_OVER_COUNT,
+            codes.SEVERITY_ERROR,
+            f"slot(s) {', '.join(map(str, over))} are past this ruleset's "
+            f"{spec.fielded_pilots} pilots; clear them in the comp editor",
+            over,
+            fielded=spec.fielded_pilots,
+        )
+        ordered = [s for s in ordered if s.slot_no <= spec.fielded_pilots]
     slot_nos = [s.slot_no for s in ordered]
     if len(ordered) != spec.fielded_pilots or slot_nos != list(range(1, spec.fielded_pilots + 1)):
         violate(

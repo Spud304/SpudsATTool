@@ -50,6 +50,7 @@ class CompSlotOut(Schema):
     default_fit_speed_ms: float | None
     ship_note: str
     link_scripts: list[str]
+    over_count: bool  # past the ruleset's pilot count (it went down); does not fly
 
 
 class CompEvalSummaryOut(Schema):
@@ -113,6 +114,7 @@ class CompPatchIn(Schema):
     notes: str | None = None
     ban_theory: str | None = None
     slots: list[CompSlotIn] | None = None
+    clear_over_count: bool | None = None  # delete the slots past the ruleset's pilot count
     reason: str = ""
 
 
@@ -215,7 +217,7 @@ def _summary(comp: Comp, banned: tuple[int, ...] = ()) -> tuple[dict, CompEvalua
     }, evaluation
 
 
-def _slot_out(slot) -> dict:
+def _slot_out(slot, fielded: int) -> dict:
     fit = slot.default_fit
     return {
         "slot_no": slot.slot_no,
@@ -233,6 +235,7 @@ def _slot_out(slot) -> dict:
         "default_fit_speed_ms": fit.speed_ms if fit else None,
         "ship_note": slot.ship_note,
         "link_scripts": list(slot.link_scripts or []),
+        "over_count": slot.slot_no > fielded,
     }
 
 
@@ -244,7 +247,7 @@ def _full(comp: Comp, user: User) -> dict:
         "ban_theory": comp.ban_theory,
         "fielded_pilots": comp.ruleset.fielded_pilots,
         "flagship_enabled": comp.ruleset.flagship_enabled,
-        "slots": [_slot_out(s) for s in comp.slots.all()],
+        "slots": [_slot_out(s, comp.ruleset.fielded_pilots) for s in comp.slots.all()],
         "evaluation_detail": asdict(evaluation) if evaluation is not None else None,
         "reviewed_by_name": comp.reviewed_by.display_name if comp.reviewed_by else "",
         "reviewed_at": comp.reviewed_at.isoformat() if comp.reviewed_at else None,
@@ -410,6 +413,7 @@ def patch_comp(request: HttpRequest, comp_id: int, payload: CompPatchIn):
             notes=payload.notes,
             ban_theory=payload.ban_theory,
             slots=slots,
+            clear_over_count=bool(payload.clear_over_count),
             reason=payload.reason,
         )
     )

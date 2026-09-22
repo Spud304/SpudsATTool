@@ -209,6 +209,7 @@ def update_comp(
     notes: str | None = None,
     ban_theory: str | None = None,
     slots: list[SlotPatch] | None = None,
+    clear_over_count: bool = False,
     reason: str = "",
 ) -> Comp:
     before = _snapshot(comp)
@@ -233,6 +234,10 @@ def update_comp(
             comp.save()
             if slots is not None:
                 changed_slots = _validate_slots(comp, slots)
+            if clear_over_count:
+                over = comp.slots.filter(slot_no__gt=comp.ruleset.fielded_pilots)
+                changed_slots += list(over.values_list("slot_no", flat=True))
+                over.delete()
     except IntegrityError as exc:
         raise CompError(409, f"{comp.ruleset.code} already has a comp named {comp.name!r}") from exc
     after = _snapshot(comp)

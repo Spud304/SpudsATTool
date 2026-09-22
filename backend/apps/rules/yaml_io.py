@@ -283,6 +283,12 @@ class RulesetDocument(_Base):
         for name in _duplicates(class_names):
             problems.append(f"ship_classes: {name!r} listed more than once")
         class_set = set(class_names)
+        for i, limit in enumerate(self.group_limits):
+            for j, member in enumerate(limit.members):
+                if member.class_ is not None and member.class_ not in class_set:
+                    problems.append(
+                        f"group_limits[{i}].members[{j}]: class {member.class_!r} is not in ship_classes"
+                    )
         for i, cls in enumerate(self.ship_classes):
             if cls.size not in known:
                 problems.append(f"ship_classes[{i}]: size {cls.size} is not in hull_sizes")

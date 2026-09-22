@@ -35,6 +35,7 @@ SEVERITY_INFO = "info"
 
 # Violation codes
 WRONG_SLOT_COUNT = "WRONG_SLOT_COUNT"
+SLOTS_OVER_COUNT = "SLOTS_OVER_COUNT"  # left over after the ruleset's pilot count went down
 EMPTY_SLOT = "EMPTY_SLOT"
 UNLISTED_HULL = "UNLISTED_HULL"
 ILLEGAL_HULL = "ILLEGAL_HULL"
