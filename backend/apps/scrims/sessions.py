@@ -1,4 +1,4 @@
-"""Scrim sessions and attendance. Sets, rounds and the live stream arrive in part B."""
+"""Scrim sessions and attendance: header edits, archiving, RSVP and roll call."""
 
 from datetime import datetime, timedelta
 
@@ -128,69 +128,78 @@ def _require_not_archived(session: Session) -> None:
 
 
 def update_session(actor: User, session: Session, **fields) -> Session:
-    _require_not_archived(session)
-    before = _snapshot(session)
-    if "title" in fields:
-        title = (fields.pop("title") or "").strip()[:120]
-        if not title:
-            raise ScrimError(422, "title is required")
-        session.title = title
-    if "kind" in fields:
-        session.kind = _check_choices(fields.pop("kind"), SessionKind, "kind")
-    if "default_our_side" in fields:
-        side = fields.pop("default_our_side") or ""
-        session.default_our_side = _check_choices(side, Side, "side") if side else ""
-    if "opponent_id" in fields:
-        session.opponent = _opponent(fields.pop("opponent_id"))
-    if "stage_code" in fields:
-        session.stage = _stage(session.ruleset, fields.pop("stage_code"))
-    for key, value in fields.items():
-        if key in ("system_name", "moveme_system"):
-            value = (value or "").strip()[:60]
-        setattr(session, key, value)
-    # Named fields only: the live stream owns `event_seq`, and this copy of the row may be stale.
-    session.save(
-        update_fields=[
-            "title",
-            "kind",
-            "default_our_side",
-            "opponent",
-            "stage",
-            "system_name",
-            "moveme_system",
-            "motd",
-            "date",
-            "updated_at",
-        ]
-    )
-    after = _snapshot(session)
-    diff = {k: (before[k], after[k]) for k in before if before[k] != after[k]}
-    if diff or "motd" in fields:
-        record(
-            actor=actor,
-            scope=scope(session),
-            action="scrim.updated",
-            target=session,
-            before={k: v[0] for k, v in diff.items()},
-            after={k: v[1] for k, v in diff.items()},
-        )
-    events.notify(session.pk, events.KIND_SESSION, actor)
-    return session
+    # Under the session lock on a fresh row, writing only the fields sent: two captains editing
+    # the MotD and the title at once both keep their change.
+    with events.locked(session.pk) as row:
+        _require_not_archived(row)
+        before = _snapshot(row)
+        changed: list[str] = []
+
+        def put(field: str, value) -> None:
+            setattr(row, field, value)
+            changed.append(field)
+
+        if "title" in fields:
+            title = (fields.pop("title") or "").strip()[:120]
+            if not title:
+                raise ScrimError(422, "title is required")
+            put("title", title)
+        if "date" in fields:
+            date = fields.pop("date")
+            if date is None:
+                raise ScrimError(422, "date is required")
+            put("date", date)
+        if "kind" in fields:
+            put("kind", _check_choices(fields.pop("kind"), SessionKind, "kind"))
+        if "default_our_side" in fields:
+            side = fields.pop("default_our_side") or ""
+            put("default_our_side", _check_choices(side, Side, "side") if side else "")
+        if "opponent_id" in fields:
+            put("opponent", _opponent(fields.pop("opponent_id")))
+        if "stage_code" in fields:
+            stage = _stage(row.ruleset, fields.pop("stage_code"))
+            if stage != row.stage and row.sets.exists():
+                # Sets hold bans laid out for the old stage (count, order, avalanche).
+                raise ScrimError(409, "the stage is fixed once the scrim has sets")
+            put("stage", stage)
+        for key in ("system_name", "moveme_system"):
+            if key in fields:
+                put(key, (fields.pop(key) or "").strip()[:60])
+        if "motd" in fields:
+            put("motd", fields.pop("motd") or "")
+        if fields:
+            raise ScrimError(422, f"unknown fields {sorted(fields)}")
+        # Named fields only: the live stream owns `event_seq`.
+        row.save(update_fields=[*changed, "updated_at"])
+        after = _snapshot(row)
+        diff = {k: (before[k], after[k]) for k in before if before[k] != after[k]}
+        if diff or "motd" in changed:
+            record(
+                actor=actor,
+                scope=scope(row),
+                action="scrim.updated",
+                target=row,
+                before={k: v[0] for k, v in diff.items()},
+                after={k: v[1] for k, v in diff.items()},
+            )
+        events.emit(row, events.KIND_SESSION, {}, actor)
+    return row
 
 
 def archive_session(actor: User, session: Session, reason: str = "") -> Session:
-    if not session.is_archived:
-        session.is_archived = True
-        session.save(update_fields=["is_archived", "updated_at"])
-        record(
-            actor=actor,
-            scope=scope(session),
-            action="scrim.archived",
-            target=session,
-            reason=reason,
-        )
-    events.notify(session.pk, events.KIND_SESSION, actor)
-    return session
+    with events.locked(session.pk) as row:
+        if not row.is_archived:
+            row.is_archived = True
+            row.save(update_fields=["is_archived", "updated_at"])
+            record(
+                actor=actor,
+                scope=scope(row),
+                action="scrim.archived",
+                target=row,
+                reason=reason,
+            )
+        events.emit(row, events.KIND_SESSION, {}, actor)
+    return row
 
 
 def pilot_of(user: User) -> Pilot | None:
@@ -215,54 +224,58 @@ def set_rsvp(actor: User, session: Session, rsvp: str, reason: str = "") -> Sess
     if pilot is None:
         raise ScrimError(403, "your login is not linked to a pilot on the roster")
     _check_choices(rsvp, Rsvp, "rsvp")
-    if is_past(session) or session.is_archived:
-        raise ScrimError(409, "this scrim is over; RSVP is closed")
     reason = reason.strip()[:200]
     if rsvp == Rsvp.MAYBE and not reason:
         raise ScrimError(422, "say why when answering maybe")
-    row, _ = SessionAttendance.objects.get_or_create(session=session, pilot=pilot)
-    row.rsvp = rsvp
-    row.rsvp_reason = reason if rsvp in (Rsvp.MAYBE, Rsvp.NO) else ""
-    row.rsvp_at = timezone.now()
-    row.save(update_fields=["rsvp", "rsvp_reason", "rsvp_at"])
-    events.notify(session.pk, events.KIND_ATTENDANCE, actor)
+    # The session lock serialises RSVP and attendance writers, so get_or_create cannot race.
+    with events.locked(session.pk) as locked_session:
+        if is_past(locked_session) or locked_session.is_archived:
+            raise ScrimError(409, "this scrim is over; RSVP is closed")
+        row, _ = SessionAttendance.objects.get_or_create(session=session, pilot=pilot)
+        row.rsvp = rsvp
+        row.rsvp_reason = reason if rsvp in (Rsvp.MAYBE, Rsvp.NO) else ""
+        row.rsvp_at = timezone.now()
+        row.save(update_fields=["rsvp", "rsvp_reason", "rsvp_at"])
+        events.emit(locked_session, events.KIND_ATTENDANCE, {}, actor)
     return row
 
 
 def set_attendance(
     actor: User, session: Session, pilot: Pilot, attendance: str, reason: str = ""
 ) -> SessionAttendance:
-    _require_not_archived(session)
     _check_choices(attendance, Attendance, "attendance")
     reason = reason.strip()[:200]
-    row, _ = SessionAttendance.objects.get_or_create(session=session, pilot=pilot)
-    before = row.attendance
-    row.attendance = attendance
-    if attendance == Attendance.NO_SHOW:
-        if not reason:
-            raise ScrimError(422, "a reason is required to mark a no-show")
-        row.removed_by, row.removed_reason, row.removed_at = actor, reason, timezone.now()
-    elif before == Attendance.NO_SHOW:
-        row.removed_by, row.removed_reason, row.removed_at = None, "", None
-    row.save()
-    if attendance == Attendance.NO_SHOW:
-        record(
-            actor=actor,
-            scope=scope(session),
-            action="scrim.no_show_removed",
-            target=session,
-            reason=reason,
-            after={"pilot": pilot.name},
-        )
-    elif before != attendance:
-        record(
-            actor=actor,
-            scope=scope(session),
-            action="scrim.attendance_set",
-            target=session,
-            after={"pilot": pilot.name, "attendance": attendance},
-        )
-    events.notify(session.pk, events.KIND_ATTENDANCE, actor)
+    if attendance == Attendance.NO_SHOW and not reason:
+        raise ScrimError(422, "a reason is required to mark a no-show")
+    with events.locked(session.pk) as locked_session:
+        _require_not_archived(locked_session)
+        row, _ = SessionAttendance.objects.get_or_create(session=session, pilot=pilot)
+        before = row.attendance
+        row.attendance = attendance
+        if attendance == Attendance.NO_SHOW:
+            row.removed_by, row.removed_reason, row.removed_at = actor, reason, timezone.now()
+        elif before == Attendance.NO_SHOW:
+            row.removed_by, row.removed_reason, row.removed_at = None, "", None
+        # Not the RSVP columns: the pilot may be answering at the same moment.
+        row.save(update_fields=["attendance", "removed_by", "removed_reason", "removed_at"])
+        if attendance == Attendance.NO_SHOW:
+            record(
+                actor=actor,
+                scope=scope(session),
+                action="scrim.no_show_removed",
+                target=session,
+                reason=reason,
+                after={"pilot": pilot.name},
+            )
+        elif before != attendance:
+            record(
+                actor=actor,
+                scope=scope(session),
+                action="scrim.attendance_set",
+                target=session,
+                after={"pilot": pilot.name, "attendance": attendance},
+            )
+        events.emit(locked_session, events.KIND_ATTENDANCE, {}, actor)
     return row
 
 

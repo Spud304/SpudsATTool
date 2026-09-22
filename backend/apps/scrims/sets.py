@@ -9,7 +9,7 @@ from django.utils import timezone
 from apps.accounts.models import User
 from apps.audit.services import record
 from apps.library.constants import LINK_SCRIPTS
-from apps.library.models import Comp, CompSlot, Fit
+from apps.library.models import Archetype, Comp, CompSlot, Fit
 from apps.rules.engine.bans import avalanche_allocation
 from apps.rules.engine.codes import SIDE_A
 
@@ -213,7 +213,10 @@ def patch_set(actor: User, session_id: int, set_id: int, **fields) -> dict:
             the_set.warp_calls = _warp_calls(fields["warp_calls"])
         for key in ("our_archetype_id", "opp_archetype_id"):
             if key in fields:
-                setattr(the_set, key, fields[key])
+                value = fields[key]
+                if value is not None and not Archetype.objects.filter(pk=value).exists():
+                    raise ScrimError(422, f"unknown archetype {value}")
+                setattr(the_set, key, value)
         the_set.save()
         if "comp_id" in fields:
             _load_comp(session, the_set, fields["comp_id"])
@@ -266,7 +269,8 @@ def _load_comp(session: Session, the_set: Set, comp_id: int | None) -> None:
     if the_set.our_archetype_id is None and comp.archetype_id is not None:
         the_set.our_archetype_id = comp.archetype_id
     the_set.save(update_fields=["comp", "our_archetype"])
-    for rnd in the_set.rounds.all():
+    # Rounds already played keep the lineup they were fought with.
+    for rnd in the_set.rounds.filter(outcome=Outcome.NONE):
         for a in rnd.assignments.filter(side=LineupSide.US):
             slot = slots.get(a.slot_no)
             if slot is None or not a.load_default:
@@ -398,8 +402,10 @@ def delete_round(actor: User, session_id: int, set_id: int, round_no: int) -> di
 
 
 def round_restorable(the_set: Set, rnd: Round) -> bool:
-    """A deleted round comes back only while nothing newer is live: later rounds copy from it."""
-    return not the_set.rounds.filter(round_no__gt=rnd.round_no).exists()
+    """A deleted round comes back only as the next one after the last live round, so round
+    numbers stay without gaps and later rounds still follow the one they were copied from."""
+    last = the_set.rounds.order_by("-round_no").first()
+    return last is not None and rnd.round_no == last.round_no + 1
 
 
 def restore_round(actor: User, session_id: int, set_id: int, round_no: int) -> dict:
@@ -411,7 +417,7 @@ def restore_round(actor: User, session_id: int, set_id: int, round_no: int) -> d
         if rnd is None:
             raise ScrimError(404, f"set has no deleted round {round_no}")
         if not round_restorable(the_set, rnd):
-            raise ScrimError(409, "a newer round exists; remove it before restoring this one")
+            raise ScrimError(409, "restore rounds in order: only the next round after the last one")
         rnd.deleted_at = None
         rnd.deleted_by = None
         rnd.save(update_fields=["deleted_at", "deleted_by"])

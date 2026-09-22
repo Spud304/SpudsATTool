@@ -162,7 +162,9 @@ async def test_stream_ends_when_access_is_withdrawn(scrim, captain):
     with pytest.raises(StopAsyncIteration):
         for _ in range(10):
             frames.append(await asyncio.wait_for(anext(stream), 2))
-    assert calls == 2 and [parse(f)["kind"] for f in frames] == ["presence", "ping"]
+    kinds = [parse(f)["kind"] for f in frames]
+    # one or two pings depending on timer resolution, then the stream ends
+    assert calls == 2 and kinds[0] == "presence" and set(kinds[1:]) == {"ping"} and len(kinds) <= 3
 
 
 @pytest.mark.django_db(transaction=True)

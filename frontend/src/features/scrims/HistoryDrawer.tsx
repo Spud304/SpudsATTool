@@ -78,7 +78,7 @@ export function HistoryDrawer({
                     Set {r.set_index} R{r.round_no} <span className="text-muted">(by {r.deleted_by_name || 'unknown'} {whenAt(r.deleted_at)})</span>
                   </span>
                   {perms.manage ? (
-                    <Button className="h-6 px-2" disabled={restoring || !r.restorable} title={r.restorable ? '' : 'a newer round exists; remove it first'} onClick={() => onRestoreRound(r.set_id, r.round_no)} data-testid={`scrim.history.deleted.round.${r.set_id}.${r.round_no}.restore`}>
+                    <Button className="h-6 px-2" disabled={restoring || !r.restorable} title={r.restorable ? '' : 'restore the earlier deleted round first, or remove the newer one'} onClick={() => onRestoreRound(r.set_id, r.round_no)} data-testid={`scrim.history.deleted.round.${r.set_id}.${r.round_no}.restore`}>
                       Restore
                     </Button>
                   ) : null}

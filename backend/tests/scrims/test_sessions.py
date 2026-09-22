@@ -6,7 +6,8 @@ from django.utils import timezone
 from apps.audit.models import AuditLog
 from apps.rules.models import PointTableVersion
 from apps.scrims import roster, sessions
-from apps.scrims.models import Pilot, SessionAttendance
+from apps.scrims.models import Pilot, Session, SessionAttendance
+from apps.scrims.roster import ScrimError
 
 pytestmark = pytest.mark.django_db
 
@@ -108,5 +109,41 @@ def test_update_and_archive(imported_atxxii, captain, tonight):
     )
     entry = AuditLog.objects.get(action="scrim.updated")
     assert entry.before["title"] == "OF 99" and entry.after["side"] == "B"
-    sessions.archive_session(captain, session, "duplicate")
+    session = sessions.archive_session(captain, session, "duplicate")
     assert session.is_archived and AuditLog.objects.filter(action="scrim.archived").exists()
+
+
+def test_header_edits_keep_each_others_fields(imported_atxxii, captain, tonight):
+    session = sessions.create_session(captain, title="OF 99", date=tonight)
+    stale = Session.objects.get(pk=session.pk)  # a second captain loaded the page earlier
+    sessions.update_session(captain, session, motd="bring links")
+    sessions.update_session(captain, stale, title="OF 99 v2")
+    session.refresh_from_db()
+    assert session.title == "OF 99 v2" and session.motd == "bring links"
+    with pytest.raises(ScrimError) as err:
+        sessions.update_session(captain, session, date=None)
+    assert err.value.status == 422
+    sessions.update_session(captain, session, motd=None)
+    session.refresh_from_db()
+    assert session.motd == ""
+
+
+def test_attendance_does_not_overwrite_a_fresh_rsvp(imported_atxxii, captain, pilot, tonight):
+    session = sessions.create_session(captain, title="OF 99", date=tonight)
+    who = Pilot.objects.get(user=pilot)
+    SessionAttendance.objects.filter(session=session, pilot=who).update(rsvp="yes")
+    # the roll call row the captain holds still says "none"; only attendance is written
+    sessions.set_attendance(captain, session, who, "present")
+    row = SessionAttendance.objects.get(session=session, pilot=who)
+    assert row.rsvp == "yes" and row.attendance == "present"
+
+
+def test_stage_is_fixed_once_sets_exist(scrim, captain):
+    from apps.scrims import sets
+
+    sessions.update_session(captain, scrim, stage_code="prelim")  # no sets yet: allowed
+    sets.create_set(captain, scrim.pk)
+    with pytest.raises(ScrimError) as err:
+        sessions.update_session(captain, scrim, stage_code="bracket")
+    assert err.value.status == 409
+    sessions.update_session(captain, scrim, stage_code="prelim", title="same stage is fine")

@@ -1,8 +1,8 @@
 """The session-level write lock and the append-only event log behind the live stream.
 
-Every scrim mutation runs inside `locked(session_id)`, which takes a row lock on the Session so
-concurrent editors serialise; `emit()` then bumps `event_seq`, stores a `ChangeEvent` and publishes
-it to the broker once the transaction commits. Set events carry the whole set document (see
+Every scrim mutation (sets, header, archive, RSVP, attendance) runs inside `locked(session_id)`,
+which takes a row lock on the Session so concurrent editors serialise; `emit()` then bumps
+`event_seq`, stores a `ChangeEvent` and publishes it to the broker once the transaction commits. Set events carry the whole set document (see
 `derived.py`); header and attendance events carry nothing and tell clients to refetch.
 """
 
@@ -55,7 +55,7 @@ def emit(session: Session, kind: str, payload: dict, actor=None) -> ChangeEvent:
 
 
 def notify(session_id: int, kind: str, actor=None, payload: dict | None = None) -> None:
-    """For services that are not already holding the lock (RSVP, attendance, header edits)."""
+    """For a caller not already holding the lock, such as the roster attaching a pilot to scrims."""
     with locked(session_id) as session:
         emit(session, kind, payload or {}, actor)
 

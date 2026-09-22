@@ -62,14 +62,18 @@ def test_round_soft_delete_and_restore_rules(scrim, captain, theo):
         history["deleted_rounds"][0]["round_no"] == 3 and history["deleted_rounds"][0]["restorable"]
     )
 
-    # Delete round 2 too: round 3 now has a live round below it missing, and round 2 is the newer deletion.
+    # Delete round 2 too: only 2 can come back first, or the set would read [1, 3].
     sets.delete_round(captain, scrim.pk, set_id, 2)
     rounds = {r["round_no"]: r["restorable"] for r in history_document(scrim)["deleted_rounds"]}
-    assert rounds == {2: True, 3: True}
+    assert rounds == {2: True, 3: False}
+    with pytest.raises(ScrimError):
+        sets.restore_round(captain, scrim.pk, set_id, 3)
     doc = sets.restore_round(captain, scrim.pk, set_id, 2)
     assert [r["round_no"] for r in doc["rounds"]] == [1, 2] and doc["rounds"][1][
         "outcome"
     ] == "loss"
+    rounds = {r["round_no"]: r["restorable"] for r in history_document(scrim)["deleted_rounds"]}
+    assert rounds == {3: True}
 
     # Adding a fresh round 3 purges the deleted one; restoring it afterwards is refused.
     doc = sets.add_round(theo, scrim.pk, set_id)

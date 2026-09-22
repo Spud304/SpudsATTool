@@ -279,9 +279,25 @@ def test_an_archived_scrim_is_read_only(scrim, captain, pilot):
         lambda: sets.add_round(captain, scrim.pk, doc["id"]),
         lambda: sets.delete_set(captain, scrim.pk, doc["id"]),
         lambda: sessions.update_session(captain, scrim, title="renamed"),
-        lambda: sessions.set_attendance(captain, scrim, Pilot.objects.get(user=pilot), "attended"),
+        lambda: sessions.set_attendance(captain, scrim, Pilot.objects.get(user=pilot), "present"),
     ]
     for edit in edits:
         with pytest.raises(ScrimError) as err:
             edit()
         assert err.value.status == 409
+
+
+def test_loading_a_comp_leaves_fought_rounds_alone(scrim, captain, theo, of99_comp):
+    set_id = sets.create_set(captain, scrim.pk)["id"]
+    sets.patch_round(theo, scrim.pk, set_id, 1, outcome="loss")
+    sets.add_round(theo, scrim.pk, set_id)
+    doc = sets.patch_set(theo, scrim.pk, set_id, comp_id=of99_comp.pk)
+    assert slot(doc, 1, "us", 3)["type_id"] is None  # round 1 was fought with an empty slot
+    assert slot(doc, 2, "us", 3)["type_id"] == at.ABSOLUTION
+
+
+def test_unknown_archetype_is_a_422(scrim, captain):
+    set_id = sets.create_set(captain, scrim.pk)["id"]
+    with pytest.raises(ScrimError) as err:
+        sets.patch_set(captain, scrim.pk, set_id, our_archetype_id=999999)
+    assert err.value.status == 422
