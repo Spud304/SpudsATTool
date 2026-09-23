@@ -77,6 +77,12 @@ def upsert_character(identity: SsoIdentity, affiliation: dict | None = None) -> 
             if identity.owner_hash:
                 char.owner_hash = identity.owner_hash
             if identity.name:
+                # A user still named after this character (a placeholder from grant_admin, or an
+                # older name) follows the rename.
+                user = char.user
+                if user is not None and user.display_name == char.name != identity.name:
+                    user.display_name = identity.name
+                    user.save(update_fields=["display_name"])
                 char.name = identity.name
         if affiliation:
             char.corporation_id = affiliation.get("corporation_id")

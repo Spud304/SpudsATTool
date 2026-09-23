@@ -21,7 +21,9 @@ class Command(BaseCommand):
                 character_id=int(ref), defaults={"name": f"Character {ref}"}
             )
             if created:
-                self.stdout.write("character has not logged in yet; admin applies on first login")
+                self.stdout.write(
+                    "character has not logged in yet; it is admin now and its name fills in on first login"
+                )
         else:
             character = EveCharacter.objects.filter(name=ref).first()
             if character is None:

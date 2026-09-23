@@ -20,6 +20,13 @@ const csrf: Middleware = {
 export const api = createClient<paths>({ baseUrl: '', credentials: 'same-origin' })
 api.use(csrf)
 
+/** Logout is POST-only (a GET link could be triggered by any page); the server then redirects home. */
+export async function logout() {
+  const token = readCookie('csrftoken')
+  await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin', headers: token ? { 'X-CSRFToken': token } : {} })
+  window.location.assign('/')
+}
+
 export type Schemas = components['schemas']
 export type RulesetOut = Schemas['RulesetOut']
 export type ShipOut = Schemas['ShipOut']

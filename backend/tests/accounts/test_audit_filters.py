@@ -11,7 +11,7 @@ pytestmark = pytest.mark.django_db
 
 def test_filters_and_facets(client, team, admins, login_as):
     login_as(role=None)
-    client.get("/auth/logout")
+    client.post("/auth/logout")
     login_as(character_id=2, name="Cap", role="captain")
     cap = client.get("/api/me").json()
     record(actor=None, action="pilot.created", target_label="Fryon", after={"merc": True})
@@ -44,6 +44,6 @@ def test_filters_and_facets(client, team, admins, login_as):
     }  # the env admin acted through no request
     assert facets["actors"] == sorted(facets["actors"], key=lambda a: a["display_name"])
 
-    client.get("/auth/logout")
+    client.post("/auth/logout")
     login_as(character_id=3, name="Just A Pilot", role="pilot")
     assert client.get("/api/audit/facets").status_code == 403

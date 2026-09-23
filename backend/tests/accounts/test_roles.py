@@ -74,7 +74,7 @@ def test_admin_creates_a_role_and_its_members_follow(team, admins, client, login
     assert AuditLog.objects.filter(action="role.created").exists()
 
     # a member on the new role gets exactly those permissions
-    client.get("/auth/logout")
+    client.post("/auth/logout")
     login_as(character_id=31, name="Eyes", role="scout")
     caps = client.get("/api/me").json()["capabilities"]
     assert caps["view_scrims"] and caps["browse_library"] and not caps["rsvp"] and not caps["fly"]
@@ -84,7 +84,7 @@ def test_admin_creates_a_role_and_its_members_follow(team, admins, client, login
     assert Pilot.objects.filter(user__characters__character_id=31).count() == 0
 
     # granting fly creates the roster row for current members
-    client.get("/auth/logout")
+    client.post("/auth/logout")
     login_as(role=None)
     resp = patch(
         client,
@@ -123,9 +123,9 @@ def test_delete_reassigns_members_invites_and_rules(team, admins, client, login_
     login_as(role=None)
     scout = roles.create_role(None, name="Scout", permissions=["view_scrims"])
     pilot = roles.by_slug("pilot")
-    client.get("/auth/logout")
+    client.post("/auth/logout")
     login_as(character_id=41, name="Eyes", role="scout")
-    client.get("/auth/logout")
+    client.post("/auth/logout")
     login_as(role=None)
     Invite.objects.create(role=scout, expires_at=timezone.now())
     assert client.delete(f"/api/team/roles/{scout.pk}").status_code == 409  # in use, no target
@@ -139,12 +139,12 @@ def test_delete_reassigns_members_invites_and_rules(team, admins, client, login_
 def test_manage_members_assigns_any_role_but_admin(team, admins, client, login_as):
     login_as(role=None)
     roles.create_role(None, name="Scout", permissions=["view_scrims"])
-    client.get("/auth/logout")
+    client.post("/auth/logout")
     login_as(character_id=2, name="Cap", role="captain")
     assert post(client, "/api/team/invites", {"role": "scout"}).status_code == 201
     assert post(client, "/api/team/invites", {"role": "admin"}).status_code == 403
     assert post(client, "/api/team/invites", {"role": "nope"}).status_code == 422
-    client.get("/auth/logout")
+    client.post("/auth/logout")
     login_as(character_id=ADMIN_ID, role="admin")
     assert post(client, "/api/team/invites", {"role": "admin"}).status_code == 201
 

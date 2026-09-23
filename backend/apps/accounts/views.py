@@ -107,7 +107,7 @@ def callback_view(request: HttpRequest) -> HttpResponse:
     return redirect(next_url)
 
 
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["POST"])  # a GET would let any page log the member out
 def logout_view(request: HttpRequest) -> HttpResponse:
     auth_logout(request)
     return redirect("/")
@@ -134,12 +134,13 @@ def dev_login_view(request: HttpRequest) -> HttpResponse:
         owner_hash=request.GET.get("owner", "dev-owner"),
         scopes=("publicData",),
     )
-    affiliation = {
-        "corporation_id": int(request.GET["corporation_id"])
-        if request.GET.get("corporation_id")
-        else None,
-        "alliance_id": int(request.GET["alliance_id"]) if request.GET.get("alliance_id") else None,
-    }
+    try:
+        affiliation = {
+            key: int(request.GET[key]) if request.GET.get(key) else None
+            for key in ("corporation_id", "alliance_id")
+        }
+    except ValueError:
+        return HttpResponseBadRequest("corporation_id and alliance_id must be numbers")
     character = services.upsert_character(identity, affiliation)
     role = request.GET.get("role")
     if role:

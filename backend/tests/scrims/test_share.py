@@ -64,7 +64,7 @@ def test_captain_endpoints_and_permissions(client, scrim, login_as):
     login_as(character_id=6, name="Viewer", role="viewer")
     assert client.post(base, json.dumps({}), content_type="application/json").status_code == 403
     assert client.get(base).status_code == 403
-    client.get("/auth/logout")
+    client.post("/auth/logout")
 
     login_as(character_id=7, name="Cap", role="captain")
     resp = client.post(base, json.dumps({"days": 2}), content_type="application/json")

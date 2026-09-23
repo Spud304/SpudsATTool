@@ -129,7 +129,7 @@ def validate_permissions(codes: list[str]) -> list[str]:
 
 
 def _unique_slug(name: str) -> str:
-    base = slugify(name)[:40] or "role"
+    base = slugify(name)[:36] or "role"  # room for a "-NN" suffix within the 40-character slug
     slug = base
     n = 2
     while TeamRole.objects.filter(slug=slug).exists():

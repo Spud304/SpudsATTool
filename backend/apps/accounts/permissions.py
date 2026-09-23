@@ -113,11 +113,7 @@ def require_member(user) -> None:
 # Named helpers kept for readability at the call sites.
 
 
-def is_leadership(user) -> bool:
-    return has_perm(user, "view_audit")
-
-
-def require_leadership(user) -> None:
+def require_view_audit(user) -> None:
     require_perm(user, "view_audit", "requires the audit log permission or the leadership flag")
 
 

@@ -6,7 +6,6 @@ from contextlib import contextmanager
 from django.db import connections
 
 
-# TODO look at this
 @contextmanager
 def advisory_lock(key: int, *, using: str = "default") -> Iterator[bool]:
     """Try a Postgres session-level advisory lock; yields whether it was acquired.

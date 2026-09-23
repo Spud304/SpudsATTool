@@ -84,6 +84,6 @@ def test_csv_endpoint_and_filename(client, scrim, captain, login_as):
         == f'attachment; filename="OF-99-{scrim.date.date().isoformat()}.csv"'
     )
     assert resp.content.decode().splitlines()[0] == ",".join(export.COLUMNS)
-    client.get("/auth/logout")
+    client.post("/auth/logout")
     login_as(character_id=5, name="Guest", role="guest")
     assert client.get(f"/api/scrims/{scrim.pk}/export.csv").status_code == 403

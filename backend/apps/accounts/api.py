@@ -6,7 +6,7 @@ from django.db import transaction
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from ninja import Router, Schema
+from ninja import Field, Router, Schema
 from ninja.errors import HttpError
 
 from apps.audit.services import record
@@ -122,9 +122,9 @@ class InviteOut(Schema):
 
 class InviteIn(Schema):
     role: str = "pilot"
-    uses: int = 1
-    expires_in_hours: int = 72
-    note: str = ""
+    uses: int = Field(1, ge=1, le=1000)
+    expires_in_hours: int = Field(72, ge=1, le=24 * 365)
+    note: str = Field("", max_length=200)
 
 
 class AdmissionRuleOut(Schema):
@@ -277,7 +277,16 @@ def set_main_character(request: HttpRequest, payload: MainCharacterIn):
 def list_members(request: HttpRequest):
     permissions.require_member(request.user)
     qs = Membership.objects.select_related("user", "role").prefetch_related("user__characters")
-    return [_member_out(m) for m in qs.order_by("user__display_name")]
+    # Managers see everyone; other members see the active roster, and notes only with leadership.
+    managing = permissions.can_manage_members(request.user)
+    if not managing:
+        qs = qs.filter(status=MembershipStatus.ACTIVE)
+    show_notes = managing or permissions.has_perm(request.user, "view_pilot_notes")
+    rows = [_member_out(m) for m in qs.order_by("user__display_name")]
+    if not show_notes:
+        for row in rows:
+            row["note"] = ""
+    return rows
 
 
 def _guard_last_admin(membership: Membership, changes: dict) -> None:
@@ -287,10 +296,12 @@ def _guard_last_admin(membership: Membership, changes: dict) -> None:
         or changes.get("status") not in (None, MembershipStatus.ACTIVE)
     )
     if losing_admin:
-        others = Membership.objects.filter(
+        # Lock every active admin row, this one included: two admins demoting each other at once
+        # then queue on the same rows, and the second sees the first's change.
+        admins = Membership.objects.select_for_update().filter(
             role__is_system=True, status=MembershipStatus.ACTIVE
-        ).exclude(pk=membership.pk)
-        if not others.exists():
+        )
+        if not [pk for pk in admins.values_list("pk", flat=True) if pk != membership.pk]:
             raise HttpError(409, "cannot demote or remove the last active admin")
 
 
@@ -330,15 +341,15 @@ def patch_member(request: HttpRequest, user_id: int, payload: MemberPatch):
             from apps.scrims.roster import ensure_pilot_for
 
             ensure_pilot_for(membership.user)
-    after = _member_out(membership)
-    record(
-        actor=request.user,
-        action="membership.updated",
-        target=membership.user,
-        reason=payload.reason,
-        before={k: before[k] for k in changes},
-        after={k: after[k] for k in changes},
-    )
+        after = _member_out(membership)
+        record(
+            actor=request.user,
+            action="membership.updated",
+            target=membership.user,
+            reason=payload.reason,
+            before={k: before[k] for k in changes},
+            after={k: after[k] for k in changes},
+        )
     return after
 
 
@@ -360,12 +371,12 @@ def remove_member(request: HttpRequest, user_id: int, payload: RemoveIn):
         membership.user.is_active = False
         membership.user.save(update_fields=["is_active"])
         services.sync_staff_flags(membership.user, membership)
-    record(
-        actor=request.user,
-        action="membership.removed",
-        target=membership.user,
-        reason=payload.reason,
-    )
+        record(
+            actor=request.user,
+            action="membership.removed",
+            target=membership.user,
+            reason=payload.reason,
+        )
     return 204, None
 
 
@@ -386,16 +397,20 @@ def create_invite(request: HttpRequest, payload: InviteIn):
     role = roles.by_slug(payload.role)
     if not permissions.can_assign_role(request.user, role):
         raise HttpError(403, "cannot create an invite for that role")
-    invite = Invite.objects.create(
-        role=role,
-        uses_left=max(1, payload.uses),
-        expires_at=timezone.now() + timedelta(hours=max(1, payload.expires_in_hours)),
-        note=payload.note,
-        created_by=request.user,
-    )
-    record(
-        actor=request.user, action="invite.created", target=invite, after={"role": invite.role.slug}
-    )
+    with transaction.atomic():
+        invite = Invite.objects.create(
+            role=role,
+            uses_left=payload.uses,
+            expires_at=timezone.now() + timedelta(hours=payload.expires_in_hours),
+            note=payload.note,
+            created_by=request.user,
+        )
+        record(
+            actor=request.user,
+            action="invite.created",
+            target=invite,
+            after={"role": invite.role.slug},
+        )
     return 201, _invite_out(request, invite)
 
 
@@ -403,8 +418,9 @@ def create_invite(request: HttpRequest, payload: InviteIn):
 def revoke_invite(request: HttpRequest, invite_id: int):
     _require_manager(request.user)
     invite = get_object_or_404(Invite, pk=invite_id)
-    record(actor=request.user, action="invite.revoked", target=invite)
-    invite.delete()
+    with transaction.atomic():
+        record(actor=request.user, action="invite.revoked", target=invite)
+        invite.delete()
     return 204, None
 
 
@@ -429,8 +445,11 @@ def create_rule(request: HttpRequest, payload: AdmissionRuleIn):
         raise HttpError(409, "a rule for that entity already exists")
     data = payload.dict()
     data["default_role"] = role
-    rule = AdmissionRule.objects.create(**data, created_by=request.user)
-    record(actor=request.user, action="admission_rule.created", target=rule, after=payload.dict())
+    with transaction.atomic():
+        rule = AdmissionRule.objects.create(**data, created_by=request.user)
+        record(
+            actor=request.user, action="admission_rule.created", target=rule, after=payload.dict()
+        )
     return 201, _rule_out(rule)
 
 
@@ -447,14 +466,15 @@ def patch_rule(request: HttpRequest, rule_id: int, payload: AdmissionRulePatch):
             raise HttpError(403, "cannot grant that role")
     for field, value in changes.items():
         setattr(rule, field, value)
-    rule.save()
-    record(
-        actor=request.user,
-        action="admission_rule.updated",
-        target=rule,
-        before=before,
-        after={k: (v.slug if isinstance(v, TeamRole) else v) for k, v in changes.items()},
-    )
+    with transaction.atomic():
+        rule.save()
+        record(
+            actor=request.user,
+            action="admission_rule.updated",
+            target=rule,
+            before=before,
+            after={k: (v.slug if isinstance(v, TeamRole) else v) for k, v in changes.items()},
+        )
     return _rule_out(rule)
 
 
@@ -462,6 +482,7 @@ def patch_rule(request: HttpRequest, rule_id: int, payload: AdmissionRulePatch):
 def delete_rule(request: HttpRequest, rule_id: int):
     _require_manager(request.user)
     rule = get_object_or_404(AdmissionRule, pk=rule_id)
-    record(actor=request.user, action="admission_rule.deleted", target=rule)
-    rule.delete()
+    with transaction.atomic():
+        record(actor=request.user, action="admission_rule.deleted", target=rule)
+        rule.delete()
     return 204, None

@@ -6,7 +6,7 @@ from django.http import HttpRequest
 from ninja import Query, Router, Schema
 from ninja.pagination import LimitOffsetPagination, paginate
 
-from apps.accounts.permissions import require_leadership
+from apps.accounts.permissions import require_view_audit
 
 from .models import AuditLog
 
@@ -51,7 +51,7 @@ class FacetsOut(Schema):
 @router.get("", response=list[AuditOut])
 @paginate(LimitOffsetPagination)
 def list_audit(request: HttpRequest, filters: Query[AuditFilter]):
-    require_leadership(request.user)
+    require_view_audit(request.user)
     qs = AuditLog.objects.all()
     if filters.action:
         qs = qs.filter(action__startswith=filters.action)
@@ -73,7 +73,7 @@ def list_audit(request: HttpRequest, filters: Query[AuditFilter]):
 @router.get("/facets", response=FacetsOut)
 def facets(request: HttpRequest):
     """What the log contains, for the filter dropdowns: distinct actions, target types and actors."""
-    require_leadership(request.user)
+    require_view_audit(request.user)
     actors = (
         AuditLog.objects.filter(actor__isnull=False)
         .values_list("actor_id", "actor__display_name")

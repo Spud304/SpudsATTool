@@ -72,6 +72,6 @@ def test_history_endpoint(client, scrim, captain, theo, login_as):
         client.get("/api/pilots/history", {"type_id": at.KERES, "exclude_session": scrim.pk}).json()
         == []
     )
-    client.get("/auth/logout")
+    client.post("/auth/logout")
     login_as(character_id=5, name="Guest", role="guest")
     assert client.get("/api/pilots/history", {"type_id": at.KERES}).status_code == 403

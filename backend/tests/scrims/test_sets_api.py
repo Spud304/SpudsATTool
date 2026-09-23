@@ -32,7 +32,7 @@ def test_set_lifecycle_over_the_api(client, api_scrim, of99_comp, login_as):
     base = f"/api/scrims/{api_scrim.pk}"
     login_as(character_id=6, name="Viewer", role="viewer")
     assert call(client, "post", f"{base}/sets", {}).status_code == 403
-    client.get("/auth/logout")
+    client.post("/auth/logout")
 
     login_as(character_id=7, name="Cap", role="captain")
     resp = call(client, "post", f"{base}/sets", {"label": "Armor Rush"})

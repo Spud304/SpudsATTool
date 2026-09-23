@@ -5,7 +5,7 @@ from typing import Any, cast
 from django.db.models import Count, Q
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
-from ninja import Router, Schema
+from ninja import Field, Router, Schema
 
 from . import permissions, roles
 from .models import TeamRole, User
@@ -36,14 +36,14 @@ class RolesOut(Schema):
 
 
 class RoleIn(Schema):
-    name: str
-    description: str = ""
+    name: str = Field(max_length=60)
+    description: str = Field("", max_length=200)
     permissions: list[str] = []
 
 
 class RolePatch(Schema):
-    name: str | None = None
-    description: str | None = None
+    name: str | None = Field(None, max_length=60)
+    description: str | None = Field(None, max_length=200)
     permissions: list[str] | None = None
     reason: str = ""
 

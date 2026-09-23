@@ -107,8 +107,12 @@ def test_grant_admin_command(team, make_character, capsys):
     call_command("grant_admin", "Recovered")
     assert Membership.objects.get(user__characters__character_id=5).role.slug == Role.ADMIN
     call_command("grant_admin", "777")  # not logged in yet
-    assert "applies on first login" in capsys.readouterr().out
+    assert "fills in on first login" in capsys.readouterr().out
     assert Membership.objects.get(user__characters__character_id=777).role.slug == Role.ADMIN
+    make_character(777, "Real Name")  # first login
+    assert (
+        Membership.objects.get(user__characters__character_id=777).user.display_name == "Real Name"
+    )
 
 
 def test_refresh_affiliations_grace_and_reactivation(team, admins, make_character, monkeypatch):

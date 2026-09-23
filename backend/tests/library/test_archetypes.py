@@ -11,7 +11,9 @@ JSON = "application/json"
 
 def test_archetype_delete_refuses_when_used(client, library_sde, imported_atxxii, login_as):
     login_as(character_id=4, name="Theo", role="theorycrafter")
-    resp = client.post("/api/comps/archetypes", json.dumps({"name": "Test Wedge"}), content_type=JSON)
+    resp = client.post(
+        "/api/comps/archetypes", json.dumps({"name": "Test Wedge"}), content_type=JSON
+    )
     assert resp.status_code == 201
     kite = resp.json()
     assert kite["in_use"] == 0
@@ -34,6 +36,6 @@ def test_archetype_delete_refuses_when_used(client, library_sde, imported_atxxii
     assert client.delete(f"/api/comps/archetypes/{kite['id']}").status_code == 204
     assert not Archetype.objects.filter(name="Test Wedge").exists()
 
-    client.get("/auth/logout")
+    client.post("/auth/logout")
     login_as(character_id=5, name="Pilot", role="pilot")
     assert client.delete("/api/comps/archetypes/1").status_code == 403

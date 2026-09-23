@@ -18,7 +18,7 @@ def test_warp_labels_crud_and_in_use_guard(client, scrim, captain, login_as):
         client.post("/api/warp-labels", json.dumps({"label": "x"}), content_type=JSON).status_code
         == 403
     )
-    client.get("/auth/logout")
+    client.post("/auth/logout")
 
     login_as(character_id=1, name="Spud", role="admin")
     resp = client.post(

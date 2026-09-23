@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Link, useLocation } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { useMe, useRulesets, useTeamMutations } from '@/lib/api/hooks'
+import { logout } from '@/lib/api/client'
 import { Badge, LinkButton, Mono, Select } from '@/components/ui'
 import { applyTheme, readTheme, type Theme } from '@/lib/theme'
 
@@ -59,9 +60,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <span data-testid="shell.user">{me.data.display_name}</span>{' '}
                 {me.data.membership ? <Badge tone="accent" testId="shell.role">{me.data.membership.role}</Badge> : <Badge tone="warn" testId="shell.role">no membership</Badge>}
               </span>
-              <a href="/auth/logout" className="hover:text-fg" data-testid="shell.logout">
+              <button type="button" onClick={() => void logout()} className="hover:text-fg" data-testid="shell.logout">
                 Log out
-              </a>
+              </button>
             </>
           ) : (
             <LinkButton href={`/auth/login?next=${encodeURIComponent(pathname)}`} testId="shell.login">

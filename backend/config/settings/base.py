@@ -32,7 +32,6 @@ INSTALLED_APPS = [
     "apps.rules",
     "apps.library",
     "apps.scrims",
-    # Phase 2: apps.sessions
     # Phase 3: apps.analytics, apps.importer
 ]
 
@@ -153,7 +152,6 @@ TEAM_NAME = env.str("TEAM_NAME", "AT Team")
 ADMIN_CHARACTER_IDS = env.list("ADMIN_CHARACTER_IDS", [], subcast=int)
 # /auth/dev-login shortcut for local work and tests; dev and test settings turn it on.
 DEV_LOGIN_ENABLED: bool = False
-FIELD_ENCRYPTION_KEY = env.str("FIELD_ENCRYPTION_KEY", "")
 
 LOGGING = {
     "version": 1,

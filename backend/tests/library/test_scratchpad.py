@@ -50,7 +50,7 @@ def test_put_then_get_round_trips_per_user(client, imported_atxxii, login_as):
     assert Scratchpad.objects.count() == 1
 
     # Another member has their own, empty document.
-    client.get("/auth/logout")
+    client.post("/auth/logout")
     login_as(character_id=12, name="Two", role="theorycrafter")
     assert client.get("/api/scratchpad").json()["slots"] == []
 

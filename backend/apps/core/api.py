@@ -3,7 +3,7 @@ from datetime import datetime
 from django.conf import settings
 from django.db import connection
 from django.http import HttpRequest
-from ninja import Router, Schema
+from ninja import Field, Router, Schema
 from ninja.errors import HttpError
 
 from apps.accounts import permissions
@@ -38,9 +38,9 @@ class TeamOut(Schema):
 
 
 class TeamPatch(Schema):
-    name: str | None = None
+    name: str | None = Field(None, max_length=100)
     alliance_id: int | None = None
-    affiliation_grace_hours: int | None = None
+    affiliation_grace_hours: int | None = Field(None, ge=0, le=24 * 30)
     active_ruleset: str | None = None  # tournament code
 
 

@@ -33,14 +33,14 @@ def test_permissions(client, imported_atxxii, login_as):
     login_as(character_id=5, name="Guest", role="guest")
     resp = client.get("/api/scrims")  # assigned-only members get the list, empty until fielded
     assert resp.status_code == 200 and resp.json() == []
-    client.get("/auth/logout")
+    client.post("/auth/logout")
 
     login_as(character_id=6, name="Viewer", role="viewer")
     assert client.get("/api/scrims").status_code == 200
     assert client.get("/api/pilots").status_code == 200
     assert post(client, "/api/scrims", {"title": "x", "date": iso(tonight)}).status_code == 403
     assert post(client, "/api/pilots", {"name": "x"}).status_code == 403
-    client.get("/auth/logout")
+    client.post("/auth/logout")
 
     login_as(character_id=7, name="Cap", role="captain")
     resp = post(
@@ -50,7 +50,7 @@ def test_permissions(client, imported_atxxii, login_as):
     body = resp.json()
     assert body["ruleset"] == "ATXXII" and body["stage"] == "bracket" and body["can_manage"]
     assert body["can_rsvp"] and body["my_rsvp"] == "none"
-    client.get("/auth/logout")
+    client.post("/auth/logout")
 
     login_as(character_id=6, name="Viewer", role="viewer")
     scrim = client.get(f"/api/scrims/{body['id']}").json()
@@ -62,7 +62,7 @@ def test_rsvp_tally_and_roll_call(client, imported_atxxii, login_as):
     tonight = timezone.now() + timedelta(hours=2)
     login_as(character_id=7, name="Cap", role="captain")
     scrim_id = post(client, "/api/scrims", {"title": "OF 99", "date": iso(tonight)}).json()["id"]
-    client.get("/auth/logout")
+    client.post("/auth/logout")
 
     login_as(character_id=8, name="Spud", role="pilot")
     assert put(client, f"/api/scrims/{scrim_id}/rsvp", {"rsvp": "maybe"}).status_code == 422
@@ -71,7 +71,7 @@ def test_rsvp_tally_and_roll_call(client, imported_atxxii, login_as):
     me = next(a for a in body["attendance"] if a["is_me"])
     assert me["pilot_name"] == "Spud" and me["rsvp_reason"] == "late"
     assert body["attendance"][0]["pilot_name"] == "Spud"  # maybe sorts before no answer
-    client.get("/auth/logout")
+    client.post("/auth/logout")
 
     login_as(character_id=7, name="Cap", role="captain")
     upcoming = client.get("/api/scrims").json()
@@ -143,7 +143,7 @@ def test_rsvp_needs_sight_of_the_scrim(client, imported_atxxii, login_as):
     tonight = timezone.now() + timedelta(hours=2)
     login_as(character_id=7, name="Cap", role="captain")
     scrim_id = post(client, "/api/scrims", {"title": "OF 99", "date": iso(tonight)}).json()["id"]
-    client.get("/auth/logout")
+    client.post("/auth/logout")
 
     TeamRole.objects.create(
         slug="merc-rsvp", name="Merc RSVP", permissions=["view_assigned_scrims", "rsvp", "fly"]

@@ -131,3 +131,61 @@ def test_rules_endpoints_need_login(client, team, login_as):
     assert client.get("/api/rulesets").status_code == 401
     login_as(character_id=3, name="Viewer", role="viewer")
     assert client.get("/api/rulesets").status_code == 403
+
+
+def test_bad_input_is_refused_not_a_crash(client, team, admins, login_as):
+    login_as(role=None)  # env admin
+    j = "application/json"
+    too_long = client.post(
+        "/api/team/invites", {"expires_in_hours": 10**9}, content_type=j
+    ).status_code
+    assert too_long == 422
+    assert (
+        client.patch("/api/team", {"affiliation_grace_hours": -1}, content_type=j).status_code
+        == 422
+    )
+    assert client.post("/api/team/roles", {"name": "x" * 61}, content_type=j).status_code == 422
+    name = "a" * 60  # slugs cut at 36 characters leave room for the -2 suffix
+    assert client.post("/api/team/roles", {"name": name}, content_type=j).status_code == 201
+    assert (
+        client.post("/api/team/roles", {"name": name[:-1] + "b"}, content_type=j).status_code == 201
+    )
+    resp = client.get("/auth/dev-login", {"character_id": 5, "corporation_id": "abc"})
+    assert resp.status_code == 400
+
+
+def test_logout_needs_post(client, team, admins, login_as):
+    login_as(role=None)
+    assert client.get("/auth/logout").status_code == 405
+    assert client.get("/api/me").json()["authenticated"] is True
+    client.post("/auth/logout")
+    assert client.get("/api/me").json()["authenticated"] is False
+
+
+def test_members_see_the_active_roster_without_notes(client, team, admins, login_as):
+    login_as(role=None)
+    login_as(character_id=2, name="Gone", role="pilot")
+    gone = Membership.objects.get(user__characters__character_id=2)
+    gone.status, gone.note = MembershipStatus.REMOVED, "left for another team"
+    gone.save()
+    Membership.objects.filter(user__characters__character_id=ADMIN_ID).update(note="runs it")
+
+    client.post("/auth/logout")
+    login_as(character_id=3, name="Watcher", role="viewer")
+    rows = client.get("/api/team/members").json()
+    assert "Gone" not in [r["display_name"] for r in rows]
+    assert all(r["note"] == "" for r in rows)
+
+    client.post("/auth/logout")
+    login_as(role=None)
+    rows = {r["display_name"]: r for r in client.get("/api/team/members").json()}
+    assert rows["Gone"]["note"] == "left for another team" and rows["Spud"]["note"] == "runs it"
+
+
+def test_the_audit_log_cannot_be_deleted_in_django_admin():
+    from django.contrib import admin
+
+    from apps.audit.admin import AuditLogAdmin
+    from apps.audit.models import AuditLog
+
+    assert AuditLogAdmin(AuditLog, admin.site).has_delete_permission(None) is False

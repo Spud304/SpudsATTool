@@ -120,11 +120,11 @@ def test_history_api_permissions(client, scrim, captain, login_as):
     assert body["deleted_sets"][0]["id"] == doc["id"]
     assert body["entries"][0]["action"] == "set.deleted" and body["entries"][0]["reason"] == "oops"
     assert client.post(f"{base}/sets/{doc['id']}/restore").status_code == 403
-    client.get("/auth/logout")
+    client.post("/auth/logout")
 
     login_as(character_id=5, name="Guest", role="guest")
     assert client.get(f"{base}/history").status_code == 403
-    client.get("/auth/logout")
+    client.post("/auth/logout")
 
     login_as(character_id=7, name="Cap", role="captain")
     resp = client.post(f"{base}/sets/{doc['id']}/restore")

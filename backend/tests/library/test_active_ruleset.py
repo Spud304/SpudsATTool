@@ -47,7 +47,7 @@ def test_team_patch_admin_only_and_me(client, library_sde, imported_atxxii, logi
         "/api/team", json.dumps({"active_ruleset": "ATX2"}), content_type="application/json"
     )
     assert resp.status_code == 403
-    client.get("/auth/logout")
+    client.post("/auth/logout")
 
     login_as(character_id=9, name="Boss", role="admin")
     resp = client.patch(

@@ -32,7 +32,7 @@ def test_auth_matrix(client, library_sde, imported_atxxii, login_as):
     assert client.get("/api/comps").status_code == 401
     login_as(role="viewer")
     assert client.get("/api/comps").status_code == 403
-    client.get("/auth/logout")
+    client.post("/auth/logout")
     login_as(role="pilot")
     assert client.get("/api/comps").status_code == 200
     assert client.get("/api/comps/vocab").status_code == 200
@@ -94,19 +94,19 @@ def test_pilot_flow_and_can_edit(client, library_sde, imported_atxxii, login_as)
     assert comp["status"] == "suggested" and comp["can_edit"]
     assert patch(client, f"/api/comps/{comp['id']}", {"notes": "try it"}).status_code == 200
     assert patch(client, f"/api/comps/{comp['id']}", {"status": "active"}).status_code == 403
-    client.get("/auth/logout")
+    client.post("/auth/logout")
 
     login_as(character_id=2, name="Two", role="pilot")
     assert patch(client, f"/api/comps/{comp['id']}", {"notes": "mine now"}).status_code == 403
     assert client.get(f"/api/comps/{comp['id']}").json()["can_edit"] is False
-    client.get("/auth/logout")
+    client.post("/auth/logout")
 
     login_as(character_id=3, name="Theo", role="theorycrafter")
     resp = patch(
         client, f"/api/comps/{comp['id']}", {"status": "construction", "reason": "promising"}
     )
     assert resp.status_code == 200 and resp.json()["reviewed_by_name"] == "Theo"
-    client.get("/auth/logout")
+    client.post("/auth/logout")
     login_as(character_id=1, name="One", role="pilot")
     assert patch(client, f"/api/comps/{comp['id']}", {"notes": "x"}).status_code == 403
 
@@ -119,7 +119,7 @@ def test_vocab_archetypes_and_clone(client, library_sde, imported_atxxii, login_
     assert vocab["statuses"] == ["suggested", "construction", "active", "inactive", "retired"]
     assert vocab["active_ruleset"] == "ATXXII"
     assert post(client, "/api/comps/archetypes", {"name": "Bait"}).status_code == 403
-    client.get("/auth/logout")
+    client.post("/auth/logout")
 
     login_as(character_id=3, name="Theo", role="theorycrafter")
     resp = post(client, "/api/comps/archetypes", {"name": "Bait"})

@@ -70,7 +70,7 @@ def test_pilot_edits_own_suggested_only(client, library_sde, login_as):
     fit_id = post(client, "/api/fits", {"eft_text": ABSO_FIT}).json()["id"]
     assert patch(client, f"/api/fits/{fit_id}", {"name": "Renamed"}).status_code == 200
     assert patch(client, f"/api/fits/{fit_id}", {"status": "active"}).status_code == 403
-    client.get("/auth/logout")
+    client.post("/auth/logout")
     login_as(character_id=2, name="Two", role="pilot")
     resp = patch(client, f"/api/fits/{fit_id}", {"name": "Hijack"})
     assert resp.status_code == 403
@@ -80,7 +80,7 @@ def test_pilot_edits_own_suggested_only(client, library_sde, login_as):
 def test_theorycrafter_activates_with_audit(client, library_sde, login_as):
     login_as(character_id=1, name="One", role="pilot")
     fit_id = post(client, "/api/fits", {"eft_text": ABSO_FIT}).json()["id"]
-    client.get("/auth/logout")
+    client.post("/auth/logout")
     login_as(character_id=3, name="Theo", role="theorycrafter")
     resp = patch(client, f"/api/fits/{fit_id}", {"status": "active", "reason": "looks good"})
     assert resp.status_code == 200
@@ -90,7 +90,7 @@ def test_theorycrafter_activates_with_audit(client, library_sde, login_as):
     assert entry.reason == "looks good" and entry.after == {"status": "active"}
     assert AuditLog.objects.filter(action="fit.created").count() == 1
     # pilot can no longer edit an active fit
-    client.get("/auth/logout")
+    client.post("/auth/logout")
     login_as(character_id=1, name="One", role="pilot")
     assert patch(client, f"/api/fits/{fit_id}", {"name": "x"}).status_code == 403
 

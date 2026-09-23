@@ -17,7 +17,6 @@ init:            ## create deploy/.env with generated secrets (does not overwrit
 	@test -f deploy/.env && echo "deploy/.env already exists" || ( \
 	  cp deploy/.env.example deploy/.env && \
 	  sed -i "s|^SECRET_KEY=.*|SECRET_KEY=$$(openssl rand -base64 48 | tr -d '\n=/+')|" deploy/.env && \
-	  sed -i "s|^FIELD_ENCRYPTION_KEY=.*|FIELD_ENCRYPTION_KEY=$$(openssl rand -base64 32 | tr -d '\n=/+')|" deploy/.env && \
 	  sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$$(openssl rand -base64 24 | tr -d '\n=/+')|" deploy/.env && \
 	  echo "wrote deploy/.env; now set DOMAIN, ACME_EMAIL, EVE_CLIENT_ID, EVE_CLIENT_SECRET, ESI_CONTACT_EMAIL, TEAM_NAME" )
 
