@@ -535,7 +535,10 @@ def patch_assignment(
             if key in fields:
                 setattr(a, key, bool(fields[key]))
         if "warp_in_km" in fields:
-            a.warp_in_km = fields["warp_in_km"]
+            warp = fields["warp_in_km"]
+            if warp is not None and not 0 <= warp <= 1000:
+                raise ScrimError(422, "warp-in must be 0..1000 km")
+            a.warp_in_km = warp
         if "custom_note" in fields:
             a.custom_note = (fields["custom_note"] or "")[:300]
         if "link_scripts" in fields:

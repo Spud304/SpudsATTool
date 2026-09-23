@@ -301,3 +301,10 @@ def test_unknown_archetype_is_a_422(scrim, captain):
     with pytest.raises(ScrimError) as err:
         sets.patch_set(captain, scrim.pk, set_id, our_archetype_id=999999)
     assert err.value.status == 422
+
+
+def test_warp_in_is_bounded(scrim, captain):
+    set_id = sets.create_set(captain, scrim.pk)["id"]
+    with pytest.raises(ScrimError) as err:
+        sets.patch_assignment(captain, scrim.pk, set_id, 1, "US", 1, warp_in_km=40000)
+    assert err.value.status == 422

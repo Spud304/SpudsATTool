@@ -53,14 +53,17 @@ def login_view(request: HttpRequest) -> HttpResponse:
         "next": _safe_next(request, request.GET.get("next")),
         "mode": "link" if request.GET.get("mode") == "link" else "login",
     }
-    return redirect(
-        sso.build_authorize_url(
+    try:
+        url = sso.build_authorize_url(
             state=state,
             code_challenge=challenge,
             redirect_uri=_callback_uri(request),
             scopes=settings.EVE_SSO_SCOPES,
         )
-    )
+    except sso.SsoError as exc:
+        log.warning("sso failure: %s", exc)
+        return render(request, "accounts/sso_error.html", {"error": str(exc)}, status=503)
+    return redirect(url)
 
 
 @require_http_methods(["GET"])

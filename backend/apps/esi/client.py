@@ -70,9 +70,12 @@ class EsiClient:
             headers["If-None-Match"] = cached["etag"]
 
         for attempt in range(2):
-            resp = self._client.request(
-                method, path, params=params, json=json_body, headers=headers
-            )
+            try:
+                resp = self._client.request(
+                    method, path, params=params, json=json_body, headers=headers
+                )
+            except httpx.HTTPError as exc:  # timeouts, DNS, refused connections
+                raise EsiUnavailable(f"ESI unreachable on {path}: {exc}") from exc
             self._log_ratelimit(resp)
             if resp.status_code == 304 and cached:
                 return cached["body"]
@@ -92,7 +95,10 @@ class EsiClient:
             if resp.status_code >= 400:
                 raise EsiError(f"ESI {resp.status_code} on {path}: {resp.text[:200]}")
             cache.delete("esi:5xx")
-            body = resp.json()
+            try:
+                body = resp.json()
+            except ValueError as exc:
+                raise EsiError(f"ESI sent a non-JSON body on {path}") from exc
             etag = resp.headers.get("ETag")
             if use_etag and etag:
                 cache.set(key, {"etag": etag, "body": body}, ETAG_TTL)

@@ -67,13 +67,19 @@ def scan_incoming(*, force: bool = False, files: list[str] | None = None) -> lis
             reports.append(report)
             moved = move_to(path, dirs["archive"])
             log.info("archived %s as %s", path.name, moved)
-        except ImportFailed as exc:
+        except Exception as exc:
+            # Any failure, not only ImportFailed (a CRC error mid-stream, a bad row): left in
+            # incoming/, the zip would be retried every pass and block the ones behind it.
+            remediation = getattr(exc, "remediation", "") or "see the log for the traceback"
             moved = move_to(path, dirs["failed"])
             note = moved.with_suffix(moved.suffix + ".error.txt")
-            note.write_text(f"{exc}\n{exc.remediation}\n", encoding="utf-8")
-            log.error(
-                "import of %s failed: %s (%s); moved to %s", path.name, exc, exc.remediation, moved
-            )
+            note.write_text(f"{type(exc).__name__}: {exc}\n{remediation}\n", encoding="utf-8")
+            if isinstance(exc, ImportFailed):
+                log.error(
+                    "import of %s failed: %s (%s); moved to %s", path.name, exc, remediation, moved
+                )
+            else:
+                log.exception("import of %s crashed; moved to %s", path.name, moved)
             failed = ImportReport(source=str(path))
             failed.fail(str(exc))
             failed.finish()

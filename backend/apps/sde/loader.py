@@ -37,19 +37,21 @@ def import_source(
     if latest is not None and build < latest.build and not force:
         raise ImportFailed(
             f"build {build} is older than the imported build {latest.build}",
-            "pass --force to re-import an older build (its records will be marked removed by the newer one)",
+            "pass --force to re-import an older build (records only the newer build has are marked removed)",
         )
 
     wanted = files or included_files()
     available = set(source.names())
-    for name in wanted:
-        if name not in available:
-            report.warn(f"{name}.jsonl not present in {source.description}; skipped")
-            continue
-        load_raw_file(source, name, build, report, dry_run=dry_run)
-
-    if not dry_run and not raw_only:
-        derive.derive_all(build, release_date, report)
+    # One transaction for every file and the derivation: a file that fails part way leaves the
+    # database on the previous build, never on a mix of two.
+    with transaction.atomic():
+        for name in wanted:
+            if name not in available:
+                report.warn(f"{name}.jsonl not present in {source.description}; skipped")
+                continue
+            load_raw_file(source, name, build, report, dry_run=dry_run)
+        if not dry_run and not raw_only:
+            derive.derive_all(build, release_date, report)
     report.finish()
     return report
 
@@ -57,7 +59,7 @@ def import_source(
 def load_raw_file(
     source: SdeSource, name: str, build: int, report: ImportReport, *, dry_run: bool = False
 ) -> None:
-    """Upsert every record of one file in a single transaction, then flag the ones that vanished."""
+    """Upsert every record of one file, then flag the ones that vanished."""
     counts = report.file(name)
     started = time.monotonic()
     warnings: list[str] = []
@@ -83,9 +85,12 @@ def load_raw_file(
                 flush()
         flush()
         if not dry_run:
-            counts.removed = SdeRawRecord.objects.filter(
-                file=name, build__lt=build, removed=False
-            ).update(removed=True)
+            # Anything this build did not carry, older or (after a forced downgrade) newer.
+            counts.removed = (
+                SdeRawRecord.objects.filter(file=name, removed=False)
+                .exclude(build=build)
+                .update(removed=True)
+            )
 
     counts.seconds = time.monotonic() - started
     if warnings:

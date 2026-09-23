@@ -86,6 +86,11 @@ class Command(BaseCommand):
         parser.add_argument("--sheet", default="Comp library")
         parser.add_argument("--notes-sheet", default="Comp Notes")
         parser.add_argument("--dry-run", action="store_true")
+        parser.add_argument(
+            "--overwrite",
+            action="store_true",
+            help="replace comps that already exist (default: keep them and their in-app edits)",
+        )
 
     def handle(self, *args, **options):
         from openpyxl import load_workbook
@@ -169,6 +174,9 @@ class Command(BaseCommand):
                         warp_km = int(float(warp)) if warp not in (None, "") else None
                     except (TypeError, ValueError):
                         warp_km = None
+                    if warp_km is not None and not 0 <= warp_km <= 1000:
+                        report.warn(f"row {row_no}: {block.name}: warp-in {warp_km} km dropped")
+                        warp_km = None
                     flag = _cell(cells, COL_FLAG)
                     patches[slot_no] = SlotPatch(
                         slot_no=slot_no,
@@ -183,19 +191,21 @@ class Command(BaseCommand):
                     patches.setdefault(slot_no, SlotPatch(slot_no=slot_no))
                 note_text, ban_theory = notes.get(block.name, ("", ""))
                 try:
-                    _, created = comps.upsert_imported_comp(
+                    _, outcome = comps.upsert_imported_comp(
                         ruleset=ruleset,
                         name=block.name,
                         status=status,
                         notes=note_text,
                         ban_theory=ban_theory,
                         slots=list(patches.values()),
+                        overwrite=options["overwrite"],
                     )
                 except comps.CompError as exc:
                     report.fail(f"row {block.first_row}: {block.name}: {exc}")
                     continue
-                counts.upserted += 1
-                report.derived["created"] = report.derived.get("created", 0) + int(created)
+                report.derived[outcome] = report.derived.get(outcome, 0) + 1
+                if outcome != "skipped":
+                    counts.upserted += 1
             if options["dry_run"]:
                 transaction.set_rollback(True)
                 report.warn("dry run: nothing written")

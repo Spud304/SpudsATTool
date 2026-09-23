@@ -139,3 +139,10 @@ def test_adding_to_the_library_needs_suggest_or_manage(client, library_sde, logi
     # their own earlier suggestion is read-only now too
     assert client.get(f"/api/fits/{fit_id}").json()["can_edit"] is False
     assert patch(client, f"/api/fits/{fit_id}", {"name": "Renamed"}).status_code == 403
+
+
+def test_fit_names_cannot_be_blank(client, library_sde, login_as):
+    login_as(role="theorycrafter")
+    fit_id = post(client, "/api/fits", {"eft_text": ABSO_FIT, "name": "   "}).json()["id"]
+    assert client.get(f"/api/fits/{fit_id}").json()["name"] == "Octo Ewar Abso"  # header name
+    assert patch(client, f"/api/fits/{fit_id}", {"name": " "}).status_code == 422

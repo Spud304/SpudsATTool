@@ -112,3 +112,37 @@ def test_dir_source_import(tiny_zip, tmp_path):
     with DirSource(out) as source:
         report = import_source(source, build=BUILD)
     assert report.ok and EveGroup.objects.get(pk=28).name == "Hauler"
+
+
+def test_forced_older_build_becomes_the_live_build(tiny_zip, tmp_path):
+    run(tiny_zip)
+    records = tiny_records()
+    del records["types"][648]  # only the newer build has it
+    older = tmp_path / f"eve-online-static-data-{BUILD - 10}-jsonl.zip"
+    older.write_bytes(make_sde_zip(records, build=BUILD - 10))
+    run(older, build=BUILD - 10, force=True)
+    assert SdeRawRecord.objects.get(file="types", key="648").removed
+    assert EveType.objects.get(pk=648).removed is True
+    latest = SdeBuild.latest()
+    assert latest is not None and latest.build == BUILD - 10
+
+
+def test_a_failed_file_leaves_the_previous_build_whole(tiny_zip, tmp_path, monkeypatch):
+    from apps.sde import loader
+
+    run(tiny_zip)
+    newer = tmp_path / f"eve-online-static-data-{BUILD + 1}-jsonl.zip"
+    newer.write_bytes(make_sde_zip(tiny_records(), build=BUILD + 1))
+    real = loader.load_raw_file
+
+    def load_then_break(source, name, build, report, **kwargs):
+        real(source, name, build, report, **kwargs)
+        if name == "types":
+            raise RuntimeError("disk full")
+
+    monkeypatch.setattr(loader, "load_raw_file", load_then_break)
+    with pytest.raises(RuntimeError):
+        run(newer, build=BUILD + 1)
+    assert set(SdeRawRecord.objects.values_list("build", flat=True)) == {BUILD}
+    latest = SdeBuild.latest()
+    assert latest is not None and latest.build == BUILD

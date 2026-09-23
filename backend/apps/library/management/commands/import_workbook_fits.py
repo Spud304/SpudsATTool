@@ -21,6 +21,11 @@ class Command(BaseCommand):
         parser.add_argument("path")
         parser.add_argument("--sheet", default="Fit library")
         parser.add_argument("--dry-run", action="store_true")
+        parser.add_argument(
+            "--overwrite",
+            action="store_true",
+            help="replace fits that already exist (default: keep them and their in-app edits)",
+        )
 
     def handle(self, *args, **options):
         from openpyxl import load_workbook
@@ -64,11 +69,18 @@ class Command(BaseCommand):
                     report.warn(
                         f"row {row_no}: {ship.name} / {name}: EFT header says {header_hull!r}"
                     )
-                fit, created, resolved = services.upsert_imported_fit(
-                    ship=ship, name=name, status=status, eft_text=eft, pyfa_summary=str(pyfa or "")
+                fit, outcome, resolved = services.upsert_imported_fit(
+                    ship=ship,
+                    name=name,
+                    status=status,
+                    eft_text=eft,
+                    pyfa_summary=str(pyfa or ""),
+                    overwrite=options["overwrite"],
                 )
+                report.derived[outcome] = report.derived.get(outcome, 0) + 1
+                if outcome == "skipped":
+                    continue
                 counts.upserted += 1
-                report.derived["created"] = report.derived.get("created", 0) + int(created)
                 for missing in resolved.unresolved:
                     report.warn(f"row {row_no}: {ship.name} / {name}: unknown item {missing!r}")
             if options["dry_run"]:

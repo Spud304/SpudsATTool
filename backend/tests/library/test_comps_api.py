@@ -187,3 +187,14 @@ def test_create_with_a_lineup_is_all_or_nothing(client, library_sde, imported_at
     body = post(client, "/api/comps", {"name": "From pad", "slots": slots(*[at.RIFTER] * 10)})
     assert body.status_code == 201
     assert [s["type_id"] for s in body.json()["slots"]] == [at.RIFTER] * 10
+
+
+def test_archetype_patch_ignores_nulls_and_refuses_blank(
+    client, library_sde, imported_atxxii, login_as
+):
+    login_as(role="theorycrafter")
+    arch = post(client, "/api/comps/archetypes", {"name": "Brawl"}).json()
+    url = f"/api/comps/archetypes/{arch['id']}"
+    resp = patch(client, url, {"name": None, "description": None, "is_retired": None})
+    assert resp.status_code == 200 and resp.json()["name"] == "Brawl"
+    assert patch(client, url, {"name": "  "}).status_code == 422

@@ -35,9 +35,15 @@ def discovery() -> dict:
     doc = cache.get(DISCOVERY_CACHE_KEY)
     if doc:
         return doc
-    resp = httpx.get(settings.EVE_SSO_DISCOVERY_URL, timeout=10)
-    resp.raise_for_status()
-    doc = resp.json()
+    try:
+        resp = httpx.get(settings.EVE_SSO_DISCOVERY_URL, timeout=10)
+        resp.raise_for_status()
+        doc = resp.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        raise SsoError(f"EVE SSO is unreachable: {exc}") from exc
+    needed = ("authorization_endpoint", "token_endpoint", "jwks_uri")
+    if not isinstance(doc, dict) or any(k not in doc for k in needed):
+        raise SsoError("EVE SSO discovery document is missing endpoints")
     cache.set(DISCOVERY_CACHE_KEY, doc, 24 * 3600)
     return doc
 
@@ -65,21 +71,30 @@ def build_authorize_url(
 
 
 def exchange_code(*, code: str, code_verifier: str, redirect_uri: str) -> dict:
-    resp = httpx.post(
-        discovery()["token_endpoint"],
-        data={
-            "grant_type": "authorization_code",
-            "code": code,
-            "code_verifier": code_verifier,
-            "redirect_uri": redirect_uri,
-        },
-        auth=(settings.EVE_CLIENT_ID, settings.EVE_CLIENT_SECRET),
-        timeout=15,
-    )
+    try:
+        resp = httpx.post(
+            discovery()["token_endpoint"],
+            data={
+                "grant_type": "authorization_code",
+                "code": code,
+                "code_verifier": code_verifier,
+                "redirect_uri": redirect_uri,
+            },
+            auth=(settings.EVE_CLIENT_ID, settings.EVE_CLIENT_SECRET),
+            timeout=15,
+        )
+    except httpx.HTTPError as exc:
+        raise SsoError(f"token exchange failed: {exc}") from exc
     if resp.status_code != 200:
         log.warning("sso token exchange failed: %s %s", resp.status_code, resp.text[:300])
         raise SsoError("token exchange failed")
-    return resp.json()
+    try:
+        tokens = resp.json()
+    except ValueError as exc:
+        raise SsoError("token exchange answered with a non-JSON body") from exc
+    if not isinstance(tokens, dict) or "access_token" not in tokens:
+        raise SsoError("token exchange answered without an access token")
+    return tokens
 
 
 def _signing_key(token: str):
@@ -93,9 +108,9 @@ def _signing_key(token: str):
 
 def validate_access_token(token: str, *, key=None) -> SsoIdentity:
     """Validate an EVE SSO JWT offline. `key` lets tests inject a public key instead of the JWKS."""
-    if key is None:
-        key = _signing_key(token)
     try:
+        if key is None:
+            key = _signing_key(token)  # PyJWKClientError is a PyJWTError
         claims = jwt.decode(
             token,
             key,

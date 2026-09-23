@@ -356,10 +356,28 @@ def upsert_imported_comp(
     notes: str,
     ban_theory: str,
     slots: list[SlotPatch],
-) -> tuple[Comp, bool]:
-    """Workbook import path: no actor, no audit; matches an existing comp by name, case-insensitively."""
+    overwrite: bool = False,
+) -> tuple[Comp, str]:
+    """Workbook import path, no actor; matches a comp by name, case-insensitively.
+
+    Returns (comp, "created" | "overwritten" | "skipped"): an existing comp keeps its in-app
+    edits unless `overwrite`, and an overwrite is audited with what it replaced."""
+    name = name.strip()[:120]
     comp = Comp.objects.filter(ruleset=ruleset, name__iexact=name).first()
     created = comp is None
+    if comp is not None and not overwrite:
+        return comp, "skipped"
+    before = None
+    if comp is not None:  # full text and lineup, since the import replaces them
+        before = {
+            **_snapshot(comp),
+            "notes": comp.notes,
+            "ban_theory": comp.ban_theory,
+            "slots": [
+                [s.slot_no, s.ship.name if s.ship else None, s.default_fit_id]
+                for s in comp.slots.select_related("ship")
+            ],
+        }
     if comp is None:
         comp = Comp(ruleset=ruleset, name=name)
     comp.status = status
@@ -372,7 +390,9 @@ def upsert_imported_comp(
                 CompSlot(comp=comp, slot_no=i) for i in range(1, ruleset.fielded_pilots + 1)
             )
         _validate_slots(comp, slots)
-    return comp, created
+        if before is not None:
+            record(actor=None, action="comp.overwritten_by_import", target=comp, before=before)
+    return comp, "created" if created else "overwritten"
 
 
 def create_archetype(actor: User, *, name: str, description: str = "", sort_order: int = 0):
@@ -391,9 +411,15 @@ def create_archetype(actor: User, *, name: str, description: str = "", sort_orde
 
 
 def update_archetype(actor: User, archetype: Archetype, **fields) -> Archetype:
+    # PATCH bodies can carry explicit nulls; every archetype column is NOT NULL.
+    fields = {k: v for k, v in fields.items() if v is not None}
+    if "name" in fields:
+        fields["name"] = fields["name"].strip()[:60]
+        if not fields["name"]:
+            raise CompError(422, "archetype name is required")
     before = {k: getattr(archetype, k) for k in fields}
     for key, value in fields.items():
-        setattr(archetype, key, value.strip()[:60] if key == "name" else value)
+        setattr(archetype, key, value)
     try:
         with transaction.atomic():
             archetype.save()

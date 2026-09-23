@@ -26,7 +26,7 @@ class SdeRawRecord(models.Model):
 
 
 class SdeBuild(models.Model):
-    """One row per imported SDE build; the newest is the live build."""
+    """One row per imported SDE build; the most recently imported is the live build."""
 
     build = models.PositiveIntegerField(unique=True)
     release_date = models.DateTimeField(null=True, blank=True)
@@ -46,7 +46,9 @@ class SdeBuild(models.Model):
 
     @classmethod
     def latest(cls) -> "SdeBuild | None":
-        return cls.objects.order_by("-build").first()
+        # By import time, not build number: after a forced import of an older build, that build
+        # is what the tables hold.
+        return cls.objects.order_by("-imported_at", "-build").first()
 
 
 class EveCategory(models.Model):

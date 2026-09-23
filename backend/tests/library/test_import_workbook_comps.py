@@ -2,6 +2,7 @@ import pytest
 from django.core.management import CommandError, call_command
 from openpyxl import Workbook
 
+from apps.audit.models import AuditLog
 from apps.library import services
 from apps.library.models import Comp
 from apps.sde.models import EveType
@@ -96,8 +97,14 @@ def test_import_blocks(tmp_path, library_sde, imported_atxxii, capsys):
     assert "unknown hull 'Nope Hull'" in out and "unknown status 'Weird'" in out
     assert "slot 11 out of range" in out
 
+    Comp.objects.filter(name="Neon").update(notes="edited in the app")
     call_command("import_workbook_comps", str(path))
     assert Comp.objects.count() == 2
+    assert Comp.objects.get(name="Neon").notes == "edited in the app"
+    call_command("import_workbook_comps", str(path), "--overwrite")
+    assert Comp.objects.get(name="Neon").notes == "run it"
+    entry = AuditLog.objects.get(action="comp.overwritten_by_import", target_id=str(neon.pk))
+    assert entry.before["notes"] == "edited in the app" and len(entry.before["slots"]) == 10
 
 
 def test_dry_run_and_unknown_ruleset(tmp_path, library_sde, imported_atxxii):

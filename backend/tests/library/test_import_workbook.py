@@ -65,3 +65,23 @@ def test_dry_run_and_unknown_hull(tmp_path, library_sde):
     )
     with pytest.raises(CommandError):
         call_command("import_workbook_fits", str(bad))
+
+
+def test_reimport_keeps_in_app_edits_unless_overwrite(tmp_path, library_sde, capsys):
+    from apps.audit.models import AuditLog
+
+    path = make_workbook(
+        tmp_path / "fits.xlsx",
+        [["", "", "Valid", "Active", "Absolution", "Octo Ewar Abso", ABSO_FIT, ABSO_PYFA]],
+    )
+    call_command("import_workbook_fits", str(path))
+    Fit.objects.filter(name="Octo Ewar Abso").update(status="retired")  # changed in the app
+    call_command("import_workbook_fits", str(path))
+    assert Fit.objects.get(name="Octo Ewar Abso").status == "retired"
+    assert "skipped: 1" in capsys.readouterr().out
+    call_command("import_workbook_fits", str(path), "--overwrite")
+    assert Fit.objects.get(name="Octo Ewar Abso").status == "active"
+    entry = AuditLog.objects.get(action="fit.overwritten_by_import")
+    assert entry.before["status"] == "retired" and entry.before["eft_text"].startswith(
+        "[Absolution"
+    )

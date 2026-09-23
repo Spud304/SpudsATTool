@@ -177,3 +177,17 @@ def test_django_admin_access_is_for_env_admins_only(client, team, settings, make
     assert resp.status_code == 200, resp.content
     other.refresh_from_db()
     assert not other.is_superuser and not other.is_staff
+
+
+def test_a_transferred_character_can_log_in_for_its_new_owner(
+    team, admins, make_character, settings
+):
+    AdmissionRule.objects.create(kind=AdmissionRuleKind.CORPORATION, entity_id=1000)
+    old_user, _ = admitted(
+        services.admit(make_character(2, "Sold", owner="a", corporation_id=1000))
+    )
+    char = make_character(2, "Sold", owner="b", corporation_id=1000)  # new owner hash
+    new_user, _ = admitted(services.admit(char))
+    assert new_user.pk != old_user.pk and new_user.username == "char:2"
+    old_user.refresh_from_db()
+    assert old_user.username == f"char:2:was:{old_user.pk}"

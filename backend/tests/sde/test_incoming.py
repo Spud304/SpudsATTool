@@ -63,3 +63,26 @@ def test_archive_name_collision_gets_suffix(sde_dir):
     src.write_bytes(b"new")
     moved = incoming.move_to(src, dirs["archive"])
     assert moved.name.startswith("a-") and moved.suffix == ".zip"
+
+
+def test_a_crashing_zip_does_not_block_the_next(sde_dir, monkeypatch):
+    dirs = incoming.sde_dirs()
+    first = dirs["incoming"] / "a.zip"
+    second = dirs["incoming"] / f"b-{BUILD}.zip"
+    for path in (first, second):
+        path.write_bytes(make_sde_zip(tiny_records()))
+        settle(path)
+    real = incoming.import_source
+    calls = []
+
+    def crash_first(source, **kwargs):
+        calls.append(source)
+        if len(calls) == 1:
+            raise UnicodeDecodeError("utf-8", b"\xff", 0, 1, "bad byte")
+        return real(source, **kwargs)
+
+    monkeypatch.setattr(incoming, "import_source", crash_first)
+    reports = incoming.scan_incoming()
+    assert [r.ok for r in reports] == [False, True]
+    assert "UnicodeDecodeError" in (dirs["failed"] / "a.zip.error.txt").read_text()
+    assert (dirs["archive"] / second.name).exists() and not first.exists()

@@ -179,12 +179,14 @@ def create_fit(
     final_status = _check_status(actor, status, None)
     fit = Fit(
         ship=resolved.hull,
-        name=(name or parsed.fit_name).strip()[:120],
+        name=((name or "").strip() or parsed.fit_name).strip()[:120],
         status=final_status,
         eft_text=eft_text.replace("\r\n", "\n"),
         pyfa_summary=pyfa_summary,
         created_by=actor,
     )
+    if not fit.name:
+        raise FitError(422, "fit name is required (the EFT header has none)")
     if final_status != FitStatus.SUGGESTED:
         fit.reviewed_by, fit.reviewed_at = actor, timezone.now()
     _apply_derived(fit, resolved, parse_pyfa_summary(pyfa_summary))
@@ -217,6 +219,8 @@ def update_fit(
         status_changed = False
     if name is not None:
         fit.name = name.strip()[:120]
+        if not fit.name:
+            raise FitError(422, "fit name is required")
     if pyfa_summary is not None:
         fit.pyfa_summary = pyfa_summary
     if eft_text is not None:
@@ -264,19 +268,39 @@ def update_fit(
 
 
 def upsert_imported_fit(
-    *, ship: EveType, name: str, status: str, eft_text: str, pyfa_summary: str
-) -> tuple[Fit, bool, ResolvedFit]:
-    """Workbook import path: no actor, no audit, keyed by (ship, name)."""
+    *,
+    ship: EveType,
+    name: str,
+    status: str,
+    eft_text: str,
+    pyfa_summary: str,
+    overwrite: bool = False,
+) -> tuple[Fit, str, ResolvedFit]:
+    """Workbook import path, no actor, keyed by (ship, name).
+
+    Returns (fit, "created" | "overwritten" | "skipped", resolved): an existing fit keeps its
+    in-app edits unless `overwrite`, and an overwrite is audited with what it replaced."""
+    name = name.strip()[:120]
     resolved = resolve_fit(parse_eft(eft_text))
-    fit, created = Fit.objects.get_or_create(
-        ship=ship, name=name, defaults={"eft_text": eft_text, "status": status}
-    )
+    fit = Fit.objects.filter(ship=ship, name=name).first()
+    if fit is not None and not overwrite:
+        return fit, "skipped", resolved
+    created = fit is None
+    if fit is None:
+        fit = Fit(ship=ship, name=name)
+    else:
+        record(
+            actor=None,
+            action="fit.overwritten_by_import",
+            target=fit,
+            before={**_snapshot(fit), "eft_text": fit.eft_text},
+        )
     fit.status = status
     fit.eft_text = eft_text
     fit.pyfa_summary = pyfa_summary
     _apply_derived(fit, resolved, parse_pyfa_summary(pyfa_summary))
     fit.save()
-    return fit, created, resolved
+    return fit, "created" if created else "overwritten", resolved
 
 
 def evaluate_fit(fit: Fit, ruleset: Ruleset, *, is_flagship: bool = False) -> FitEvaluation:

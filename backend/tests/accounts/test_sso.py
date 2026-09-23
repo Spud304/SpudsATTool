@@ -52,3 +52,38 @@ def test_pkce_pair_is_s256():
     verifier, challenge = sso.make_pkce()
     expected = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=")
     assert challenge == expected.decode() and "=" not in verifier
+
+
+def test_network_failures_become_sso_errors(monkeypatch, settings):
+    import httpx
+    from django.core.cache import cache
+
+    cache.clear()
+
+    def down(*args, **kwargs):
+        raise httpx.ConnectError("no route")
+
+    monkeypatch.setattr(sso.httpx, "get", down)
+    with pytest.raises(sso.SsoError):
+        sso.discovery()
+    cache.set(
+        sso.DISCOVERY_CACHE_KEY,
+        {"authorization_endpoint": "a", "token_endpoint": "t", "jwks_uri": "j"},
+        60,
+    )
+    monkeypatch.setattr(sso.httpx, "post", down)
+    with pytest.raises(sso.SsoError):
+        sso.exchange_code(code="c", code_verifier="v", redirect_uri="r")
+    cache.clear()
+
+
+@pytest.mark.django_db
+def test_login_page_explains_an_unreachable_sso(client, settings, monkeypatch):
+    settings.EVE_CLIENT_ID = "client"
+
+    def fail():
+        raise sso.SsoError("EVE SSO is unreachable: no route")
+
+    monkeypatch.setattr(sso, "discovery", fail)
+    resp = client.get("/auth/login")
+    assert resp.status_code == 503 and b"unreachable" in resp.content

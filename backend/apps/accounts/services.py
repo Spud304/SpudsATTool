@@ -90,9 +90,14 @@ def upsert_character(identity: SsoIdentity, affiliation: dict | None = None) -> 
 def ensure_user(character: EveCharacter) -> User:
     if character.user is not None:
         return character.user
-    user = User.objects.create_user(
-        username=f"char:{character.character_id}", display_name=character.name
-    )
+    username = f"char:{character.character_id}"
+    # After a transfer the previous owner's account still carries this username; it keeps its
+    # history under a new one so the new owner can have theirs.
+    previous = User.objects.filter(username=username).first()
+    if previous is not None:
+        previous.username = f"{username}:was:{previous.pk}"
+        previous.save(update_fields=["username"])
+    user = User.objects.create_user(username=username, display_name=character.name)
     character.user = user
     character.save(update_fields=["user"])
     user.main_character = character
