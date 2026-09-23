@@ -306,7 +306,8 @@ def session_document(session: Session, user: User | None, shared: bool = False) 
         and not shared
         and user is not None
         and permissions.can_rsvp(user)
-        and not sessions.is_past(session),
+        and not sessions.is_past(session)
+        and not session.is_archived,
     }
 
 

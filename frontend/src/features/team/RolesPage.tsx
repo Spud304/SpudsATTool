@@ -33,12 +33,15 @@ export function RolesPage() {
     patchRole.mutate({ id: role.id, body: { permissions: next, reason: `${on ? 'granted' : 'removed'} ${code}` } })
   }
   const remove = (role: RoleOut) => {
-    const others = rows.filter((r) => r.id !== role.id && !r.is_system)
+    // Only an admin may move members into the admin role (the server refuses anyone else).
+    const isAdmin = Boolean(me.data?.capabilities?.is_admin)
+    const others = rows.filter((r) => r.id !== role.id && (!r.is_system || isAdmin))
     let target: RoleOut | undefined
     if (role.member_count > 0) {
-      const answer = window.prompt(`${role.member_count} member(s) hold "${role.name}". Type the role that takes them:`, others[0]?.slug ?? '')
+      const suggested = others.find((r) => !r.is_system) ?? others[0]
+      const answer = window.prompt(`${role.member_count} member(s) hold "${role.name}". Type the role that takes them:`, suggested?.slug ?? '')
       if (answer === null) return
-      target = rows.find((r) => r.slug === answer.trim() || r.name.toLowerCase() === answer.trim().toLowerCase())
+      target = others.find((r) => r.slug === answer.trim() || r.name.toLowerCase() === answer.trim().toLowerCase())
       if (!target || target.id === role.id) return window.alert('No role by that name.')
     } else if (!window.confirm(`Delete the role "${role.name}"?`)) return
     deleteRole.mutate({ id: role.id, reassignTo: target?.id })

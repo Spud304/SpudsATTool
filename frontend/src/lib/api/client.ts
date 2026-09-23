@@ -86,10 +86,26 @@ export type HistoryEntryOut = Schemas['HistoryEntryOut']
 export type DeletedSetOut = Schemas['DeletedSetOut']
 export type DeletedRoundOut = Schemas['DeletedRoundOut']
 
+/** The server's message: a string from our HttpErrors, or django-ninja's list of field errors on a 422. */
+function messageOf(status: number, detail: unknown): string {
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail) && detail.length) {
+    return detail
+      .map((d) => {
+        const item = d as { loc?: unknown[]; msg?: string }
+        // loc is like ["body", "payload", "slots", 3, "warp_in_km"]; the first two say nothing to a user
+        const where = (item.loc ?? []).filter((p) => p !== 'body' && p !== 'payload' && p !== 'query' && p !== 'path').join('.')
+        return where ? `${where}: ${item.msg ?? 'invalid'}` : (item.msg ?? 'invalid')
+      })
+      .join('; ')
+  }
+  return `API error ${status}`
+}
+
 export class ApiError extends Error {
   status: number
   constructor(status: number, detail: unknown) {
-    super(typeof detail === 'string' ? detail : `API error ${status}`)
+    super(messageOf(status, detail))
     this.status = status
   }
 }

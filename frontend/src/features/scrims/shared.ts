@@ -4,7 +4,8 @@ import type { Tone } from '@/components/ui'
 import type { RoundDoc, SetDoc, ShipOut, ViewerOut } from '@/lib/api/client'
 
 /** What the viewer may do on the live page; derived once from /api/me. */
-export type Perms = { edit: boolean; manage: boolean; score: boolean; userId: number | null }
+/** `locked`: an archived scrim, read-only for everyone (the server refuses every write). */
+export type Perms = { edit: boolean; manage: boolean; score: boolean; locked: boolean; userId: number | null }
 
 /** Presence plumbing handed to every editable field. */
 export type Live = { setFocus: (field: string | null) => void; remote: Map<string, string[]> }

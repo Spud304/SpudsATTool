@@ -175,3 +175,15 @@ def test_slots_past_a_reduced_pilot_count_are_flagged_and_clearable(
     body = patch(client, f"/api/comps/{comp['id']}", {"clear_over_count": True}).json()
     assert [s["slot_no"] for s in body["slots"]] == list(range(1, 9))
     assert "SLOTS_OVER_COUNT" not in [v["code"] for v in body["evaluation_detail"]["violations"]]
+
+
+def test_create_with_a_lineup_is_all_or_nothing(client, library_sde, imported_atxxii, login_as):
+    from apps.library.models import Comp
+
+    login_as(role="theorycrafter")
+    bad = slots(*([at.RIFTER] * 9 + [424242]))  # slot 10: no such hull
+    assert post(client, "/api/comps", {"name": "From pad", "slots": bad}).status_code == 422
+    assert not Comp.objects.filter(name="From pad").exists()
+    body = post(client, "/api/comps", {"name": "From pad", "slots": slots(*[at.RIFTER] * 10)})
+    assert body.status_code == 201
+    assert [s["type_id"] for s in body.json()["slots"]] == [at.RIFTER] * 10

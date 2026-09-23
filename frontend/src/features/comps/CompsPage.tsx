@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { useCompMutations, useComps, useCompVocab, useMe } from '@/lib/api/hooks'
+import { useCanAddToLibrary, useCompMutations, useComps, useCompVocab, useMe } from '@/lib/api/hooks'
 import { Badge, Button, Empty, ErrorText, Field, Input, Mono, PageHeader, Panel, Select, Table } from '@/components/ui'
 import { num, when } from '@/features/fits/format'
 import { COMP_STATUSES, capTone, compStatusTone } from './format'
@@ -20,6 +20,7 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
 export function CompsPage() {
   usePageTitle('Comps')
   useSlashFocus('comps.search')
+  const canAdd = useCanAddToLibrary()
   const me = useMe()
   const active = me.data?.team?.active_ruleset ?? ''
   const vocab = useCompVocab()
@@ -153,7 +154,7 @@ export function CompsPage() {
           </Empty>
         )}
       </Panel>
-      <NewCompPanel />
+      {canAdd ? <NewCompPanel /> : null}
     </div>
     </>
   )
@@ -167,15 +168,20 @@ function NewCompPanel() {
   const [name, setName] = useState('')
   const [status, setStatus] = useState<string>('construction')
   const submit = async () => {
-    const comp = await createComp.mutateAsync({ name, status: canManage ? status : null, notes: '', ban_theory: '' })
-    setName('')
-    await navigate({ to: '/comps/$compId', params: { compId: String(comp.id) } })
+    if (!name.trim() || createComp.isPending) return // Enter and the button both land here
+    try {
+      const comp = await createComp.mutateAsync({ name, status: canManage ? status : null, notes: '', ban_theory: '' })
+      setName('')
+      await navigate({ to: '/comps/$compId', params: { compId: String(comp.id) } })
+    } catch {
+      // shown by <ErrorText error={createComp.error} />
+    }
   }
   return (
     <Panel title="New comp" testId="comps.new">
       <div className="space-y-2">
         <Field label="Name">
-          <Input data-testid="comps.new.name" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && name.trim() && submit()} />
+          <Input data-testid="comps.new.name" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && void submit()} />
         </Field>
         {canManage ? (
           <Field label="Status">

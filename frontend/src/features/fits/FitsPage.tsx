@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { useFits } from '@/lib/api/hooks'
+import { useCanAddToLibrary, useFits } from '@/lib/api/hooks'
 import type { FitSummaryOut } from '@/lib/api/client'
 import { Badge, Button, Empty, ErrorText, Input, Mono, PageHeader, Panel, Select, Table } from '@/components/ui'
 import { NewFitPanel } from './NewFitPanel'
@@ -20,6 +20,7 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
 export function FitsPage() {
   usePageTitle('Fits')
   useSlashFocus('fits.search')
+  const canAdd = useCanAddToLibrary()
   const [status, setStatus] = useState('active,suggested')
   const [q, setQ] = useState('')
   const fits = useFits({ status: status || undefined, q: q.trim() || undefined })
@@ -129,7 +130,7 @@ export function FitsPage() {
           </Empty>
         )}
       </Panel>
-      <NewFitPanel />
+      {canAdd ? <NewFitPanel /> : null}
     </div>
     </>
   )

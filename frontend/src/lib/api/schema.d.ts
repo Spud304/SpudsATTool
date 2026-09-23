@@ -2009,6 +2009,39 @@ export interface components {
              * @default
              */
             ban_theory: string;
+            /** Slots */
+            slots?: components["schemas"]["CompSlotIn"][] | null;
+        };
+        /** CompSlotIn */
+        CompSlotIn: {
+            /** Slot No */
+            slot_no: number;
+            /** Type Id */
+            type_id?: number | null;
+            /**
+             * Is Flagship
+             * @default false
+             */
+            is_flagship: boolean;
+            /**
+             * Is Unique
+             * @default false
+             */
+            is_unique: boolean;
+            /** Warp In Km */
+            warp_in_km?: number | null;
+            /** Default Fit Id */
+            default_fit_id?: number | null;
+            /**
+             * Ship Note
+             * @default
+             */
+            ship_note: string;
+            /**
+             * Link Scripts
+             * @default []
+             */
+            link_scripts: string[];
         };
         /** ArchetypeOut */
         ArchetypeOut: {
@@ -2095,37 +2128,6 @@ export interface components {
              * @default
              */
             reason: string;
-        };
-        /** CompSlotIn */
-        CompSlotIn: {
-            /** Slot No */
-            slot_no: number;
-            /** Type Id */
-            type_id?: number | null;
-            /**
-             * Is Flagship
-             * @default false
-             */
-            is_flagship: boolean;
-            /**
-             * Is Unique
-             * @default false
-             */
-            is_unique: boolean;
-            /** Warp In Km */
-            warp_in_km?: number | null;
-            /** Default Fit Id */
-            default_fit_id?: number | null;
-            /**
-             * Ship Note
-             * @default
-             */
-            ship_note: string;
-            /**
-             * Link Scripts
-             * @default []
-             */
-            link_scripts: string[];
         };
         /** CloneIn */
         CloneIn: {

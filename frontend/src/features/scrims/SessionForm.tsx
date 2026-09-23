@@ -66,8 +66,15 @@ export function SessionForm({
   const submit = async () => {
     let opponentId: number | null = d.opponent_id ? Number(d.opponent_id) : null
     if (d.opponent_id === 'new' && d.new_opponent.trim()) {
-      const created = await createOpponent.mutateAsync({ name: d.new_opponent.trim(), notes: '', alliance_id: null })
+      let created
+      try {
+        created = await createOpponent.mutateAsync({ name: d.new_opponent.trim(), notes: '', alliance_id: null })
+      } catch {
+        return // shown by <ErrorText>
+      }
       opponentId = created.id
+      // Pick it in the form now, so a retry after a failed save does not create it twice.
+      setD((prev) => ({ ...prev, opponent_id: String(created.id), new_opponent: '' }))
     } else if (d.opponent_id === 'new') {
       opponentId = null
     }
@@ -130,7 +137,13 @@ export function SessionForm({
       ) : null}
       <div className="grid grid-cols-2 gap-2">
         <Field label="Stage">
-          <Select data-testid={`${testPrefix}.stage`} value={d.stage_code} onChange={(e) => set('stage_code')(e.target.value)}>
+          <Select
+            data-testid={`${testPrefix}.stage`}
+            value={d.stage_code}
+            disabled={Boolean(session?.sets.length)}
+            title={session?.sets.length ? 'fixed once the scrim has a set: its bans follow this stage' : undefined}
+            onChange={(e) => set('stage_code')(e.target.value)}
+          >
             <option value="">unset</option>
             {(vocab.data?.stages ?? []).map((s) => (
               <option key={s.code} value={s.code}>

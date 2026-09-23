@@ -4,6 +4,7 @@ import { useAdmissionRules, useInvites, useMe, useMembers, useRoles, useTeamMuta
 import type { RoleOut } from '@/lib/api/client'
 import { Badge, Button, Checkbox, Empty, ErrorText, Field, Input, Mono, PageHeader, Panel, Select, Table } from '@/components/ui'
 import { usePageTitle } from '@/hooks/usePageTitle'
+import { notify } from '@/components/toast'
 
 /** The roles a manager may hand out: every role except admin, which only admins assign. */
 function assignable(roles: RoleOut[] | undefined, isAdmin: boolean): RoleOut[] {
@@ -183,7 +184,7 @@ function InvitesPanel({ isAdmin }: { isAdmin: boolean }) {
           Create
         </Button>
       </form>
-      <ErrorText error={createInvite.error} />
+      <ErrorText error={createInvite.error ?? revokeInvite.error} />
       {invites.data?.length ? (
         <Table hover>
           <thead>
@@ -210,9 +211,13 @@ function InvitesPanel({ isAdmin }: { isAdmin: boolean }) {
                   <Button
                     data-testid="team.invites.copy"
                     onClick={() => {
-                      void navigator.clipboard.writeText(inv.url)
-                      setCopied(inv.id)
-                      setTimeout(() => setCopied(null), 1500)
+                      navigator.clipboard.writeText(inv.url).then(
+                        () => {
+                          setCopied(inv.id)
+                          setTimeout(() => setCopied(null), 1500)
+                        },
+                        () => notify('Could not copy: the browser refused clipboard access', 'bad'),
+                      )
                     }}
                   >
                     {copied === inv.id ? 'Copied' : 'Copy link'}
@@ -287,7 +292,7 @@ function RulesPanel({ isAdmin }: { isAdmin: boolean }) {
           Add
         </Button>
       </form>
-      <ErrorText error={createRule.error} />
+      <ErrorText error={createRule.error ?? patchRule.error ?? deleteRule.error} />
       {rules.data?.length ? (
         <Table hover>
           <thead>

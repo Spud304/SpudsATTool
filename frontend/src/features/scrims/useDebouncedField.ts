@@ -17,24 +17,35 @@ export function useDebouncedField(server: string, save: (value: string) => void,
     }
   }, [server])
 
-  const flush = () => {
+  // Only a keystroke makes a save due: without it, a blur would write back the stale copy held
+  // since focus over whatever someone else saved meanwhile.
+  const typed = useRef(false)
+  const send = () => {
     window.clearTimeout(timer.current)
-    if (latest.current !== server) save(latest.current)
+    if (!typed.current) return
+    typed.current = false
+    save(latest.current)
   }
   return {
     value,
     onChange: (next: string) => {
       setValue(next)
       latest.current = next
+      typed.current = true
       window.clearTimeout(timer.current)
-      timer.current = window.setTimeout(() => save(latest.current), delay)
+      timer.current = window.setTimeout(send, delay)
     },
     onFocus: () => {
       focused.current = true
     },
     onBlur: () => {
       focused.current = false
-      flush()
+      if (typed.current) send()
+      else {
+        // Nothing typed: show what the server holds now, which may have changed while focused.
+        setValue(server)
+        latest.current = server
+      }
     },
   }
 }

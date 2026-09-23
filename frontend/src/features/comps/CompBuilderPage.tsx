@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { NO_SPINNER } from '@/lib/styles'
 import { api, unwrap, type CompOut, type CompSlotIn, type EvaluateOut, type FitSummaryOut, type SlotIn } from '@/lib/api/client'
-import { useComp, useCompMutations, useCompVocab, useFits, useMe, useRulesets, useRulesetShips } from '@/lib/api/hooks'
+import { useCanAddToLibrary, useComp, useCompMutations, useCompVocab, useFits, useMe, useRulesets, useRulesetShips } from '@/lib/api/hooks'
 import { Badge, Button, Checkbox, Empty, ErrorText, Field, Input, Mono, PageHeader, Panel, Select, Table, Textarea } from '@/components/ui'
 import { num, when } from '@/features/fits/format'
 import { ViolationList, rowFlags } from './ViolationList'
@@ -19,7 +19,9 @@ export function CompBuilderPage() {
   if (comp.isLoading) return <Empty>Loading…</Empty>
   if (comp.error) return <ErrorText error={comp.error} />
   if (!comp.data) return <Empty>Not found.</Empty>
-  return <Builder key={comp.data.updated_at} comp={comp.data} />
+  const c = comp.data
+  // Remount only when editable content changed on the server, so a status change keeps unsaved edits.
+  return <Builder key={JSON.stringify([c.id, c.name, c.notes, c.ban_theory, c.archetype_id, c.slots])} comp={c} />
 }
 
 type SlotState = {
@@ -50,6 +52,7 @@ function fromComp(comp: CompOut): SlotState[] {
 function Builder({ comp }: { comp: CompOut }) {
   const me = useMe()
   const canManage = Boolean(me.data?.capabilities?.manage_library)
+  const canAdd = useCanAddToLibrary()
   const navigate = useNavigate()
   const rulesets = useRulesets()
   const ruleset = rulesets.data?.find((r) => r.code === comp.ruleset)
@@ -185,9 +188,11 @@ function Builder({ comp }: { comp: CompOut }) {
         }
         actions={
           <>
-            <Button data-testid="comp.clone" onClick={clone} disabled={cloneComp.isPending}>
-              Clone
-            </Button>
+            {canAdd ? (
+              <Button data-testid="comp.clone" onClick={clone} disabled={cloneComp.isPending}>
+                Clone
+              </Button>
+            ) : null}
             {comp.can_edit ? (
               <Button data-testid="comp.save" variant="primary" disabled={!dirty || patchComp.isPending} onClick={save}>
                 Save
@@ -449,7 +454,6 @@ function StatusPanel({ comp }: { comp: CompOut }) {
     </Panel>
   )
 }
-
 
 function OverCount({ comp, dirty, pending, onClear }: { comp: CompOut; dirty: boolean; pending: boolean; onClear: () => void }) {
   const over = comp.slots.filter((s) => s.over_count)

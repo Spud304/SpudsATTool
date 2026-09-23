@@ -44,10 +44,12 @@ export function ScrimPage() {
   if (scrim.error) return <ErrorText error={scrim.error} />
   if (!scrim.data || !me.data) return <Empty>Loading\u2026</Empty>
   const caps = me.data.capabilities
+  const locked = scrim.data.is_archived
   const perms: Perms = {
-    edit: Boolean(caps?.edit_sets),
-    manage: Boolean(caps?.manage_scrims),
-    score: Boolean(caps?.score),
+    edit: !locked && Boolean(caps?.edit_sets),
+    manage: !locked && Boolean(caps?.manage_scrims),
+    score: !locked && Boolean(caps?.score),
+    locked,
     userId: me.data.user_id ?? null,
   }
   return <Board scrim={scrim.data} perms={perms} stream={stream} />
@@ -134,19 +136,19 @@ export function Board({ scrim, perms, stream, shared = false }: { scrim: Session
             <>
               <div style={{ gridArea: 'bans' }} className="flex flex-col gap-2">
                 <ErrorText error={error} testId="scrim.error" />
-                <BanBoard set={set} stage={scrim.stage} perms={perms} live={live} byName={byName} comps={comps.data ?? []} compsLoading={comps.isLoading} m={m} className="flex-1" />
+                <BanBoard key={set.id} set={set} stage={scrim.stage} perms={perms} live={live} byName={byName} comps={comps.data ?? []} compsLoading={comps.isLoading} m={m} className="flex-1" />
               </div>
               <div style={{ gridArea: 'results' }} className="self-start">
                 <ResultsColumn set={set} round={round} onRound={(n) => selectRound(set.id, n)} perms={perms} m={m} />
               </div>
               <div style={{ gridArea: 'main' }} className="flex min-w-0 flex-col gap-2 self-start">
-                <OurLineup scrimId={scrim.id} set={set} round={round} perms={perms} live={live} byName={byName} fitsByShip={fitsByShip} pilots={options} warpLabels={scrimVocab.data?.warp_labels ?? []} linkScripts={compVocab.data?.link_scripts ?? []} m={m} />
+                <OurLineup key={`${set.id}.${round.round_no}`} scrimId={scrim.id} set={set} round={round} perms={perms} live={live} byName={byName} fitsByShip={fitsByShip} pilots={options} warpLabels={scrimVocab.data?.warp_labels ?? []} linkScripts={compVocab.data?.link_scripts ?? []} m={m} />
                 <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
-                    <TheirLineup set={set} round={round} perms={perms} live={live} byName={byName} archetypes={compVocab.data?.archetypes ?? []} m={m} />
+                    <TheirLineup key={`${set.id}.${round.round_no}`} set={set} round={round} perms={perms} live={live} byName={byName} archetypes={compVocab.data?.archetypes ?? []} m={m} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <RoundNotes set={set} round={round} onRound={(n) => selectRound(set.id, n)} onAdd={perms.edit ? m.addRound : undefined} onDelete={perms.manage ? m.deleteRound : undefined} perms={perms} live={live} save={(n, notes) => m.patchRound(n, { notes })} />
+                    <RoundNotes key={`${set.id}.${round.round_no}`} set={set} round={round} onRound={(n) => selectRound(set.id, n)} onAdd={perms.edit ? m.addRound : undefined} onDelete={perms.manage ? m.deleteRound : undefined} perms={perms} live={live} save={(n, notes) => m.patchRound(n, { notes })} />
                   </div>
                 </div>
               </div>
@@ -282,9 +284,11 @@ function Header({
             <Button variant="ghost" className="h-6 px-1.5" data-testid="scrim.header.share" onClick={onShare}>
               Share
             </Button>
-            <Button variant="ghost" className="h-6 px-1.5" data-testid="scrim.header.edit" onClick={() => setEditing(true)}>
-              Edit
-            </Button>
+            {!scrim.is_archived ? (
+              <Button variant="ghost" className="h-6 px-1.5" data-testid="scrim.header.edit" onClick={() => setEditing(true)}>
+                Edit
+              </Button>
+            ) : null}
             {!scrim.is_archived ? (
               <Button
                 variant="ghost"

@@ -7,7 +7,7 @@ import { useScrimStream } from '@/features/scrims/useScrimStream'
 import { keys } from '@/lib/api/hooks'
 import { usePageTitle } from '@/hooks/usePageTitle'
 
-const NOBODY: Perms = { edit: false, manage: false, score: false, userId: null }
+const NOBODY: Perms = { edit: false, manage: false, score: false, locked: true, userId: null }
 
 /** The board for whoever holds a share link: read-only, live, fit text hidden. No login involved. */
 export function SharePage() {

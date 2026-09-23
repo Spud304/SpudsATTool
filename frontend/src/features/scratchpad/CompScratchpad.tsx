@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { api, unwrap, type BanIn, type EvaluateOut, type RulesetOut, type ScratchpadOut, type ShipOut, type SlotIn } from '@/lib/api/client'
-import { useCompMutations, useRulesets, useRulesetShips, useScratchpad, useScratchpadMutations } from '@/lib/api/hooks'
+import { useCanAddToLibrary, useCompMutations, useRulesets, useRulesetShips, useScratchpad, useScratchpadMutations } from '@/lib/api/hooks'
 import { Badge, Button, Checkbox, Empty, ErrorText, Input, Mono, PageHeader, Panel, Select, Table, Textarea } from '@/components/ui'
 import { HullInput } from '@/features/comps/HullInput'
 import { capTone, sizeCounts } from '@/features/comps/format'
@@ -100,7 +100,8 @@ function Editor({ ruleset, saved }: { ruleset: RulesetOut; saved: ScratchpadOut 
   const byName = useMemo(() => new Map((ships.data ?? []).map((s) => [s.name, s])), [ships.data])
   const byId = useMemo(() => new Map((ships.data ?? []).map((s) => [s.type_id, s])), [ships.data])
   const { save } = useScratchpadMutations()
-  const { createComp, patchComp } = useCompMutations()
+  const { createComp } = useCompMutations()
+  const canAdd = useCanAddToLibrary()
 
   const [slots, setSlots] = useState<SlotState[]>(() => initialSlots(ruleset, saved))
   const [bans, setBans] = useState<number[]>(() => (saved?.ruleset === code ? saved.bans : []))
@@ -206,12 +207,18 @@ function Editor({ ruleset, saved }: { ruleset: RulesetOut; saved: ScratchpadOut 
   const moveToComp = async () => {
     setMoving(true)
     try {
-      const comp = await createComp.mutateAsync({ name: `Scratchpad ${new Date().toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}`, ruleset: code, status: 'construction', notes: '', ban_theory: '' })
-      await patchComp.mutateAsync({
-        id: comp.id,
-        body: { reason: 'from the scratchpad', slots: slots.map((s, i) => ({ slot_no: i + 1, type_id: s.type_id, is_flagship: s.is_flagship, is_unique: false, ship_note: '', link_scripts: [] })) },
+      // One request with the lineup: a refused lineup leaves no empty comp behind.
+      const comp = await createComp.mutateAsync({
+        name: `Scratchpad ${new Date().toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}`,
+        ruleset: code,
+        status: 'construction',
+        notes: '',
+        ban_theory: '',
+        slots: slots.map((s, i) => ({ slot_no: i + 1, type_id: s.type_id, is_flagship: s.is_flagship, is_unique: false, ship_note: '', link_scripts: [] })),
       })
       await navigate({ to: '/comps/$compId', params: { compId: String(comp.id) } })
+    } catch {
+      // shown by <ErrorText error={createComp.error} />
     } finally {
       setMoving(false)
     }
@@ -237,13 +244,13 @@ function Editor({ ruleset, saved }: { ruleset: RulesetOut; saved: ScratchpadOut 
               <Button onClick={clearAll} data-testid="scratchpad.clear" disabled={filled.length === 0 && bans.length === 0}>
                 Clear all
               </Button>
-              <Button variant="primary" onClick={moveToComp} data-testid="scratchpad.move" disabled={filled.length === 0 || moving} title="save as a construction comp and open the editor">
+              <Button variant="primary" onClick={moveToComp} data-testid="scratchpad.move" disabled={!canAdd || filled.length === 0 || moving} title={canAdd ? 'save as a construction comp and open the editor' : 'your role cannot add comps to the library'}>
                 Move to comp editor
               </Button>
             </span>
           }
         >
-          <ErrorText error={createComp.error ?? patchComp.error ?? save.error} />
+          <ErrorText error={createComp.error ?? save.error} />
           {pasteOpen ? (
             <div className="mb-2 space-y-1" data-testid="scratchpad.paste.form">
               <Textarea rows={4} className="w-full" placeholder={'Astarte\nDeacon, Keres'} value={pasteText} onChange={(e) => setPasteText(e.target.value)} data-testid="scratchpad.paste.text" />

@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import type { AttendanceOut, FitSummaryOut, LinkScriptOut, PilotOut, RoundDoc, SetDoc, ShipOut, SlotDoc } from '@/lib/api/client'
+import { useEffect, useRef, useState } from 'react'
 import { Badge, Checkbox, Input, Mono, Panel, Select, Table } from '@/components/ui'
 import { HullInput } from '@/features/comps/HullInput'
 import type { Live, Perms } from './shared'
@@ -163,7 +164,7 @@ function OurRow({
 }) {
   const id = `scrim.ours.row.${s.slot_no}`
   const mine = perms.userId != null && s.pilot_user_id === perms.userId
-  const own = perms.edit || mine // pilots may change fit, warp and note on their own slot
+  const own = !perms.locked && (perms.edit || mine) // pilots may change fit, warp and note on their own slot
   const field = (name: string) => `set.${set.id}.us.${s.slot_no}.${name}`
   const duplicate = s.flags.includes('DUPLICATE_PILOT')
   const groups: PilotOption['group'][] = ['attending', 'maybe', 'other']
@@ -269,19 +270,7 @@ function OurRow({
       </td>
       <td>
         {own ? (
-          <Input
-            data-testid={`${id}.warp`}
-            type="number"
-            className={clsx('mono h-6 w-12 text-center font-semibold', NO_SPINNER)}
-            min={0}
-            max={1000}
-            value={s.warp_in_km ?? ''}
-            onChange={(e) => patch({ warp_in_km: e.target.value === '' ? null : Number(e.target.value) })}
-            {...remoteProps(live, field('warp'))}
-            style={{ backgroundColor: warpColor(s.warp_in_km), borderColor: warpColor(s.warp_in_km), color: s.warp_in_km != null ? '#0b1220' : undefined, ...remoteProps(live, field('warp')).style }}
-            onFocus={() => live.setFocus(field('warp'))}
-            onBlur={() => live.setFocus(null)}
-          />
+          <WarpInput testId={`${id}.warp`} server={s.warp_in_km} live={live} field={field('warp')} onSave={(v) => patch({ warp_in_km: v })} />
         ) : (
           <Mono className="inline-block min-w-8 rounded px-1.5 text-center font-semibold" testId={`${id}.warp`}>
             <span className="text-[#0b1220]" style={{ backgroundColor: warpColor(s.warp_in_km), display: 'block', borderRadius: 4 }}>{s.warp_in_km ?? ''}</span>
@@ -342,5 +331,51 @@ function OurRow({
         ) : null}
       </td>
     </tr>
+  )
+}
+
+
+/** Warp-in km: a local draft saved on blur or Enter, so typing "25" is one save of 25, not 2 then 5. */
+function WarpInput({ testId, server, live, field, onSave }: { testId: string; server: number | null; live: Live; field: string; onSave: (v: number | null) => void }) {
+  const [text, setText] = useState(server == null ? '' : String(server))
+  const focused = useRef(false)
+  useEffect(() => {
+    if (!focused.current) setText(server == null ? '' : String(server))
+  }, [server])
+  const commit = () => {
+    const next = text.trim() === '' ? null : Math.round(Number(text))
+    if (next != null && (!Number.isFinite(next) || next < 0 || next > 1000)) {
+      setText(server == null ? '' : String(server))
+      return
+    }
+    if (next !== server) onSave(next)
+  }
+  const parsed = Number(text)
+  const shown = text.trim() === '' || !Number.isFinite(parsed) ? null : parsed
+  const remote = remoteProps(live, field)
+  return (
+    <Input
+      data-testid={testId}
+      type="number"
+      className={clsx('mono h-6 w-12 text-center font-semibold', NO_SPINNER)}
+      min={0}
+      max={1000}
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') commit()
+      }}
+      {...remote}
+      style={{ backgroundColor: warpColor(shown), borderColor: warpColor(shown), color: shown != null ? '#0b1220' : undefined, ...remote.style }}
+      onFocus={() => {
+        focused.current = true
+        live.setFocus(field)
+      }}
+      onBlur={() => {
+        focused.current = false
+        live.setFocus(null)
+        commit()
+      }}
+    />
   )
 }

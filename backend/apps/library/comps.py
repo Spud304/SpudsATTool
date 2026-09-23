@@ -95,6 +95,7 @@ def create_comp(
     archetype_id: int | None = None,
     notes: str = "",
     ban_theory: str = "",
+    slots: list[SlotPatch] | None = None,
 ) -> Comp:
     ruleset = ruleset or selection.active_ruleset()
     if ruleset is None:
@@ -120,6 +121,8 @@ def create_comp(
             CompSlot.objects.bulk_create(
                 CompSlot(comp=comp, slot_no=i) for i in range(1, ruleset.fielded_pilots + 1)
             )
+            if slots is not None:  # in the same transaction: a bad lineup leaves no empty comp
+                _validate_slots(comp, slots)
     except IntegrityError as exc:
         raise CompError(409, f"{ruleset.code} already has a comp named {name!r}") from exc
     record(actor=actor, action="comp.created", target=comp, after=_snapshot(comp))

@@ -29,6 +29,7 @@ export function HullInput({
   useEffect(() => setText(value), [value])
   const commit = () => {
     const t = text.trim()
+    if (t === value.trim()) return // unchanged: tabbing through must not save or reset anything
     if (t === '') return onPick(null)
     const s = lookup.get(t)
     if (s) onPick(s)
@@ -52,15 +53,19 @@ export function HullInput({
       onKeyDown={(e) => {
         if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && onArrow && text === value) {
           e.preventDefault()
-          skipBlur.current = true // nothing typed, nothing to commit
+          // Moving focus blurs us synchronously; nothing was typed, so skip that blur. Reset right
+          // after, because at the first or last row focus does not move and no blur comes.
+          skipBlur.current = true
           onArrow(e.key === 'ArrowDown' ? 1 : -1)
+          skipBlur.current = false
           return
         }
         if (e.key !== 'Enter') return
         commit()
         if (onEnter) {
-          skipBlur.current = true // the focus move blurs us; the value is already committed
+          skipBlur.current = true // the value is already committed
           onEnter()
+          skipBlur.current = false
         }
       }}
       placeholder="hull"

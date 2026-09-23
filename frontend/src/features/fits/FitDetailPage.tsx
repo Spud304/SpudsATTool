@@ -40,7 +40,8 @@ export function FitDetailPage() {
         }
       />
       <div className="grid gap-4 xl:grid-cols-[3fr_2fr]">
-        <Editor key={f.updated_at} fit={f} />
+        {/* Remount only when the editable text changed on the server, so a status change keeps unsaved edits. */}
+        <Editor key={JSON.stringify([f.id, f.name, f.eft_text, f.pyfa_summary])} fit={f} />
         <div className="space-y-4">
           <StatsPanel fit={f} />
           <StatusPanel fit={f} />
@@ -161,10 +162,7 @@ function StatusPanel({ fit }: { fit: FitOut }) {
           data-testid="fit.status.apply"
           variant="primary"
           disabled={status === fit.status || patchFit.isPending}
-          onClick={() => {
-            patchFit.mutate({ id: fit.id, body: { status, reason } })
-            setReason('')
-          }}
+          onClick={() => patchFit.mutate({ id: fit.id, body: { status, reason } }, { onSuccess: () => setReason('') })}
         >
           Apply
         </Button>

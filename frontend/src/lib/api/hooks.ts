@@ -66,6 +66,12 @@ export function useMe() {
   return useQuery({ queryKey: keys.me, queryFn: async () => unwrap(await api.GET('/api/me')), staleTime: 60_000 })
 }
 
+/** New comps and fits, clones and the scratchpad's move: suggest_library or manage_library. */
+export function useCanAddToLibrary(): boolean {
+  const caps = useMe().data?.capabilities
+  return Boolean(caps?.suggest_library || caps?.manage_library)
+}
+
 export function useHealth() {
   return useQuery({ queryKey: keys.health, queryFn: async () => unwrap(await api.GET('/api/health')), staleTime: 30_000 })
 }

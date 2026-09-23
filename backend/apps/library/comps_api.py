@@ -105,6 +105,7 @@ class CompCreateIn(Schema):
     archetype_id: int | None = None
     notes: str = ""
     ban_theory: str = ""
+    slots: list[CompSlotIn] | None = None
 
 
 class CompPatchIn(Schema):
@@ -270,6 +271,24 @@ def _archetype_out(a: Archetype) -> dict:
     }
 
 
+def _slot_patches(slots: list[CompSlotIn] | None) -> list[comps.SlotPatch] | None:
+    if slots is None:
+        return None
+    return [
+        comps.SlotPatch(
+            slot_no=sl.slot_no,
+            type_id=sl.type_id,
+            is_flagship=sl.is_flagship,
+            is_unique=sl.is_unique,
+            warp_in_km=sl.warp_in_km,
+            default_fit_id=sl.default_fit_id,
+            ship_note=sl.ship_note,
+            link_scripts=tuple(sl.link_scripts),
+        )
+        for sl in slots
+    ]
+
+
 def _wrap(call):
     try:
         return call()
@@ -320,6 +339,7 @@ def create_comp(request: HttpRequest, payload: CompCreateIn):
             archetype_id=payload.archetype_id,
             notes=payload.notes,
             ban_theory=payload.ban_theory,
+            slots=_slot_patches(payload.slots),
         )
     )
     return 201, _full(_comp(comp.pk), user)
@@ -386,23 +406,7 @@ def patch_comp(request: HttpRequest, comp_id: int, payload: CompPatchIn):
     if not _can_edit(user, comp):
         raise HttpError(403, "you can only edit your own suggested comps")
     fields = payload.dict(exclude_unset=True)
-    slots = (
-        [
-            comps.SlotPatch(
-                slot_no=sl.slot_no,
-                type_id=sl.type_id,
-                is_flagship=sl.is_flagship,
-                is_unique=sl.is_unique,
-                warp_in_km=sl.warp_in_km,
-                default_fit_id=sl.default_fit_id,
-                ship_note=sl.ship_note,
-                link_scripts=tuple(sl.link_scripts),
-            )
-            for sl in payload.slots
-        ]
-        if payload.slots is not None
-        else None
-    )
+    slots = _slot_patches(payload.slots)
     _wrap(
         lambda: comps.update_comp(
             user,
