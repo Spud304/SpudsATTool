@@ -540,7 +540,6 @@ module_rules:
   banned_name_patterns: ["^'(Augmented|Integrated)'\\s", "-\\d{3}-I$"]
   flagship:
     allowed_meta_groups: [Deadspace, Faction, Officer, Storyline, Tech I, Tech II]
-    # The module families the rules post lists (2026-09-22), as SDE groups. Drones are not among them.
     groups:
     - Energy Weapon
     - Hybrid Weapon

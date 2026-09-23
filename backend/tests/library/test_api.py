@@ -126,6 +126,19 @@ def test_legality_endpoint(client, library_sde, imported_atxxii, login_as):
     flag = client.get(f"/api/fits/{fit_id}/legality", {"ruleset": "ATXXII", "flagship": "true"})
     assert flag.json()["is_legal"] and flag.json()["is_flagship"]
 
+    # A mutated Stasis Webifier II is abyssal: banned, and a flagship does not change that.
+    mutated = ABSO_FIT.replace("Stasis Webifier II", "Stasis Webifier II [1]") + (
+        "\n[1] Stasis Webifier II\n  Decayed Stasis Webifier Mutaplasmid\n  speedFactor -61\n"
+    )
+    Fit.objects.filter(pk=fit_id).update(eft_text=mutated)
+    for flagship in ("false", "true"):
+        body = client.get(
+            f"/api/fits/{fit_id}/legality", {"ruleset": "ATXXII", "flagship": flagship}
+        ).json()
+        assert not body["is_legal"]
+        bad = [v for v in body["violations"] if v["code"] == "META_GROUP_NOT_ALLOWED"]
+        assert bad[0]["message"].startswith("Stasis Webifier II (mutated) is Abyssal")
+
 
 def test_adding_to_the_library_needs_suggest_or_manage(client, library_sde, login_as):
     login_as(role="pilot")

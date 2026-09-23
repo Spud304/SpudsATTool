@@ -1,7 +1,7 @@
 """Fit library write path and derived data. Every mutation lands in the audit log."""
 
 import hashlib
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from django.db import IntegrityError, models, transaction
 from django.utils import timezone
@@ -12,7 +12,7 @@ from apps.audit.services import record
 from apps.rules import adapters
 from apps.rules.engine import FitEvaluation, FitItemSpec, evaluate_fit_modules
 from apps.rules.models import Ruleset
-from apps.sde.constants import CATEGORY_SHIP, GROUP_COMMAND_BURST
+from apps.sde.constants import CATEGORY_SHIP, GROUP_COMMAND_BURST, META_ABYSSAL
 from apps.sde.models import EveType
 from apps.sde.resolve import resolve_names
 
@@ -86,7 +86,12 @@ def resolve_fit(parsed: ParsedEft) -> ResolvedFit:
 def item_specs(resolved: ResolvedFit) -> tuple[FitItemSpec, ...]:
     specs: list[FitItemSpec] = []
     for r in resolved.items:
-        specs.append(_spec(r.item.line_no, r.item.name, r.type, r.item.quantity, r.item.offline))
+        spec = _spec(r.item.line_no, r.item.name, r.type, r.item.quantity, r.item.offline)
+        if r.item.mutated and spec.type_id is not None:
+            # A mutated copy is an abyssal module whatever its base, so the rules judge it by the
+            # Abyssal meta group, as they do a line that names the abyssal type directly.
+            spec = replace(spec, name=f"{spec.name} (mutated)", meta_group_id=META_ABYSSAL)
+        specs.append(spec)
         if r.item.charge:
             specs.append(_spec(r.item.line_no, r.item.charge, r.charge_type, 1, False))
     return tuple(specs)

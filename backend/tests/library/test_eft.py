@@ -65,3 +65,38 @@ def test_item_line_roundtrip(name, charge, qty):
     assert p.ok and len(p.items) == 1
     item = p.items[0]
     assert item.name == name and item.charge == charge and item.quantity == qty
+
+
+PYFA_MUTATED = """[Skua, 10mn skua]
+
+Mizuro's Modified Ballistic Control System [1]
+Caldari Navy Ballistic Control System [2]
+Missile Guidance Computer II
+
+Corelum A-Type 10MN Afterburner [3]
+
+
+Caldari Navy Nova Light Missile x300
+
+
+[1] Mizuro's Modified Ballistic Control System
+  Glorified Unstable Ballistic Control System Mutaplasmid
+  cpu 39.8008, missileDamageMultiplierBonus 1.144181, speedMultiplier 0.8708828
+[2] Caldari Navy Ballistic Control System
+  Unstable Ballistic Control System Mutaplasmid
+  cpu 34.6728, missileDamageMultiplierBonus 1.138099, speedMultiplier 0.870865
+"""
+
+
+def test_mutated_modules_are_marked_by_their_reference():
+    p = parse_eft(PYFA_MUTATED)
+    names = [(i.name, i.mutated) for i in p.items]
+    assert names == [
+        ("Mizuro's Modified Ballistic Control System", True),
+        ("Caldari Navy Ballistic Control System", True),
+        ("Missile Guidance Computer II", False),
+        ("Corelum A-Type 10MN Afterburner", True),
+        ("Caldari Navy Nova Light Missile", False),
+    ]
+    # the blocks are read, not warned about; [3] has none in this trimmed paste
+    assert p.warnings == ("line 7: Corelum A-Type 10MN Afterburner [3] has no [3] block",)
