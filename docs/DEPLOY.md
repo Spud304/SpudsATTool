@@ -39,7 +39,7 @@ make up
 make logs
 ```
 
-When `PROXY_NETWORK` is set the Makefile adds `deploy/docker-compose.proxy.yml`, which removes Caddy's published ports, names the container `attool-caddy`, sets `SITE_ADDRESS=:80` and attaches it to the external network. `make build` builds the two images locally; `make up` pulls only the images it cannot build (Postgres, Redis).
+When `PROXY_NETWORK` is set the Makefile adds `deploy/docker-compose.proxy.yml`, which removes Caddy's published ports, names the container `attool-caddy`, sets `SITE_ADDRESS=:80` and attaches it to the external network. `make build` builds the two images locally; `make up` pulls only the images it cannot build (Postgres, Redis). Leave `ATTOOL_IMAGES` unset: `ATTOOL_IMAGES=registry` would make `make up` pull the released images instead.
 
 Check from the host before touching the proxy:
 
@@ -95,7 +95,7 @@ The nginx container must be on the same Docker network as `attool-caddy`, or for
 
 ## 5. Operations
 
-Same as SETUP.md: `make upgrade` (backup, then rebuild and restart), `make backup`, `make logs`. Because images are built locally, upgrading is `git pull && make build && make up`. Nightly dumps land in the `backups` volume. The backend image does not include `rclone`, so `BACKUP_RCLONE_REMOTE` only prints a warning today; copy the volume off the box by other means or leave it empty.
+Same as SETUP.md: `git pull && make upgrade` (backup, rebuild from the checkout, restart), `make backup`, `make restore DUMP=attool-<stamp>.dump`, `make logs`. Nightly dumps land in the `backups` volume. The backend image does not include `rclone`, so `BACKUP_RCLONE_REMOTE` only prints a warning today; copy the volume off the box by other means or leave it empty.
 
 ## Checklist for a first night
 

@@ -15,7 +15,7 @@ class Command(BaseCommand):
             self.stderr.write("EVE_CLIENT_ID / EVE_CLIENT_SECRET are not set: EVE login will fail.")
         if not settings.ADMIN_CHARACTER_IDS:
             self.stderr.write(
-                "ADMIN_CHARACTER_IDS is empty: nobody can be admitted. Add your character id."
+                "ADMIN_CHARACTER_IDS is empty: no admin can be admitted. Add your character id."
             )
         else:
             self.stdout.write(f"admin characters: {settings.ADMIN_CHARACTER_IDS}")

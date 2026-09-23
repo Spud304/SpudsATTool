@@ -1,7 +1,13 @@
-.PHONY: init run stop playwright dev dev-db dev-backend dev-frontend test test-backend test-frontend lint gen-client build up upgrade backup logs
+.PHONY: init run stop playwright dev dev-db dev-backend dev-frontend test test-backend test-frontend lint gen-client build up upgrade backup restore logs
 
-# With PROXY_NETWORK set in deploy/.env the stack sits behind an existing reverse proxy (docs/DEPLOY.md).
-PROXY_FILE  = $(shell grep -qs '^PROXY_NETWORK=.' deploy/.env && echo -f deploy/docker-compose.proxy.yml)
+# deploy/.env is KEY=value lines and # comments, which make reads as variables; no grep needed, so
+# this also parses on Windows. Missing file (a dev box): every setting below is simply unset.
+-include deploy/.env
+# With PROXY_NETWORK set the stack sits behind an existing reverse proxy (docs/DEPLOY.md).
+PROXY_FILE  = $(if $(strip $(PROXY_NETWORK)),-f deploy/docker-compose.proxy.yml)
+# ATTOOL_IMAGES=registry pulls the released images at ATTOOL_VERSION; otherwise the images are the
+# ones `make build` made from this checkout (the homelab way).
+REGISTRY    = $(if $(filter registry,$(ATTOOL_IMAGES)),1)
 COMPOSE     = docker compose -f deploy/docker-compose.yml $(PROXY_FILE) --env-file deploy/.env
 COMPOSE_DEV = docker compose -f deploy/docker-compose.dev.yml
 
@@ -16,16 +22,30 @@ init:            ## create deploy/.env with generated secrets (does not overwrit
 	  echo "wrote deploy/.env; now set DOMAIN, ACME_EMAIL, EVE_CLIENT_ID, EVE_CLIENT_SECRET, ESI_CONTACT_EMAIL, TEAM_NAME" )
 
 up:              ## start (or update) the production stack
+ifeq ($(REGISTRY),1)
+	$(COMPOSE) pull
+	$(COMPOSE) up -d --no-build --remove-orphans
+else
 	$(COMPOSE) pull --ignore-buildable
 	$(COMPOSE) up -d --remove-orphans
+endif
 
 build:           ## build images locally instead of pulling
 	$(COMPOSE) build --build-arg APP_VERSION=$$(git describe --tags --always)
 
-upgrade: backup up   ## backup, then pull and restart with the newest images
+upgrade: backup  ## backup, then restart on the newest images (registry: pull; otherwise rebuild this checkout)
+ifneq ($(REGISTRY),1)
+	$(MAKE) build
+endif
+	$(MAKE) up
 
 backup:          ## take a database backup now
 	$(COMPOSE) exec scheduler /app/deploy/backup.sh
+
+restore:         ## restore a dump from the backups volume: make restore DUMP=attool-<stamp>.dump
+	$(if $(DUMP),,$(error usage: make restore DUMP=attool-<stamp>.dump; list them with: $(COMPOSE) exec scheduler ls /backups))
+	$(if $(wildcard deploy/.env),,$(error deploy/.env not found: restore runs on the box that hosts the stack))
+	$(COMPOSE) exec -T scheduler sh -c 'pg_restore --clean --if-exists --no-owner -d "$$DATABASE_URL" "/backups/$(DUMP)"'
 
 logs:            ## follow production logs
 	$(COMPOSE) logs -f --tail=200

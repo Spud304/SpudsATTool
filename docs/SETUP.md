@@ -19,18 +19,20 @@ The callback URL must match your domain exactly, including `https://`.
 git clone <repo> attool && cd attool
 make init                 # writes deploy/.env with generated secrets
 $EDITOR deploy/.env       # set DOMAIN, ACME_EMAIL, EVE_CLIENT_ID, EVE_CLIENT_SECRET, ESI_CONTACT_EMAIL, TEAM_NAME, ADMIN_CHARACTER_IDS
-make up                   # pulls images and starts caddy, web, scheduler, db, redis (or `make build` first to build them here)
+make build                # builds the two app images from this checkout
+make up                   # starts caddy, web, scheduler, db, redis (pulls Postgres and Redis)
 ```
 
 ### Admins and first login
 
-Admins are declared, not first-come: `ADMIN_CHARACTER_IDS` lists the EVE character ids that get the admin role when they log in. While it is empty nobody can log in, and the page a denied character sees shows that character's id so you can add it. Everyone else gets in one of three ways, all managed on the Team page by a captain or admin:
+Admins are declared, not first-come: `ADMIN_CHARACTER_IDS` lists the EVE character ids that get the admin role when they log in. On a fresh install, while it is empty nobody can get in (there is no admin to hand out invites or rules), and the page a denied character sees shows that character's id so you can add it. Existing members keep logging in if it is emptied later. Everyone else gets in one of two ways, both managed on the Team page by a captain or admin:
 
 - an **invite link** (role, number of uses, expiry),
-- an **admission rule** for a corporation or alliance (members are re-checked against ESI hourly and suspended after the grace period if they leave),
-- being added explicitly.
+- an **admission rule** for a corporation or alliance (members are re-checked against ESI hourly and suspended after the grace period if they leave).
 
-Locked out? `docker compose ... exec web python manage.py grant_admin <character id>` grants admin to any character, logged in before or not.
+Only admins listed in `ADMIN_CHARACTER_IDS` can open Django's `/admin/` pages, because edits there bypass the audit log. Other admins run the team from the app.
+
+Locked out? `docker compose ... exec web python manage.py grant_admin <character id>` makes any character a team admin, logged in before or not. It does not grant `/admin/`; add the id to `ADMIN_CHARACTER_IDS` for that.
 
 Caddy obtains a TLS certificate automatically once DNS for `DOMAIN` resolves to the box. Ports 80 and 443 must be reachable. Watch the first boot with `make logs`. If another reverse proxy already owns those ports on the box, see [DEPLOY.md](DEPLOY.md).
 
@@ -48,19 +50,28 @@ The three shipped rulesets in `backend/fixtures/rulesets/` (ATXXII, ATXXI, AG7) 
 
 ## 4. Operations
 
+The app images come from one of two places, chosen in `deploy/.env`:
+
+- **Built here** (the default): `make build` builds them from this checkout. Upgrading is `git pull`, then `make upgrade` (backup, rebuild, restart).
+- **Released images**: set `ATTOOL_IMAGES=registry` and `ATTOOL_VERSION` (a release tag such as `v1.2.3`, or `latest`). `make up` pulls that tag and never builds; `make upgrade` backs up, pulls and restarts. The repository is private, so the host needs `docker login ghcr.io` with a token that has `read:packages`.
+
 | Task | Command |
 |---|---|
-| Upgrade to the newest release | `make upgrade` (backs up first) |
-| Pin a version | set `ATTOOL_VERSION=v1.2.3` in `deploy/.env`, then `make up` |
+| Upgrade | `make upgrade` (backs up first) |
+| Pin a version | with `ATTOOL_IMAGES=registry`, set `ATTOOL_VERSION=v1.2.3`, then `make up` |
 | Manual backup | `make backup` |
+| List backups | `docker compose -f deploy/docker-compose.yml --env-file deploy/.env exec scheduler ls /backups` |
+| Restore | `make restore DUMP=attool-<stamp>.dump` |
 | Logs | `make logs` |
 
-Backups are `pg_dump` files written nightly to the `backups` volume and, if `BACKUP_RCLONE_REMOTE` is set, copied off-box with rclone. The raw SDE layer is excluded (it is reproducible); after a restore, run `import_sde --check-latest` or drop the archived zip into `sde/incoming/`.
+Backups are `pg_dump` files written nightly to the `backups` volume (kept `BACKUP_RETENTION_DAYS`, default 30). The raw SDE layer is excluded (it is reproducible); after a restore, run `import_sde --check-latest` or drop the archived zip into `sde/incoming/`. The image does not include `rclone`, so `BACKUP_RCLONE_REMOTE` only logs a warning today: copy the `backups` volume off the box by other means.
 
-Restore:
+`make restore` runs `pg_restore --clean --if-exists` inside the scheduler container, which is the one that mounts the `backups` volume, and replaces the current data with the dump's. Stop the web container first so nobody writes while it runs, and start it again after:
 
 ```bash
-docker compose -f deploy/docker-compose.yml --env-file deploy/.env exec -T db pg_restore -U attool -d attool --clean --if-exists < backups/attool-<stamp>.dump
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env stop web
+make restore DUMP=attool-<stamp>.dump
+docker compose -f deploy/docker-compose.yml --env-file deploy/.env start web
 ```
 
 ### Share links

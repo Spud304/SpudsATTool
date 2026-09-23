@@ -148,7 +148,8 @@ SDE_DOWNLOAD_URL = env.str(
 RULESET_FIXTURES_DIR = BASE_DIR / "fixtures" / "rulesets"
 
 TEAM_NAME = env.str("TEAM_NAME", "AT Team")
-# Characters that are granted admin on login. Empty means nobody can be admitted.
+# Characters granted admin (and Django admin) on login. Empty: no new admins; existing members, invites
+# and rules still work, so a fresh install with it empty has nobody to let anyone in.
 ADMIN_CHARACTER_IDS = env.list("ADMIN_CHARACTER_IDS", [], subcast=int)
 # /auth/dev-login shortcut for local work and tests; dev and test settings turn it on.
 DEV_LOGIN_ENABLED: bool = False
