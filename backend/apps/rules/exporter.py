@@ -13,7 +13,7 @@ def export_document(ruleset: Ruleset) -> RulesetDocument:
     cost_points: dict[int, int] = {}
     cost_overrides: list[dict] = []
     if cost is not None:
-        for e in cost.entries.select_related("ship"):
+        for e in cost.entries.select_related("ship").order_by("pk"):  # document order
             if e.ship_class_id is not None:
                 cost_points[e.ship_class_id] = e.points
             elif e.ship is not None:
@@ -53,7 +53,7 @@ def export_document(ruleset: Ruleset) -> RulesetDocument:
                         "hull": m.ship.name if m.ship else None,
                         "weight": m.weight,
                     }
-                    for m in q.members.all()
+                    for m in sorted(q.members.all(), key=lambda m: m.pk)
                 ],
             }
         )
@@ -222,7 +222,7 @@ def _kill_table(ruleset: Ruleset, class_by_pk: dict[int, str]) -> dict | None:
     if kill is None:
         return None
     classes, overrides = [], []
-    for e in kill.entries.select_related("ship"):
+    for e in kill.entries.select_related("ship").order_by("pk"):
         if e.ship_class_id is not None and e.ship_class_id in class_by_pk:
             classes.append({"name": class_by_pk[e.ship_class_id], "points": e.points})
         elif e.ship is not None:

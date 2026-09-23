@@ -27,7 +27,7 @@ class _Base(BaseModel):
 
 class TournamentDoc(_Base):
     code: str = Field(pattern=r"^[A-Z][A-Z0-9_]{1,15}$")
-    name: str
+    name: str = Field(max_length=100)
     organiser: Literal["ccp", "community"]
     server: Literal["tranquility", "thunderdome"] = "tranquility"
     year: int
@@ -65,10 +65,10 @@ class RosterDoc(_Base):
 class RulesetKnobs(_Base):
     fielded_pilots: int = Field(ge=1, le=20)
     point_cap: int = Field(gt=0)
-    max_same_hull: int | None = None
+    max_same_hull: int | None = Field(None, ge=1)
     duplicate_inflation: InflationDoc = InflationDoc()
     flagship: FlagshipDoc = FlagshipDoc()
-    unique_ship_extra_bans: int = 0
+    unique_ship_extra_bans: int = Field(0, ge=0)
     unspent_points_to_opponent: bool = True
     kill_points_source: Literal["comp_cost", "kill_table"] = "comp_cost"
     match: MatchDoc = MatchDoc()
@@ -79,23 +79,23 @@ class RulesetKnobs(_Base):
 
 class HullSizeDoc(_Base):
     size: HullSize
-    label: str
-    max_per_comp: int | None = None
-    duplicate_surcharge: int = 0
+    label: str = Field(max_length=40)
+    max_per_comp: int | None = Field(None, ge=0)
+    duplicate_surcharge: int = Field(0, ge=0)
 
 
 class GroupLimitMemberDoc(_Base):
     hull_size: HullSize | None = None
     class_: str | None = Field(default=None, alias="class")
     hull: str | None = None
-    weight: int = 1
+    weight: int = Field(1, ge=0)
 
 
 class GroupLimitDoc(_Base):
-    code: str = Field(pattern=r"^[a-z][a-z0-9_]*$")
-    label: str
+    code: str = Field(pattern=r"^[a-z][a-z0-9_]{0,31}$")
+    label: str = Field(max_length=80)
     max: int = Field(ge=0)
-    message: str = ""
+    message: str = Field("", max_length=300)
     members: list[GroupLimitMemberDoc] = Field(min_length=1)
 
 
@@ -107,22 +107,22 @@ class AvalancheDoc(_Base):
 
 
 class StageDoc(_Base):
-    code: str = Field(pattern=r"^[a-z][a-z0-9_]*$")
-    label: str | None = None
+    code: str = Field(pattern=r"^[a-z][a-z0-9_]{0,31}$")
+    label: str | None = Field(None, max_length=80)
     best_of: Literal[1, 3, 5, 7]
     bans_per_side: int = Field(ge=0)
     ban_order: str = ""
     blind: bool = False
     ban_targets: Literal["hull", "class"] = "hull"
-    deadline_minutes: int | None = None
+    deadline_minutes: int | None = Field(None, ge=0)
     avalanche: AvalancheDoc | None = None
-    flagship_uses: int = 0
+    flagship_uses: int = Field(0, ge=0)
 
 
 class ShipClassDoc(_Base):
-    name: str
+    name: str = Field(max_length=200)
     size: HullSize
-    points: int | None = None
+    points: int | None = Field(None, ge=0)
 
 
 class ShipDoc(_Base):
@@ -136,11 +136,11 @@ class ShipDoc(_Base):
 
 class HullOverrideDoc(_Base):
     hull: str
-    points: int
+    points: int = Field(ge=0)
 
 
 class PointTableDoc(_Base):
-    label: str = ""
+    label: str = Field("", max_length=120)
     source_url: str | None = None
     effective_from: date | None = None
     hull_overrides: list[HullOverrideDoc] = []
@@ -148,7 +148,7 @@ class PointTableDoc(_Base):
 
 class KillClassDoc(_Base):
     name: str
-    points: int
+    points: int = Field(ge=0)
 
 
 class KillTableDoc(PointTableDoc):
@@ -162,10 +162,10 @@ class ModuleDefaultDoc(_Base):
 class ModuleRuleDoc(_Base):
     groups: list[str] = []
     categories: list[str] = []
-    max_meta_level: int | None = None
+    max_meta_level: int | None = Field(None, ge=0)
     allowed_meta_groups: list[str] | None = None
     hulls: Literal["any", "bonused_only"] = "any"
-    note: str = ""
+    note: str = Field("", max_length=300)
 
 
 class FlagshipModuleDoc(_Base):
@@ -196,7 +196,7 @@ class ModuleRulesDoc(_Base):
 
 
 class TextSectionDoc(_Base):
-    heading: str
+    heading: str = Field(max_length=120)
     body: str
     source_url: str | None = None
 
@@ -244,7 +244,7 @@ class RulesetDocument(_Base):
             problems.append(
                 "hull_sizes: FLAG is only meaningful with flagship.enabled and exempt_from_size_limit"
             )
-        for size in flag.eligible_sizes:
+        for size in flag.eligible_sizes if flag.enabled else ():
             if size not in known:
                 problems.append(f"ruleset.flagship.eligible_sizes: {size} is not in hull_sizes")
 

@@ -114,3 +114,36 @@ def test_shipped_documents_are_valid():
     assert shipped
     for path in shipped:
         load_ruleset_document(path.read_text(encoding="utf-8"))
+
+
+def test_numbers_and_lengths_are_bounded():
+    bad = MINI_ATXXII.replace("duplicate_surcharge: 4 }", "duplicate_surcharge: -4 }").replace(
+        "label: Battlecruiser,", f"label: {'B' * 41},"
+    )
+    with pytest.raises(DocumentInvalid) as exc:
+        load_ruleset_document(bad)
+    text = str(exc.value)
+    assert "duplicate_surcharge" in text and "label" in text
+
+
+def test_flagship_sizes_only_checked_when_flagships_are_on():
+    no_bs = (
+        MINI_ATXXII.replace(
+            "  - { size: BS, label: Battleship, max_per_comp: 2, duplicate_surcharge: 4 }\n", ""
+        )
+        .replace("  - { size: FLAG, label: Flagship, max_per_comp: 1 }\n", "")
+        .replace("flagship: { enabled: true }", "flagship: { enabled: false }")
+        .replace(", flagship_uses: 1", "")
+        .replace(
+            "  flagship: { allowed_meta_groups: [Tech I, Tech II, Faction, Deadspace, Officer] }\n",
+            "",
+        )
+        .replace('  - { name: "Battleship, Pirate Faction", size: BS, points: 53 }\n', "")
+        .replace('  - { hull: Rattlesnake, class: "Battleship, Pirate Faction" }\n', "")
+        .replace(
+            '  - { hull: Bhaalgorn, class: "Battleship, Pirate Faction", flagship_eligible: false }\n',
+            "",
+        )
+        .replace("unique_hulls: [Rattlesnake]", "unique_hulls: []")
+    )
+    assert load_ruleset_document(no_bs).ruleset.flagship.enabled is False

@@ -1,4 +1,4 @@
-"""Read-only rules endpoints for the comp scratchpad. Any active member may use them."""
+"""Read-only rules endpoints for the comp scratchpad and pickers; they need browse_library."""
 
 from dataclasses import asdict
 

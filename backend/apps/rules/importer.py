@@ -126,6 +126,7 @@ def plan_ships(doc: RulesetDocument, resolved: Resolved, report: ImportReport) -
     unique = set(doc.unique_hulls)
 
     inferred: dict[int, tuple[str, str]] = {}
+    inferred_types: dict[int, EveType] = {}
     if doc.ruleset.ships_inference != "none":
         candidates = EveType.objects.filter(
             published=True, removed=False, group__category_id=sde.CATEGORY_SHIP
@@ -147,7 +148,9 @@ def plan_ships(doc: RulesetDocument, resolved: Resolved, report: ImportReport) -
             for w in warnings:
                 report.warn(f"alias inference: {w}")
         if inferred:
-            for t in EveType.objects.filter(pk__in=inferred):
+            # Keyed by id: two published ships can share a name, and a name map keeps only one.
+            inferred_types = {t.pk: t for t in EveType.objects.filter(pk__in=inferred)}
+            for t in inferred_types.values():
                 resolved.hulls.setdefault(t.name, t)
 
     plans: list[ShipPlan] = []
@@ -187,7 +190,7 @@ def plan_ships(doc: RulesetDocument, resolved: Resolved, report: ImportReport) -
             )
         )
     for type_id, (cls, source) in inferred.items():
-        hull = next(t for t in resolved.hulls.values() if t.pk == type_id)
+        hull = inferred_types[type_id]
         if hull.pk in seen:
             continue
         size, _ = size_for(hull, None, cls)

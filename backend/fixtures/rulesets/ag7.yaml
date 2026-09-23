@@ -37,7 +37,7 @@ point_table: null
 module_rules:
   default: { allowed_meta_groups: [Tech I, Tech II] }
   by_group:
-    - { categories: [Charge], allowed_meta_groups: [Tech I, Tech II], note: Pirate faction ammunition banned (unverified). }
+    - { categories: [Charge], allowed_meta_groups: [Tech I, Tech II], note: "Tech I and Tech II charges only, which also bars navy ammunition; the archived text bans only pirate ammunition (unverified)." }
 text_sections:
   - heading: Unverified
-    body: Point values, hull list and kill scoring for AG7 are unknown; comps under this ruleset evaluate every hull as UNLISTED_HULL until a point table is imported. Bans are two per side in ABBA order, taken 45 minutes before the match.
+    body: Point values, hull list and kill scoring for AG7 are unknown; with no point table, comps under this ruleset cannot be evaluated until one is imported. Bans are two per side in ABBA order, taken 45 minutes before the match.

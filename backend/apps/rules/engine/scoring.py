@@ -11,6 +11,8 @@ def _kill_points(
     kill_table: PointTable | None,
     hulls: HullIndex | None,
 ) -> int:
+    # With a kill table, a hull scores its own entry, else its class's; a hull the table does not
+    # list scores its comp cost, like every hull does without a kill table.
     total = 0
     for slot in evaluation.slots:
         if slot.slot_no not in dead:
@@ -38,8 +40,8 @@ def _side(
     fielded = evaluation.total_points
     unspent = max(spec.point_cap - fielded, 0)
     lost = _kill_points(evaluation, dead, spec, kill_table, hulls)
-    # The sheet's U19 term: unspent points count as already lost. Clamped so an over-cap
-    # comp never produces a negative handicap.
+    # The sheet's U19 term: unspent points count as already lost. `unspent` is clamped at 0 for an
+    # over-cap comp; a side that fielded nothing concedes no handicap (there was no fight).
     handicap = unspent if spec.unspent_points_to_opponent and fielded > 0 else 0
     return SideScore(
         fielded_points=fielded,
@@ -81,6 +83,10 @@ def score_round(
         and opp_potential_dps is not None
     ):
         hint = f"potential DPS at t=0: us {us_potential_dps:.0f} vs opp {opp_potential_dps:.0f}"
+    elif spec.tiebreak_rule == codes.TIEBREAK_POINTS_REMAINING:
+        us_left = ours.fielded_points - ours.points_lost
+        opp_left = theirs.fielded_points - theirs.points_lost
+        hint = f"points still on the field: us {us_left} vs opp {opp_left}"
 
     return RoundScore(
         us=ours,

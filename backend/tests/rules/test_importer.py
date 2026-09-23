@@ -281,3 +281,18 @@ def test_kill_table_overrides_resolve_their_hulls(tiny_sde):
     ruleset = import_ruleset(load_ruleset_document(text), report=ImportReport(source="kill"))
     kill = ruleset.point_versions.get(purpose="kill", is_current=True)
     assert kill.entries.filter(ship__name="Zealot", points=30).exists()
+
+
+def test_two_ships_with_one_name_do_not_break_inference(tiny_sde):
+    zealot = EveType.objects.get(name="Zealot")
+    EveType.objects.create(
+        id=990999, name="Zealot", group_id=zealot.group_id, meta_group_id=2, published=True
+    )
+    ruleset = import_ruleset(load_ruleset_document(MINI_ATXXII), report=ImportReport(source="dup"))
+    assert RulesetShip.objects.filter(ruleset=ruleset, ship__name="Zealot").count() == 2
+
+
+def test_export_keeps_document_order(imported_atxxii):
+    ruleset, _ = imported_atxxii
+    doc = load_ruleset_document(export_ruleset(ruleset))
+    assert [m.hull_size for m in doc.group_limits[0].members] == ["LC", "LF"]

@@ -46,7 +46,7 @@ Shipped documents live in `backend/fixtures/rulesets/`: `atxxii.yaml`, `atxxi.ya
 | `unique_ship_extra_bans` | 0 | Extra bans the opponent gets when a unique prize hull is declared. |
 | `unspent_points_to_opponent` | true | Fielding under the cap concedes the difference. |
 | `kill_points_source` | `comp_cost` | Or `kill_table`. |
-| `match.tiebreak` | `none` | `potential_dps_t0`, `points_remaining`, `custom`. |
+| `match.tiebreak` | `none` | `potential_dps_t0`, `points_remaining` (the round score shows each side's surviving points), `custom`. |
 | `match.point_threshold` | null | Differential at which the scoreboard shows a decisive lead (the sheet's colour band). No match timing is modelled; results are entered after the fight. |
 | `roster.max`, `roster.merc_max` | null | |
 | `ships_inference` | `prefix` | `none`, `prefix` (a class named `"Keres (Electronic Attack Frigate)"` maps hull Keres), or `prefix_and_aliases` (also generic classes such as `Command Ship` by SDE group and faction). Explicit `ships` entries always win. |

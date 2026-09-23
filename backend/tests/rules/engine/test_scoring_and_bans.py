@@ -119,3 +119,9 @@ class TestBans:
         assert flagship_uses_remaining(at.BRACKET, 1, False, at.SPEC) == 0
         assert flagship_uses_remaining(at.BRACKET, 0, True, at.SPEC) == 0
         assert flagship_uses_remaining(at.AG_STAGE, 0, False, at.AG7_SPEC) == 0
+
+
+def test_points_remaining_tiebreak_gives_a_hint():
+    spec = replace(at.SPEC, tiebreak_rule=c.TIEBREAK_POINTS_REMAINING)
+    score = score_round(spec, full(), full(), frozenset({1}), frozenset())
+    assert score.tiebreak_hint == "points still on the field: us 164 vs opp 200"
