@@ -103,3 +103,11 @@ async def test_share_stream_needs_a_live_token_and_strips_fits(scrim, captain, t
     slots = payloads[-1]["payload"]["set"]["rounds"][0]["us"]["slots"]
     assert slots[2]["fit_name"] and all(s["fit_text"] == "" for s in slots)
     await stream.aclose()
+
+
+def test_stripping_a_message_leaves_the_original_alone():
+    doc = {"rounds": [{"us": {"slots": [{"fit_text": "[Rifter, x]"}]}, "opp": {"slots": []}}]}
+    message = {"seq": 1, "kind": "set", "payload": {"set": doc}}
+    stripped = share.strip_fit_text_from_message(message)
+    assert stripped["payload"]["set"]["rounds"][0]["us"]["slots"][0]["fit_text"] == ""
+    assert doc["rounds"][0]["us"]["slots"][0]["fit_text"] == "[Rifter, x]"

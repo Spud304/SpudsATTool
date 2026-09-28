@@ -308,3 +308,64 @@ def test_warp_in_is_bounded(scrim, captain):
     with pytest.raises(ScrimError) as err:
         sets.patch_assignment(captain, scrim.pk, set_id, 1, "US", 1, warp_in_km=40000)
     assert err.value.status == 422
+
+
+def test_paste_empties_a_slot_whose_name_does_not_resolve(scrim, captain, theo):
+    set_id = sets.create_set(captain, scrim.pk)["id"]
+    sets.paste_opp_lineup(theo, scrim.pk, set_id, 1, "Astarte\nAstarte")
+    sets.add_round(theo, scrim.pk, set_id)  # round 2 starts as a copy of round 1
+    doc, unresolved = sets.paste_opp_lineup(theo, scrim.pk, set_id, 2, "NotAShip\nKeres")
+    assert [s["type_id"] for s in doc["rounds"][1]["opp"]["slots"][:2]] == [None, at.KERES]
+    assert unresolved == ["NotAShip"]
+
+
+def test_bans_are_checked_against_the_stage(scrim, captain, theo):
+    set_id = sets.create_set(captain, scrim.pk)["id"]
+
+    def ban(**kw):
+        with pytest.raises(ScrimError) as err:
+            sets.put_ban(theo, scrim.pk, set_id, side="A", type_id=at.KERES, **kw)
+        return err.value.status
+
+    assert ban(kind="unique_extra", index=3) == 422  # the ruleset gives two
+    assert ban(kind="avalanche", index=1, in_effect_from_round=1) == 422
+    assert ban(kind="avalanche", index=1, in_effect_from_round=5) == 422  # set has one round
+    doc = sets.put_ban(
+        theo,
+        scrim.pk,
+        set_id,
+        side="A",
+        kind="avalanche",
+        index=1,
+        type_id=at.KERES,
+        in_effect_from_round=2,
+    )
+    assert doc["avalanche_bans"]
+
+
+def test_pilots_do_not_pick_hulls_and_inactive_pilots_do_not_fly(scrim, captain, theo, abso_fit):
+    set_id = sets.create_set(captain, scrim.pk)["id"]
+    with pytest.raises(ScrimError) as err:
+        sets.patch_assignment(
+            theo, scrim.pk, set_id, 1, "US", 1, may_set_hull=False, fit_id=abso_fit.pk
+        )
+    assert err.value.status == 403
+    benched = Pilot.objects.create(name="Benched", status="inactive")
+    with pytest.raises(ScrimError) as err:
+        sets.patch_assignment(theo, scrim.pk, set_id, 1, "US", 1, pilot_id=benched.pk)
+    assert err.value.status == 422
+
+
+def test_a_deleted_set_does_not_let_a_guest_in(scrim, captain, theo):
+    from apps.accounts import permissions
+
+    from .conftest import make_member
+
+    guest = make_member(150, "Merc", "guest")
+    set_id = sets.create_set(captain, scrim.pk)["id"]
+    sets.patch_assignment(
+        theo, scrim.pk, set_id, 1, "US", 1, pilot_id=Pilot.objects.get(user=guest).pk
+    )
+    assert permissions.can_view_session(guest, scrim)
+    sets.delete_set(captain, scrim.pk, set_id)
+    assert not permissions.can_view_session(guest, scrim)

@@ -281,8 +281,8 @@ def set_attendance(
 
 def tally(session: Session) -> dict[str, int]:
     counts = dict.fromkeys(Rsvp.values, 0)
-    for value in session.attendance.values_list("rsvp", flat=True):
-        counts[value] += 1
+    for row in session.attendance.all():  # prefetched by queryset(), so no query per session
+        counts[row.rsvp] += 1
     return counts
 
 

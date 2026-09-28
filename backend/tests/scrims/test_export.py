@@ -1,5 +1,6 @@
 import csv
 import io
+from datetime import UTC
 
 import pytest
 
@@ -49,6 +50,8 @@ def test_match_log_rows_follow_the_sheet(scrim, captain, theo, of99_comp):
     assert len(rows) == 20 and {r["round"] for r in rows} == {"1", "3"}
 
     first = rows[0]
+    assert first["date"] == scrim.date.astimezone(UTC).isoformat(timespec="seconds")
+    assert first["date"].endswith("+00:00")
     assert first["pilot"] == "Pilot One" and first["ship"] == "Astarte" and first["flag"] == "1"
     assert first["fate"] == "1" and first["outcome"] == "0" and first["set"] == "1"
     assert (
@@ -87,3 +90,12 @@ def test_csv_endpoint_and_filename(client, scrim, captain, login_as):
     client.post("/auth/logout")
     login_as(character_id=5, name="Guest", role="guest")
     assert client.get(f"/api/scrims/{scrim.pk}/export.csv").status_code == 403
+
+
+def test_unplayed_rounds_are_left_out(scrim, captain, theo, of99_comp):
+    set_id = sets.create_set(captain, scrim.pk)["id"]
+    sets.patch_set(theo, scrim.pk, set_id, comp_id=of99_comp.pk)
+    sets.patch_round(theo, scrim.pk, set_id, 1, outcome="win")
+    sets.add_round(theo, scrim.pk, set_id)  # round 2 exists but has not been fought
+    rows = rows_of(export.match_log_csv(scrim))
+    assert {r["round"] for r in rows} == {"1"} and "NA" not in {r["outcome"] for r in rows}

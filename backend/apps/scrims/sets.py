@@ -22,6 +22,7 @@ from .models import (
     LineupSide,
     Outcome,
     Pilot,
+    PilotStatus,
     Round,
     Session,
     Set,
@@ -300,8 +301,21 @@ def put_ban(
         _check(kind, BanKind, "ban kind")
         if index < 1:
             raise ScrimError(422, "ban index starts at 1")
-        if kind == BanKind.STANDARD and ctx.stage and index > ctx.stage.bans_per_side:
-            raise ScrimError(422, f"this stage allows {ctx.stage.bans_per_side} bans per side")
+        stage = ctx.stage
+        if kind == BanKind.STANDARD:
+            allowed = stage.bans_per_side if stage else 0
+            if index > allowed:
+                raise ScrimError(422, f"this scrim's stage allows {allowed} bans per side")
+        elif kind == BanKind.AVALANCHE:
+            if stage is None or not stage.avalanche_enabled:
+                raise ScrimError(422, "this scrim's stage has no avalanche bans")
+            last_round = the_set.rounds.order_by("-round_no").values_list("round_no", flat=True)
+            if not 2 <= in_effect_from_round <= (last_round.first() or 1) + 1:
+                raise ScrimError(422, "an avalanche ban applies from round 2 up to the next round")
+        elif kind == BanKind.UNIQUE_EXTRA and index > ctx.spec.unique_ship_extra_bans:
+            raise ScrimError(
+                422, f"this ruleset gives {ctx.spec.unique_ship_extra_bans} extra bans for a unique"
+            )
         _hull_or_422(ctx, type_id)
         ban, _ = Ban.objects.get_or_create(
             set=the_set,
@@ -476,8 +490,18 @@ def _link_scripts(value: Any) -> list[str]:
 
 
 def patch_assignment(
-    actor: User, session_id: int, set_id: int, round_no: int, side: str, slot_no: int, **fields
+    actor: User,
+    session_id: int,
+    set_id: int,
+    round_no: int,
+    side: str,
+    slot_no: int,
+    *,
+    may_set_hull: bool = True,
+    **fields,
 ) -> dict:
+    """`may_set_hull` is off for a pilot editing their own slot: picking a fit on an empty slot
+    would otherwise choose the hull, which is the set editors' call."""
     with _writable(session_id) as session:
         the_set = _set_in(session, set_id)
         ctx = derived.context_for(session)
@@ -519,6 +543,8 @@ def patch_assignment(
                         422, f"{fit.name} is a {fit.ship.name} fit, not for this slot's hull"
                     )
                 if a.ship_id is None:
+                    if not may_set_hull:
+                        raise ScrimError(403, "this slot has no hull yet; a set editor picks it")
                     a.ship_id = _hull_or_422(ctx, fit.ship_id)
                 a.fit = fit
                 a.fit_text_snapshot = fit.eft_text
@@ -526,8 +552,12 @@ def patch_assignment(
             if side != LineupSide.US:
                 raise ScrimError(422, "only our slots take a pilot")
             pilot_id = fields["pilot_id"]
-            if pilot_id is not None and not Pilot.objects.filter(pk=pilot_id).exists():
-                raise ScrimError(422, f"unknown pilot {pilot_id}")
+            if pilot_id is not None:
+                pilot = Pilot.objects.filter(pk=pilot_id).first()
+                if pilot is None:
+                    raise ScrimError(422, f"unknown pilot {pilot_id}")
+                if pilot.status != PilotStatus.ACTIVE and pilot_id != a.pilot_id:
+                    raise ScrimError(422, f"{pilot.name} is not an active pilot")
             a.pilot_id = pilot_id
         if "opp_pilot_name" in fields:
             a.opp_pilot_name = (fields["opp_pilot_name"] or "")[:100]
@@ -550,7 +580,8 @@ def patch_assignment(
 def paste_opp_lineup(
     actor: User, session_id: int, set_id: int, round_no: int, text: str
 ) -> tuple[dict, list[str]]:
-    """Ten hull names from chat, one per line (or comma separated), into the opponent's slots in order."""
+    """Hull names from chat, one per line or comma separated, into the opponent's slots in order.
+    A name that does not resolve empties its slot rather than keeping the previous round's hull."""
     with _writable(session_id) as session:
         the_set = _set_in(session, set_id)
         ctx = derived.context_for(session)
@@ -563,7 +594,6 @@ def paste_opp_lineup(
             type_id = by_name.get(name.lower())
             if type_id is None:
                 unresolved.append(name)
-                continue
             a.ship_id = type_id
             a.save(update_fields=["ship"])
         for a in slots[len(names) :]:

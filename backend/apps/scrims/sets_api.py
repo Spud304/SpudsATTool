@@ -359,8 +359,11 @@ def patch_assignment(
         refused = sorted(set(fields) - allowed)
         if refused:
             raise HttpError(403, f"you may not change {', '.join(refused)} on this slot")
+    editor = permissions.can_edit_sets(user)
     return _wrap(
-        lambda: sets.patch_assignment(user, session_id, set_id, round_no, side, slot_no, **fields)
+        lambda: sets.patch_assignment(
+            user, session_id, set_id, round_no, side, slot_no, may_set_hull=editor, **fields
+        )
     )
 
 

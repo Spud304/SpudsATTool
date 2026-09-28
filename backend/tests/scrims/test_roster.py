@@ -95,3 +95,14 @@ def test_new_pilots_join_upcoming_scrims_only(scrim, captain, tonight):
     SessionAttendance.objects.filter(pilot=merc).delete()
     roster.update_pilot(captain, merc, status="active")
     assert SessionAttendance.objects.filter(pilot=merc, session=scrim).exists()
+
+
+def test_opponent_names_cannot_be_blank_and_a_pilot_keeps_its_own_user(captain, pilot):
+    from apps.scrims.roster import ScrimError
+
+    opponent = roster.create_opponent(captain, name="Hydra")
+    with pytest.raises(ScrimError) as err:
+        roster.update_opponent(captain, opponent, name="  ")
+    assert err.value.status == 422
+    mine = Pilot.objects.get(user=pilot)
+    roster.update_pilot(captain, mine, user_id=pilot.pk, notes="same login")  # not a 409

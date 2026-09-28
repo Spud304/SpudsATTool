@@ -1,5 +1,6 @@
 """Share links: a random token that lets anyone with the URL watch one scrim read-only, fit text hidden."""
 
+import copy
 import secrets
 from datetime import timedelta
 
@@ -76,7 +77,11 @@ def strip_fit_text(set_doc: dict) -> dict:
 
 
 def strip_fit_text_from_message(message: dict) -> dict:
+    """A stripped copy: the broker may hand the same message object to member streams too."""
     payload = message.get("payload") or {}
     if message.get("kind") == "set" and isinstance(payload.get("set"), dict):
-        strip_fit_text(payload["set"])
+        message = {
+            **message,
+            "payload": {**payload, "set": strip_fit_text(copy.deepcopy(payload["set"]))},
+        }
     return message

@@ -199,15 +199,22 @@ def require_edit_sets(user) -> None:
     require_perm(user, "edit_sets", "requires the edit sets permission")
 
 
+def fielded_assignments(user):
+    """Lineup rows of the pilot linked to `user`, in sets and rounds that are not deleted."""
+    from apps.scrims.models import Assignment
+
+    return Assignment.objects.filter(
+        pilot__user=user, round__deleted_at__isnull=True, round__set__deleted_at__isnull=True
+    )
+
+
 def can_view_session(user, session) -> bool:
     """`view_scrims` sees everything; `view_assigned_scrims` only where a linked pilot is fielded."""
     if has_perm(user, "view_scrims"):
         return True
     if not has_perm(user, "view_assigned_scrims"):
         return False
-    from apps.scrims.models import Assignment
-
-    return Assignment.objects.filter(round__set__session=session, pilot__user=user).exists()
+    return fielded_assignments(user).filter(round__set__session=session).exists()
 
 
 def require_view_session(user, session) -> None:

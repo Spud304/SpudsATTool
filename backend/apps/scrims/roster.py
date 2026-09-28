@@ -59,6 +59,9 @@ def ensure_pilot_for(user: User) -> Pilot:
         with transaction.atomic():
             pilot = Pilot.objects.create(name=name, user=user)
     except IntegrityError:
+        raced = Pilot.objects.filter(user=user).first()
+        if raced is not None:  # a concurrent call created this member's pilot first
+            return raced
         # a different login already owns that name: keep both, make ours unique
         pilot = Pilot.objects.create(name=f"{name} ({user.pk})"[:100], user=user)
     attach_to_upcoming(pilot)
@@ -90,11 +93,15 @@ def create_pilot(
     return pilot
 
 
-def _linkable_user(user_id: int) -> User:
+def _linkable_user(user_id: int, pilot: Pilot | None = None) -> User:
+    """`pilot` is the row being edited: already being linked to it is not a clash."""
     user = User.objects.filter(pk=user_id).first()
     if user is None:
         raise ScrimError(422, f"unknown user {user_id}")
-    if Pilot.objects.filter(user=user).exists():
+    others = Pilot.objects.filter(user=user)
+    if pilot is not None:
+        others = others.exclude(pk=pilot.pk)
+    if others.exists():
         raise ScrimError(409, f"{user.display_name} is already linked to a pilot")
     return user
 
@@ -104,7 +111,7 @@ def update_pilot(actor: User, pilot: Pilot, **fields) -> Pilot:
     if "user_id" in fields:
         user_id = fields.pop("user_id")
         before["user"] = pilot.user.display_name if pilot.user else None
-        pilot.user = _linkable_user(user_id) if user_id is not None else None
+        pilot.user = _linkable_user(user_id, pilot) if user_id is not None else None
     for key, value in fields.items():
         if key == "name":
             value = value.strip()[:100]
@@ -144,8 +151,12 @@ def create_opponent(
 
 def update_opponent(actor: User, opponent: Opponent, **fields) -> Opponent:
     before = {k: getattr(opponent, k) for k in fields}
+    if "name" in fields:
+        fields["name"] = (fields["name"] or "").strip()[:100]
+        if not fields["name"]:
+            raise ScrimError(422, "opponent name is required")
     for key, value in fields.items():
-        setattr(opponent, key, value.strip()[:100] if key == "name" else value)
+        setattr(opponent, key, value)
     try:
         with transaction.atomic():
             opponent.save()

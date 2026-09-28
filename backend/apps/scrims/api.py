@@ -346,7 +346,8 @@ def list_sessions(request: HttpRequest, when: str = "upcoming"):
         raise HttpError(422, "when must be upcoming, past or all")
     if not permissions.has_perm(user, "view_scrims"):
         # view_assigned_scrims only: the nights a pilot linked to this member is fielded in
-        qs = qs.filter(sets__rounds__assignments__pilot__user=user).distinct()
+        fielded = permissions.fielded_assignments(user).values("round__set__session")
+        qs = qs.filter(pk__in=fielded)
     has_pilot = sessions.pilot_of(user) is not None
     return [_summary(s, user, has_pilot) for s in qs]
 

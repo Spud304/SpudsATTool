@@ -7,6 +7,7 @@ sheet's names exactly (`docs/ARCHITECTURE.md` section 2); the identifiers after 
 import csv
 import io
 from collections.abc import Iterable
+from datetime import UTC
 
 from .models import Outcome, Session
 from .sets_api import set_documents
@@ -57,13 +58,14 @@ def _bans_for_side(doc: dict, side: str) -> list[str]:
 
 def match_log_rows(session: Session, archetypes: dict[int, str] | None = None) -> Iterable[dict]:
     archetypes = archetypes or {}
-    date = session.date.date().isoformat()
+    # The start time in UTC with its offset written out, e.g. 2026-09-28T01:00:00+00:00.
+    date = session.date.astimezone(UTC).isoformat(timespec="seconds")
     for doc in set_documents(session):
         team_a = _bans_for_side(doc, "A")
         team_b = _bans_for_side(doc, "B")
         for rnd in doc["rounds"]:
-            if rnd["outcome"] == Outcome.RESET:
-                continue
+            if rnd["outcome"] in (Outcome.RESET, Outcome.NONE):
+                continue  # not fought, or fought again later
             opp_ships = [s["ship_name"] or "" for s in rnd["opp"]["slots"]]
             opp_flag = next((s["ship_name"] for s in rnd["opp"]["slots"] if s["is_flagship"]), "")
             for slot in rnd["us"]["slots"]:

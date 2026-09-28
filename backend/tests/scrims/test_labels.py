@@ -50,3 +50,17 @@ def test_warp_labels_crud_and_in_use_guard(client, scrim, captain, login_as):
     assert client.delete(f"/api/warp-labels/{row['id']}").status_code == 204
     assert not WarpInLabel.objects.filter(label="Gate 0").exists()
     assert AuditLog.objects.filter(action__startswith="warp_label.").count() == 3
+
+
+def test_renaming_a_label_renames_it_in_sets(client, scrim, captain, login_as):
+    from apps.scrims.models import Set, WarpInLabel
+
+    login_as(character_id=1, name="Spud", role="admin")
+    row = WarpInLabel.objects.create(label="Gate 9", sort_order=99)
+    set_id = sets.create_set(captain, scrim.pk)["id"]
+    sets.patch_set(captain, scrim.pk, set_id, warp_calls=["Gate 9", "Sun"])
+    resp = client.patch(
+        f"/api/warp-labels/{row.pk}", json.dumps({"label": "Gate 10"}), content_type=JSON
+    )
+    assert resp.status_code == 200 and resp.json()["in_use"] == 1
+    assert Set.objects.get(pk=set_id).warp_calls == ["Gate 10", "Sun"]

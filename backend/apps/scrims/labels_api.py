@@ -82,11 +82,17 @@ def patch_label(request: HttpRequest, label_id: int, payload: WarpLabelPatch):
         changes["label"] = changes["label"].strip()[:40]
         if not changes["label"]:
             raise HttpError(422, "a label needs text")
+    old_label = row.label
     for field, value in changes.items():
         setattr(row, field, value)
     try:
         with transaction.atomic():
             row.save()
+            if row.label != old_label:
+                # Sets store the label text, so they follow the rename (and keep counting as uses).
+                for s in Set.all_objects.filter(warp_calls__contains=[old_label]):
+                    s.warp_calls = [row.label if c == old_label else c for c in s.warp_calls]
+                    s.save(update_fields=["warp_calls"])
     except IntegrityError as exc:
         raise HttpError(409, f"label {row.label!r} already exists") from exc
     record(
