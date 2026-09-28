@@ -31,3 +31,9 @@ class CompAdmin(admin.ModelAdmin):
 class ArchetypeAdmin(admin.ModelAdmin):
     list_display = ("name", "is_retired", "sort_order")
     list_editable = ("is_retired", "sort_order")
+
+    def has_delete_permission(self, request, obj=None):
+        # Same rule as the app: only an archetype nothing uses; retire the others.
+        from .comps import archetype_uses
+
+        return obj is not None and archetype_uses(obj) == 0

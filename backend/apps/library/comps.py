@@ -17,7 +17,7 @@ from apps.sde.constants import CATEGORY_SHIP
 from apps.sde.models import EveType
 
 from .constants import LINK_SCRIPTS, MAX_LINK_SCRIPTS
-from .models import Archetype, Comp, CompSlot, CompStatus, Fit
+from .models import Archetype, Comp, CompSlot, CompStatus, Fit, FitStatus
 from .services import SUGGESTED, FitError, _check_status
 
 
@@ -60,6 +60,9 @@ def _digest(text: str) -> str:
     )
 
 
+RETIRED_FIT_STATUSES = frozenset({FitStatus.INACTIVE, FitStatus.RETIRED})
+
+
 def _snapshot(comp: Comp) -> dict:
     return {
         "name": comp.name,
@@ -96,6 +99,7 @@ def create_comp(
     notes: str = "",
     ban_theory: str = "",
     slots: list[SlotPatch] | None = None,
+    keep_retired_fits: bool = False,
 ) -> Comp:
     ruleset = ruleset or selection.active_ruleset()
     if ruleset is None:
@@ -122,14 +126,16 @@ def create_comp(
                 CompSlot(comp=comp, slot_no=i) for i in range(1, ruleset.fielded_pilots + 1)
             )
             if slots is not None:  # in the same transaction: a bad lineup leaves no empty comp
-                _validate_slots(comp, slots)
+                _validate_slots(comp, slots, keep_retired_fits=keep_retired_fits)
     except IntegrityError as exc:
         raise CompError(409, f"{ruleset.code} already has a comp named {name!r}") from exc
     record(actor=actor, action="comp.created", target=comp, after=_snapshot(comp))
     return comp
 
 
-def _validate_slots(comp: Comp, patches: list[SlotPatch]) -> list[int]:
+def _validate_slots(
+    comp: Comp, patches: list[SlotPatch], *, keep_retired_fits: bool = False
+) -> list[int]:
     """Apply a full slot replacement to comp.slots in memory; returns the changed slot numbers."""
     n = comp.ruleset.fielded_pilots
     if sorted(p.slot_no for p in patches) != list(range(1, n + 1)):
@@ -158,6 +164,11 @@ def _validate_slots(comp: Comp, patches: list[SlotPatch]) -> list[int]:
                 raise CompError(
                     422, f"slot {p.slot_no}: fit {fit.name!r} is for {fit.ship.name}, not {hull}"
                 )
+            current = existing.get(p.slot_no)
+            newly_chosen = current is None or current.default_fit_id != fit.pk
+            if newly_chosen and not keep_retired_fits and fit.status in RETIRED_FIT_STATUSES:
+                # A slot that already had it keeps it; only a new choice must be a usable fit.
+                raise CompError(422, f"slot {p.slot_no}: fit {fit.name!r} is {fit.status}")
         codes = list(p.link_scripts)
         if len(codes) > MAX_LINK_SCRIPTS:
             raise CompError(422, f"slot {p.slot_no}: at most {MAX_LINK_SCRIPTS} link scripts")
@@ -277,34 +288,50 @@ def clone_comp(
     target = ruleset or comp.ruleset
     if status is None and permissions.can_manage_library(actor):
         status = comp.status  # managers keep the source status; everyone else lands in suggested
-    new = create_comp(
-        actor,
-        name=name or f"{comp.name} (copy)",
-        ruleset=target,
-        status=status,
-        archetype_id=comp.archetype_id,
-        notes=comp.notes,
-        ban_theory=comp.ban_theory,
-    )
-    source = {s.slot_no: s for s in comp.slots.all()}
-    for slot in new.slots.all():
-        src = source.get(slot.slot_no)
-        if src is None:
-            continue
-        slot.ship_id = src.ship_id
-        slot.is_flagship = src.is_flagship
-        slot.is_unique = src.is_unique
-        slot.warp_in_km = src.warp_in_km
-        slot.default_fit_id = src.default_fit_id
-        slot.ship_note = src.ship_note
-        slot.link_scripts = list(src.link_scripts or [])
-        slot.save()
-    record(
-        actor=actor,
-        action="comp.cloned",
-        target=new,
-        after={"source_id": comp.pk, "source": comp.name, "ruleset": target.code},
-    )
+    source = {s.slot_no: s for s in comp.slots.select_related("ship")}
+    n = target.fielded_pilots
+    patches = []
+    for i in range(1, n + 1):
+        src = source.get(i)
+        patches.append(
+            SlotPatch(slot_no=i)
+            if src is None
+            else SlotPatch(
+                slot_no=i,
+                type_id=src.ship_id,
+                is_flagship=src.is_flagship,
+                is_unique=src.is_unique,
+                warp_in_km=src.warp_in_km,
+                default_fit_id=src.default_fit_id,
+                ship_note=src.ship_note,
+                link_scripts=tuple(src.link_scripts or ()),
+            )
+        )
+    # Cloning into a ruleset with fewer pilots leaves the last slots behind; the audit says which.
+    dropped = [s.ship.name for no, s in sorted(source.items()) if no > n and s.ship is not None]
+    with transaction.atomic():  # the copy exists whole or not at all
+        new = create_comp(
+            actor,
+            name=name or f"{comp.name} (copy)",
+            ruleset=target,
+            status=status,
+            archetype_id=comp.archetype_id,
+            notes=comp.notes,
+            ban_theory=comp.ban_theory,
+            slots=patches,
+            keep_retired_fits=True,
+        )
+        record(
+            actor=actor,
+            action="comp.cloned",
+            target=new,
+            after={
+                "source_id": comp.pk,
+                "source": comp.name,
+                "ruleset": target.code,
+                "dropped_hulls": dropped,
+            },
+        )
     return new
 
 
@@ -441,8 +468,12 @@ def archetype_uses(archetype: Archetype) -> int:
 
 
 def delete_archetype(actor: User, archetype: Archetype) -> None:
-    uses = archetype_uses(archetype)
-    if uses:
-        raise CompError(409, f"{uses} comp(s) or set(s) use this archetype; retire it instead")
-    record(actor=actor, action="archetype.deleted", target=archetype)
-    archetype.delete()
+    with transaction.atomic():
+        # The row lock conflicts with the key lock a comp or set takes when it points at the
+        # archetype, so none can pick it up between the count and the delete.
+        archetype = Archetype.objects.select_for_update().get(pk=archetype.pk)
+        uses = archetype_uses(archetype)
+        if uses:
+            raise CompError(409, f"{uses} comp(s) or set(s) use this archetype; retire it instead")
+        record(actor=actor, action="archetype.deleted", target=archetype)
+        archetype.delete()

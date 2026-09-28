@@ -47,7 +47,10 @@ def make_client(**kwargs) -> httpx.Client:
 def fetch_latest_build(client: httpx.Client | None = None) -> LatestBuild:
     """Read CCP's latest.jsonl: one line, {"_key": "sde", "buildNumber": N, "releaseDate": ...}."""
     client = client or make_client()
-    resp = client.get(settings.SDE_LATEST_URL)
+    try:
+        resp = client.get(settings.SDE_LATEST_URL)
+    except httpx.TransportError as exc:
+        raise ImportFailed(f"latest.jsonl unreachable: {exc}", "retry later") from exc
     if resp.status_code != 200:
         raise ImportFailed(
             f"latest.jsonl returned HTTP {resp.status_code}",
@@ -57,8 +60,11 @@ def fetch_latest_build(client: httpx.Client | None = None) -> LatestBuild:
         line = line.strip()
         if not line:
             continue
-        record = json.loads(line)
-        if record.get("_key") == "sde" and "buildNumber" in record:
+        try:
+            record = json.loads(line)
+        except ValueError:
+            continue  # not JSON: keep looking, and fail below if no line was the build pointer
+        if isinstance(record, dict) and record.get("_key") == "sde" and "buildNumber" in record:
             release = record.get("releaseDate")
             parsed = datetime.fromisoformat(release.replace("Z", "+00:00")) if release else None
             return LatestBuild(int(record["buildNumber"]), parsed)
@@ -77,8 +83,13 @@ def download_build(build: int, dest_dir: Path, client: httpx.Client | None = Non
     dest_dir.mkdir(parents=True, exist_ok=True)
     final = download_path(dest_dir, build)
     if final.exists() and zipfile.is_zipfile(final):
-        log.info("build %d already downloaded: %s", build, final)
-        return final
+        with ZipSource(final) as source:
+            info = read_build_info(source)
+        if info is not None and info[0] == build:
+            log.info("build %d already downloaded: %s", build, final)
+            return final
+        log.warning("%s is not build %d; downloading again", final, build)
+        final.unlink()
     client = client or make_client()
     partial = dest_dir / f".partial-{build}.zip"
     last_error: Exception | None = None
@@ -107,7 +118,13 @@ def download_build(build: int, dest_dir: Path, client: httpx.Client | None = Non
         )
     with ZipSource(partial) as source:
         info = read_build_info(source)
-    if info is not None and info[0] != build:
+    if info is None:
+        partial.unlink(missing_ok=True)
+        raise ImportFailed(
+            "downloaded archive has no _sde.jsonl build record",
+            "retry; if it persists CCP's download may be broken",
+        )
+    if info[0] != build:
         partial.unlink(missing_ok=True)
         raise ImportFailed(
             f"downloaded archive is build {info[0]}, expected {build}",

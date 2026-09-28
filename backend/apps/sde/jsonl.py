@@ -2,6 +2,7 @@
 
 import io
 import json
+import logging
 import zipfile
 from collections.abc import Iterator
 from datetime import datetime
@@ -11,6 +12,8 @@ from typing import Any, Protocol, TextIO
 from apps.core.importing import ImportFailed
 
 from .constants import BUILD_FILENAME_RE, BUILD_INFO_FILE
+
+log = logging.getLogger(__name__)
 
 WRONG_FORMAT_HINT = (
     "expected the JSONL SDE published since September 2025 at "
@@ -84,7 +87,7 @@ class SdeSource(Protocol):
 
 
 class ZipSource:
-    """A CCP SDE zip: all `.jsonl` members at the archive root."""
+    """A CCP SDE zip. `.jsonl` members are found at any depth and keyed by file stem."""
 
     def __init__(self, path: Path):
         self.path = Path(path)
@@ -181,7 +184,12 @@ def detect_build(
     info = read_build_info(source)
     if override is not None:
         if info is not None and info[0] != override:
-            pass  # caller logs the disagreement; the explicit flag wins
+            log.warning(
+                "%s says build %d; importing as build %d (--build)",
+                source.description,
+                info[0],
+                override,
+            )
         return override, info[1] if info else None
     if info is not None:
         return info

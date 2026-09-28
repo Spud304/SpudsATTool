@@ -3,7 +3,7 @@
 import re
 from dataclasses import dataclass, field
 
-HEADER_RE = re.compile(r"^\[(?P<hull>[^,\]]+?)(?:,\s*(?P<name>[^\]]*?))?\s*\]$")
+HEADER_RE = re.compile(r"^\[(?P<hull>[^,\]]+?)(?:,\s*(?P<name>.*?))?\s*\]$")  # a name may hold [ ]
 EMPTY_SLOT_RE = re.compile(r"^\[empty .+ slot\]$", re.IGNORECASE)
 QUANTITY_RE = re.compile(r"^(?P<name>.+?)\s+x(?P<qty>\d+)$")
 OFFLINE_RE = re.compile(r"\s*/offline$", re.IGNORECASE)  # the client writes /OFFLINE, Pyfa /offline
@@ -97,6 +97,9 @@ def parse_eft(text: str) -> ParsedEft:
         if qm:
             quantity = int(qm.group("qty"))
             line = qm.group("name")
+            if quantity == 0:
+                warnings.append(f"line {offset}: {line} x0 ignored")
+                continue
         charge: str | None = None
         if ", " in line:
             line, charge = line.split(", ", 1)

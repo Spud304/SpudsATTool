@@ -43,8 +43,12 @@ class PyfaStats:
 def _num(match: re.Match | None) -> float | None:
     if match is None:
         return None
+    raw = match.group("num")
+    # "1,230" is a thousands separator; "12,5" (a comma locale) is a decimal point.
+    if "," in raw and "." not in raw and not re.fullmatch(r"\d{1,3}(,\d{3})+", raw):
+        raw = raw.replace(",", ".")
     try:
-        value = float(match.group("num").replace(",", ""))
+        value = float(raw.replace(",", ""))
     except ValueError:
         return None
     suffix = match.groupdict().get("suffix")

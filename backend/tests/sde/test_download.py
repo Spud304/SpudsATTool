@@ -111,3 +111,27 @@ def test_prune_keeps_newest_two(tmp_path):
         "eve-online-static-data-2-jsonl.zip",
     ]
     assert (tmp_path / "unrelated.zip").exists()
+
+
+def test_a_stale_zip_on_disk_is_downloaded_again(tmp_path):
+    stale = download.download_path(tmp_path, BUILD)
+    stale.write_bytes(make_sde_zip(tiny_records(), build=BUILD - 1))
+    client, calls = make_client(make_sde_zip(tiny_records()))
+    download.download_build(BUILD, tmp_path, client)
+    assert calls["zip"] == 1
+
+
+def test_an_archive_without_a_build_record_is_refused(tmp_path):
+    client, _ = make_client(make_sde_zip(tiny_records(), build=None))
+    with pytest.raises(ImportFailed) as exc:
+        download.download_build(BUILD, tmp_path, client)
+    assert "_sde.jsonl" in str(exc.value)
+
+
+def test_a_garbled_build_pointer_is_an_import_error():
+    def handler(request):
+        return httpx.Response(200, text="<html>maintenance</html>")
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    with pytest.raises(ImportFailed):
+        download.fetch_latest_build(client)

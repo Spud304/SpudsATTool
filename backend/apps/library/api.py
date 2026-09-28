@@ -2,6 +2,7 @@
 
 from typing import cast
 
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
@@ -203,13 +204,14 @@ def create_fit(request: HttpRequest, payload: FitCreateIn):
     permissions.require_add_to_library(request.user)
     user = cast(User, request.user)
     try:
-        fit = services.create_fit(
-            user,
-            eft_text=payload.eft_text,
-            name=payload.name,
-            pyfa_summary=payload.pyfa_summary,
-            status=payload.status,
-        )
+        with transaction.atomic():  # the audit row lands with the fit or not at all
+            fit = services.create_fit(
+                user,
+                eft_text=payload.eft_text,
+                name=payload.name,
+                pyfa_summary=payload.pyfa_summary,
+                status=payload.status,
+            )
     except services.FitError as exc:
         raise HttpError(exc.status, str(exc)) from exc
     return 201, _full(_fit(fit.pk), user)
@@ -269,15 +271,16 @@ def patch_fit(request: HttpRequest, fit_id: int, payload: FitPatchIn):
     if not _can_edit(user, fit):
         raise HttpError(403, "you can only edit your own suggested fits")
     try:
-        services.update_fit(
-            user,
-            fit,
-            name=payload.name,
-            eft_text=payload.eft_text,
-            pyfa_summary=payload.pyfa_summary,
-            status=payload.status,
-            reason=payload.reason,
-        )
+        with transaction.atomic():
+            services.update_fit(
+                user,
+                fit,
+                name=payload.name,
+                eft_text=payload.eft_text,
+                pyfa_summary=payload.pyfa_summary,
+                status=payload.status,
+                reason=payload.reason,
+            )
     except services.FitError as exc:
         raise HttpError(exc.status, str(exc)) from exc
     return _full(_fit(fit.pk), user)

@@ -58,19 +58,19 @@ class Command(BaseCommand):
                 return
             try:
                 if options["path"]:
-                    self._from_path(options, files)
+                    imported = self._from_path(options, files)
                 elif options["scan_incoming"]:
-                    self._scan_incoming(options, files)
+                    imported = self._scan_incoming(options, files)
                 else:
-                    self._check_latest(options, files)
+                    imported = self._check_latest(options, files)
             except ImportFailed as exc:
                 self.stderr.write(str(exc))
                 raise CommandError(exc.remediation or "import failed") from exc
-        if not options["dry_run"] and not options["download_only"]:
-            # Shipped rulesets need ship names from the SDE, so they load once it is in.
+        if imported and not options["dry_run"]:
+            # Shipped rulesets need ship names from the SDE, so they load once a build is in.
             call_command("load_rulesets", stdout=self.stdout, stderr=self.stderr)
 
-    def _from_path(self, options: dict, files: list[str] | None) -> None:
+    def _from_path(self, options: dict, files: list[str] | None) -> bool:
         with open_source(options["path"]) as source:
             build, release_date = detect_build(
                 source, path=options["path"], override=options["build"]
@@ -85,8 +85,9 @@ class Command(BaseCommand):
                 raw_only=options["raw_only"],
             )
         self.stdout.write(report.summary())
+        return report.ok
 
-    def _scan_incoming(self, options: dict, files: list[str] | None) -> None:
+    def _scan_incoming(self, options: dict, files: list[str] | None) -> bool:
         reports = incoming.scan_incoming(force=options["force"], files=files)
         if not reports:
             self.stdout.write("incoming: nothing to import")
@@ -94,26 +95,28 @@ class Command(BaseCommand):
             self.stdout.write(report.summary())
         if any(not r.ok for r in reports):
             raise CommandError("one or more incoming archives failed; see instance/sde/failed/")
+        return bool(reports)
 
-    def _check_latest(self, options: dict, files: list[str] | None) -> None:
+    def _check_latest(self, options: dict, files: list[str] | None) -> bool:
         if not settings.SDE_AUTO_DOWNLOAD and not options["force"]:
             self.stdout.write("SDE_AUTO_DOWNLOAD is off; pass --force to download anyway")
-            return
+            return False
         latest = download.fetch_latest_build()
         current = SdeBuild.latest()
-        if current is not None:
+        if current is not None and latest.build <= current.build and not options["force"]:
+            # Up to date is a successful check. A newer build that then fails to download is
+            # not, so /api/health goes on reporting the data as stale.
             current.last_checked_at = timezone.now()
             current.save(update_fields=["last_checked_at"])
-            if latest.build <= current.build and not options["force"]:
-                self.stdout.write(
-                    f"already imported build {current.build} (CCP latest is {latest.build})"
-                )
-                return
+            self.stdout.write(
+                f"already imported build {current.build} (CCP latest is {latest.build})"
+            )
+            return False
         dirs = incoming.sde_dirs()
         path = download.download_build(latest.build, dirs["downloads"])
         if options["download_only"]:
             self.stdout.write(f"downloaded {path}")
-            return
+            return False
         with open_source(path) as source:
             build, release_date = detect_build(source, path=path)
             report = import_source(
@@ -127,3 +130,4 @@ class Command(BaseCommand):
             )
         download.prune_downloads(dirs["downloads"])
         self.stdout.write(report.summary())
+        return report.ok

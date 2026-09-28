@@ -168,3 +168,36 @@ def test_archetypes_seeded_and_editable(db, theo):
     with pytest.raises(comps.CompError):
         comps.create_archetype(theo, name="Rush")
     assert Comp.objects.count() == 0
+
+
+def test_a_retired_fit_is_kept_but_not_newly_chosen(library_sde, imported_atxxii, theo):
+    from apps.library.models import Fit
+
+    abso_fit = services.create_fit(theo, eft_text=ABSO_FIT, status="active")
+    comp = comps.create_comp(theo, name="Keeps its fit", status="active")
+    lineup = [SlotPatch(slot_no=i) for i in range(1, 11)]
+    lineup[0] = SlotPatch(slot_no=1, type_id=abso_fit.ship_id, default_fit_id=abso_fit.pk)
+    comps.update_comp(theo, comp, slots=lineup)
+    Fit.objects.filter(pk=abso_fit.pk).update(status="retired")
+    comps.update_comp(theo, comp, slots=lineup, notes="still saves")  # slot 1 already had it
+    moved = [SlotPatch(slot_no=i) for i in range(1, 11)]
+    moved[1] = SlotPatch(slot_no=2, type_id=abso_fit.ship_id, default_fit_id=abso_fit.pk)
+    with pytest.raises(comps.CompError) as err:
+        comps.update_comp(theo, comp, slots=moved)
+    assert err.value.status == 422 and "retired" in str(err.value)
+    copy = comps.clone_comp(theo, comp)  # a clone copies what the source has
+    assert copy.slots.get(slot_no=1).default_fit_id == abso_fit.pk
+
+
+def test_archetypes_in_use_cannot_be_deleted_in_django_admin(library_sde, imported_atxxii, theo):
+    from django.contrib import admin
+
+    from apps.library.admin import ArchetypeAdmin
+    from apps.library.models import Archetype
+
+    used = Archetype.objects.create(name="Used")
+    free = Archetype.objects.create(name="Free")
+    comps.create_comp(theo, name="Uses it", archetype_id=used.pk)
+    model_admin = ArchetypeAdmin(Archetype, admin.site)
+    assert not model_admin.has_delete_permission(None, used)
+    assert model_admin.has_delete_permission(None, free)

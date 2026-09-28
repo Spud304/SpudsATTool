@@ -32,3 +32,8 @@ def test_empty_and_partial():
     assert not parse_pyfa_summary("").ok
     partial = parse_pyfa_summary("DPS: 100\nSpeed: 900 m/s")
     assert partial.dps == 100 and partial.ehp_k is None and not partial.ok
+
+
+def test_decimal_commas_and_thousands_separators():
+    stats = parse_pyfa_summary("EHP: 12,5k (Em: 1k)\nSpeed: 1,230 m/s\n")
+    assert stats.ehp_k == 12.5 and stats.speed_ms == 1230

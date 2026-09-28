@@ -100,3 +100,10 @@ def test_mutated_modules_are_marked_by_their_reference():
     ]
     # the blocks are read, not warned about; [3] has none in this trimmed paste
     assert p.warnings == ("line 7: Corelum A-Type 10MN Afterburner [3] has no [3] block",)
+
+
+def test_brackets_in_a_fit_name_and_zero_quantities():
+    p = parse_eft("[Rifter, my [alt] fit]\nWarrior II x0\nWarrior II x2\n")
+    assert p.ok and p.hull_name == "Rifter" and p.fit_name == "my [alt] fit"
+    assert [(i.name, i.quantity) for i in p.items] == [("Warrior II", 2)]
+    assert p.warnings == ("line 2: Warrior II x0 ignored",)

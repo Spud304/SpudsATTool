@@ -146,3 +146,34 @@ def test_a_failed_file_leaves_the_previous_build_whole(tiny_zip, tmp_path, monke
     assert set(SdeRawRecord.objects.values_list("build", flat=True)) == {BUILD}
     latest = SdeBuild.latest()
     assert latest is not None and latest.build == BUILD
+
+
+def test_check_latest_marks_the_check_only_when_up_to_date(tiny_zip, monkeypatch, settings):
+    from django.core.management import CommandError, call_command
+
+    from apps.sde import download
+    from apps.sde.management.commands import import_sde
+
+    run(tiny_zip)
+    settings.SDE_AUTO_DOWNLOAD = True
+    reloaded = []
+    monkeypatch.setattr(import_sde, "call_command", lambda *a, **k: reloaded.append(a))
+
+    def broken(build, dest, client=None):
+        raise ImportFailed("download failed", "retry later")
+
+    monkeypatch.setattr(
+        download, "fetch_latest_build", lambda: download.LatestBuild(BUILD + 1, None)
+    )
+    monkeypatch.setattr(download, "download_build", broken)
+    with pytest.raises(CommandError):
+        call_command("import_sde", "--check-latest")
+    latest = SdeBuild.latest()
+    assert latest is not None and latest.last_checked_at is None  # health keeps saying stale
+    assert reloaded == []
+
+    monkeypatch.setattr(download, "fetch_latest_build", lambda: download.LatestBuild(BUILD, None))
+    call_command("import_sde", "--check-latest")
+    latest = SdeBuild.latest()
+    assert latest is not None and latest.last_checked_at is not None
+    assert reloaded == []  # nothing new was imported, so the rulesets are not reloaded

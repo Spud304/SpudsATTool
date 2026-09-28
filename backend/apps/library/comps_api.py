@@ -3,6 +3,7 @@
 from dataclasses import asdict
 from typing import cast
 
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
@@ -290,8 +291,10 @@ def _slot_patches(slots: list[CompSlotIn] | None) -> list[comps.SlotPatch] | Non
 
 
 def _wrap(call):
+    # One transaction per write, so the audit row lands with the change or not at all.
     try:
-        return call()
+        with transaction.atomic():
+            return call()
     except comps.FitError as exc:
         raise HttpError(exc.status, str(exc)) from exc
 
