@@ -1,0 +1,14 @@
+# The images install their own dependencies. A host's virtualenv or node_modules copied in by
+# `COPY backend/` or `COPY frontend/` would replace them with ones built for another machine.
+**/.venv
+**/node_modules
+**/__pycache__
+**/*.pyc
+backend/.pytest_cache
+backend/.ruff_cache
+backend/.hypothesis
+backend/instance
+backend/.env
+frontend/dist
+deploy/.env
+.git

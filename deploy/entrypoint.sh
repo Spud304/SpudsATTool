@@ -4,8 +4,14 @@ cd /app
 
 wait_for_db() {
   i=0
-  until python -c "import psycopg, os; psycopg.connect(os.environ['DATABASE_URL']).close()" 2>/dev/null; do
-    i=$((i+1)); [ $i -gt 60 ] && echo "database not reachable" && exit 1
+  check='import psycopg, os; psycopg.connect(os.environ["DATABASE_URL"]).close()'
+  until python -c "$check" 2>/dev/null; do
+    i=$((i+1))
+    if [ $i -gt 60 ]; then
+      echo "database not reachable; last error:"
+      python -c "$check" 2>&1 | tail -3  # the real reason (refused, bad password, missing module)
+      exit 1
+    fi
     sleep 2
   done
 }
