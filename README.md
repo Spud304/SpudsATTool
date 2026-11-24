@@ -56,3 +56,9 @@ The browser tests are Python (`pytest-playwright`) in `backend/playwright_tests/
 ```bash
 cd backend && uv run pytest playwright_tests --browser chromium --headed
 ```
+
+## License
+
+The code is under the [MIT License](LICENSE).
+
+EVE Online, the EVE logo, and all associated names, data and imagery (including ship and module names, static data from the SDE, and the tournament rules that the shipped rulesets encode) are the property of CCP hf. They are not covered by this project's license. This project is not affiliated with or endorsed by CCP Games.
